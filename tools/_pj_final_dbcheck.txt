@@ -1,0 +1,6 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+projectDesc_type	mediumtext
+tables_total	22
+test_project_left	0
+form_in_menu	0
+form_buttons	4

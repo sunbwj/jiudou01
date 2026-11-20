@@ -1,0 +1,149 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>菜单组项目维护 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">系统管理</div>
+                <a class="app-side__item" href="menu.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h12v2H3v-2z"/></svg></span>菜单项管理
+                </a>
+                <a class="app-side__item" href="menu-group.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>菜单组管理
+                </a>
+                <a class="app-side__item is-active" href="menu-group-item.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h2v12H4V6zm4 0h10v2H8V6zm0 5h10v2H8v-2zm0 5h7v2H8v-2zm12-9h2v12h-2V7z"/></svg></span>菜单组项目管理
+                </a>
+                <a class="app-side__item is-disabled" href="javascript:void(0)">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12.5a4.25 4.25 0 100-8.5 4.25 4.25 0 000 8.5zm0 1.8c-4.2 0-7.6 2.2-7.6 4.9V21h15.2v-1.8c0-2.7-3.4-4.9-7.6-4.9z"/></svg></span>用户管理
+                </a>
+                <a class="app-side__item is-disabled" href="javascript:void(0)">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a5 5 0 00-5 5v2.6H6v12h12v-12h-1V7a5 5 0 00-5-5zm0 2.2A2.8 2.8 0 0114.8 7v2.6H9.2V7A2.8 2.8 0 0112 4.2z"/></svg></span>角色权限
+                </a>
+                <div class="app-side__group-title">业务中心</div>
+                <a class="app-side__item is-disabled" href="javascript:void(0)">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 20V10h3.2v10H4zm6.4 0V4h3.2v16h-3.2zM16.8 20v-7H20v7h-3.2z"/></svg></span>统计报表
+                </a>
+                <a class="app-side__item is-disabled" href="javascript:void(0)">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.5A1.5 1.5 0 014.5 4h4.2l2 2.4h8.8A1.5 1.5 0 0121 7.9v10.6A1.5 1.5 0 0119.5 20h-15A1.5 1.5 0 013 18.5v-13z"/></svg></span>文件管理
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="菜单组项目管理/新增菜单组项目">
+                <h2 class="page-head__title" id="pageTitle">新增菜单组项目</h2>
+            </div>
+
+            <section class="el-card form-page">
+                <div class="el-card__body">
+                    <div class="el-form form-label-width" id="groupItemForm">
+                        <!-- 当前所选菜单组 -->
+                        <div class="el-form-item" data-field="groupId">
+                            <label class="el-form-item__label">当前所选菜单组</label>
+                            <div class="el-form-item__content">
+                                <span class="group-display" id="groupName">—</span>
+                                <span class="group-display__code" id="groupCode"></span>
+                                <span class="form-tip">所选菜单项将归属于该菜单组</span>
+                            </div>
+                        </div>
+
+                        <!-- 菜单项目选择（多选 + 显示序号） -->
+                        <div class="el-form-item is-required" data-field="items">
+                            <label class="el-form-item__label">菜单项目</label>
+                            <div class="el-form-item__content">
+                                <p class="form-note" id="modeNote">勾选需要的菜单项并填写显示序号（整型），点击保存即可。</p>
+                                <div class="pick-toolbar">
+                                    <div class="el-input pick-filter">
+                                        <input class="el-input__inner" type="text" id="itemFilter" placeholder="过滤：编号 / 中文名 / 英文名">
+                                    </div>
+                                    <button type="button" class="el-button el-button--small" id="btnCheckAll">全选</button>
+                                    <button type="button" class="el-button el-button--small" id="btnClearAll">清空</button>
+                                    <span class="pick-count">已选 <b id="pickCount">0</b> 项</span>
+                                </div>
+                                <div class="pick-table-wrapper">
+                                    <table class="pick-table">
+                                        <colgroup>
+                                            <col style="width:56px">
+                                            <col style="width:110px">
+                                            <col style="width:120px">
+                                            <col style="width:140px">
+                                            <col style="width:160px">
+                                            <col>
+                                        </colgroup>
+                                        <thead>
+                                        <tr>
+                                            <th class="is-center">选择</th>
+                                            <th class="is-center">显示序号</th>
+                                            <th>菜单项编号</th>
+                                            <th>菜单项中文名</th>
+                                            <th>菜单项英文名</th>
+                                            <th>功能页面路径</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="pickTbody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 操作（form-actions：页面操作按钮表 pageopbtn 扫描识别用） -->
+                        <div class="el-form-item form-actions">
+                            <div class="el-form-item__content">
+                                <button type="button" class="el-button el-button--primary" id="btnSave">保存</button>
+                                <button type="button" class="el-button" id="btnBack">返回</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/menu-group-item-form.js?v=20261031a"></script>
+</body>
+</html>

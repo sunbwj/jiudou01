@@ -1,0 +1,334 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>项目详情 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+<style>
+/* 项目详情页：左右分栏吃掉主区剩余高度 */
+@media screen and (min-width: 769px) {
+  .app-main > .pj-split {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    min-height: 0; margin-bottom: 0;
+  }
+  .pj-split__right .pj-filepanel { margin-bottom: 0; }
+  .pj-split__right .pj-filepanel__table { max-height: none; min-height: 200px; }
+}
+.pj-detail { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.pj-detail__head {
+    padding: 12px 14px 8px; font-size: 15px; font-weight: 600; color: #303133; color: var(--theme-text);
+    border-bottom: 1px solid #ebeef5;
+}
+.pj-detail__body { flex: 1 1 auto; overflow: auto; padding: 14px 16px; }
+.pj-detail__row { display: flex; padding: 8px 0; border-bottom: 1px dashed #f0f0f0; font-size: 13px; }
+.pj-detail__label { width: 96px; color: #909399; flex: 0 0 auto; }
+.pj-detail__value { color: #303133; color: var(--theme-text); flex: 1 1 auto; word-break: break-all; }
+.pj-detail__desc { margin-top: 12px; }
+.pj-detail__desc-label { font-size: 13px; font-weight: 600; color: #606266; margin-bottom: 6px; }
+.pj-detail__desc-box {
+    padding: 12px 14px; border: 1px solid #ebeef5; border-radius: 4px; background: #fff;
+    line-height: 1.8; color: #303133; color: var(--theme-text);
+}
+.pj-detail__desc-box img { max-width: 100%; }
+.pj-detail__empty { padding: 40px; text-align: center; color: #909399; }
+/* 左栏 / 右栏通用标签页（与项目管理页 .pj-filetabs 同款，页面级样式，不升 app.css） */
+.pj-filetabs {
+  display: flex; align-items: center; gap: 0; padding: 0 14px;
+  border-bottom: 1px solid #ebeef5; margin-bottom: 6px;
+}
+.pj-filetabs__tab {
+  border: 0; background: none; cursor: pointer; font-size: 13px; color: #606266;
+  padding: 7px 14px; border-bottom: 2px solid transparent; line-height: 1.4;
+}
+.pj-filetabs__tab:hover { color: #409eff; }
+.pj-filetabs__tab.is-active { color: #409eff; border-bottom-color: #409eff; font-weight: 600; }
+.pj-detailtabs { padding: 0 6px; margin-bottom: 0; }
+/* 目录视图树：与项目管理页完全同款 */
+.pj-treeview {
+  overflow: auto; font-size: 13px; color: #303133; color: var(--theme-text);
+}
+.pj-treeview { flex: 1 1 auto; min-height: 200px; max-height: none; padding: 4px 8px 12px; }
+.pj-tnode {
+  display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 8px;
+  border-radius: 4px; cursor: pointer; white-space: nowrap;
+}
+.pj-tnode:hover { background: #f5f7fa; }
+.pj-tnode.is-selected { background: #ecf5ff; color: #409eff; }
+.pj-tnode__caret { width: 14px; flex: 0 0 14px; text-align: center; color: #909399; font-size: 11px; }
+.pj-tnode__caret.is-clickable { cursor: pointer; }
+.pj-tnode__caret.is-clickable:hover { color: #409eff; }
+.pj-tnode__ico { width: 15px; height: 15px; flex: 0 0 15px; color: #e6a23c; }
+.pj-tnode--file .pj-tnode__ico { color: #909399; }
+.pj-tnode__name { overflow: hidden; text-overflow: ellipsis; }
+.pj-tnode__meta { margin-left: auto; color: #909399; font-size: 12px; flex: 0 0 auto; }
+.pj-tnode__empty { padding: 14px 10px; color: #909399; }
+/* 目录视图：文件节点可拖拽（整棵树都是落点区域，按坐标解析目标目录） */
+.pj-tnode--file[draggable="true"] { cursor: grab; }
+.pj-tnode--file.is-dragging { opacity: .4; }
+.pj-tnode--dir.is-drop-target {
+  background: #ecf5ff; box-shadow: inset 0 0 0 1px #409eff; color: #409eff;
+}
+.pj-tree__rootdrop {
+  display: none; align-items: center; gap: 6px; margin: 8px 4px 2px;
+  padding: 6px 10px; border: 1px dashed #c0c4cc; border-radius: 4px;
+  font-size: 12px; color: #909399;
+}
+.pj-treeview.is-dragging .pj-tree__rootdrop { display: flex; }
+.pj-tree__rootdrop.is-drop-target { border-color: #409eff; color: #409eff; background: #ecf5ff; }
+/* 右栏文件面板：检索 + 操作按钮 */
+.pj-filepanel__toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 0 14px 10px;
+}
+.pj-filepanel__toolbar .pf-kw {
+  -webkit-box-flex: 1; -ms-flex: 1 1 160px; flex: 1 1 160px; min-width: 120px;
+  height: 32px; padding: 0 10px; border: 1px solid #dcdfe6; border-radius: 4px;
+  font-size: 13px; color: #606266; background: #fff;
+}
+.pj-filepanel__toolbar .pf-kw:focus { outline: none; border-color: #409eff; }
+/* 演示文稿预览增强：幻灯片标题 + 翻页导航 */
+.fp-slide__title {
+  font-size: 17px; font-weight: 700; color: #303133; color: var(--theme-text);
+  margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid #ebeef5;
+}
+.fp-slide { scroll-margin-top: 8px; }
+.fp-slides-nav {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid #ebeef5; background: #fff;
+}
+.fp-slides-nav__info { font-size: 13px; color: #606266; min-width: 96px; text-align: center; }
+/* docx-preview / PPTXjs 组件容器：横向可滚、不被裁切 */
+.fp-docx { overflow-x: auto; }
+.fp-pptx { overflow-x: auto; padding-bottom: 4px; }
+.fp-pptx .slide { margin: 0 auto 12px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+</style>
+<style>
+/* 项目详情 · 工作计划 Tab（只读表格） */
+.pj-plans__bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 2px 0 8px; }
+.pj-plans__count { font-size: 12px; color: #909399; }
+#pjPlansBody { display: flex; flex-direction: column; overflow: hidden; }
+.pj-plans__wrap { border: 1px solid #ebeef5; border-radius: 4px; overflow: auto; flex: 1 1 auto; min-height: 0; }
+.pj-plans-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pj-plans-table th, .pj-plans-table td { padding: 7px 8px; border-bottom: 1px solid #f0f2f5; text-align: left; vertical-align: middle; }
+.pj-plans-table th { background: #fafbfc; color: #606266; font-weight: 600; white-space: nowrap; }
+.pj-plans-table td.is-center, .pj-plans-table th.is-center { text-align: center; }
+.pj-plans-table tbody tr:hover td { background: #f5f9ff; }
+.pj-plans-table .pj-plan-status { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 11px; }
+.pj-plans-table .is-on { background: #f0f9eb; color: #67c23a; }
+.pj-plans-table .is-off { background: #f4f4f5; color: #909399; }
+.pj-plans-table .is-stop { background: #fdf6ec; color: #e6a23c; }
+</style>
+<style>
+/* 计划工单弹窗（最大化） */
+.pj-plan-orders { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.pj-plan-orders__meta { padding: 0 2px 8px; font-size: 12px; color: #909399; flex: 0 0 auto; }
+.pj-plan-orders__wrap { flex: 1 1 auto; min-height: 0; overflow: auto; border: 1px solid #ebeef5; border-radius: 4px; }
+.pj-plan-orders__table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pj-plan-orders__table th, .pj-plan-orders__table td { padding: 7px 8px; border-bottom: 1px solid #f0f2f5; text-align: left; white-space: nowrap; }
+.pj-plan-orders__table th { background: #fafbfc; color: #606266; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+.pj-plan-orders__table td.is-center, .pj-plan-orders__table th.is-center { text-align: center; }
+.pj-plan-dialog { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.pj-plan-dialog__tabs { display: flex; gap: 4px; border-bottom: 1px solid #ebeef5; margin-bottom: 10px; flex: 0 0 auto; }
+.pj-plan-dialog__tab { border: 0; background: transparent; padding: 6px 14px; font-size: 13px; color: #606266; cursor: pointer; border-bottom: 2px solid transparent; }
+.pj-plan-dialog__tab.is-active { color: #409eff; border-bottom-color: #409eff; font-weight: 600; }
+.pj-plan-pane { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.pj-plan-pane[hidden] { display: none; }
+.pj-plan-tasks__bar { display: flex; align-items: center; gap: 10px; padding: 0 2px 8px; flex: 0 0 auto; }
+.pj-plan-tasks__name { font-size: 13px; color: #303133; font-weight: 600; }
+.pj-plan-tasks__meta { font-size: 12px; color: #909399; }
+.pj-plan-viewbtns { margin-left: auto; display: inline-flex; border: 1px solid #dcdfe6; border-radius: 4px; overflow: hidden; }
+.pj-plan-viewbtns button { border: 0; background: #fff; padding: 4px 12px; font-size: 12px; cursor: pointer; color: #606266; }
+.pj-plan-viewbtns button + button { border-left: 1px solid #dcdfe6; }
+.pj-plan-viewbtns button.is-active { background: #409eff; color: #fff; }
+.pj-plan-viewbody { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.pj-gantt__head, .pj-gantt__row { display: flex; align-items: center; font-size: 12px; }
+.pj-gantt__head { position: sticky; top: 0; background: #fafbfc; color: #909399; z-index: 1; }
+.pj-gantt__label { flex: 0 0 220px; width: 220px; padding: 5px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pj-gantt__track { position: relative; flex: 1 1 auto; height: 30px; border-left: 1px solid #ebeef5; background: #fff; }
+.pj-gantt__head .pj-gantt__track { height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
+.pj-gantt__row:nth-child(odd) .pj-gantt__track { background: #fafcff; }
+.pj-gantt__bar { position: absolute; top: 7px; height: 16px; border-radius: 3px; background: #409eff; min-width: 2px; }
+.pj-gantt__bar.is-done { background: #67c23a; }
+.pj-gantt__bar.is-late { background: #e6a23c; }
+.pj-gantt__bar.is-cancel { background: #f56c6c; }
+.pj-gantt__bar.is-none { background: #c0c4cc; }
+.pj-gantt__bar span { display: block; height: 100%; background: rgba(255,255,255,.35); border-radius: 3px; }
+.pj-cal__bar { display: flex; align-items: center; gap: 8px; padding: 0 2px 8px; }
+.pj-cal__title { font-size: 13px; font-weight: 600; color: #303133; }
+.pj-cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); border-left: 1px solid #ebeef5; border-top: 1px solid #ebeef5; }
+.pj-cal__wk { background: #fafbfc; color: #909399; font-size: 12px; padding: 5px; text-align: center; border-right: 1px solid #ebeef5; border-bottom: 1px solid #ebeef5; }
+.pj-cal__day { min-height: 72px; border-right: 1px solid #ebeef5; border-bottom: 1px solid #ebeef5; padding: 4px; font-size: 11px; }
+.pj-cal__day.is-empty { background: #fafafa; }
+.pj-cal__num { color: #909399; margin-bottom: 2px; }
+.pj-cal__task { display: block; margin: 2px 0; padding: 1px 4px; border-radius: 2px; background: #ecf5ff; color: #409eff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pj-cal__task.is-done { background: #f0f9eb; color: #67c23a; }
+.pj-cal__more { color: #909399; }
+.pj-task-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pj-task-table th, .pj-task-table td { padding: 6px 8px; border-bottom: 1px solid #f0f2f5; text-align: left; }
+.pj-task-table th { background: #fafbfc; color: #606266; position: sticky; top: 0; }
+.pj-task-table td.is-center, .pj-task-table th.is-center { text-align: center; }
+.pj-plan-frame { flex: 1 1 auto; min-height: 0; display: flex; }
+.pj-plan-frame iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+</style>
+</head>
+<body>
+
+<div class="app">
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">项目管理</div>
+                <a class="app-side__item" href="project.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h7l2 2h9v12H3V5zm2 2v10h14V9h-7.2L9.8 7H5z"/></svg></span>项目信息
+                </a>
+                <a class="app-side__item" href="project-file.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h8l5 5v15H6V2zm7 1.5V8h4.5L13 3.5zM8 11h8v2H8v-2zm0 4h8v2H8v-2z"/></svg></span>项目文件
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="项目管理/项目详情">
+                <h2 class="page-head__title">项目详情</h2>
+                <div class="page-head__actions">
+                    <button type="button" class="el-button el-button--small" id="btnBack">返回</button>
+                </div>
+            </div>
+
+            <section class="pj-split">
+                <!-- 左 70%：项目信息内容 -->
+                <div class="pj-split__left">
+                    <section class="el-card pj-detail">
+                        <div class="pj-detail__head">项目详情</div>
+                        <div class="pj-filetabs pj-detailtabs" id="dtTabs" role="tablist" aria-label="项目详情展示方式">
+                            <button type="button" class="pj-filetabs__tab is-active" id="dtTabInfo" role="tab"
+                                    aria-selected="true">项目基本信息</button>
+                            <button type="button" class="pj-filetabs__tab" id="dtTabDesc" role="tab"
+                                    aria-selected="false">项目说明</button>
+                            <button type="button" class="pj-filetabs__tab" id="dtTabPlans" role="tab"
+                                    aria-selected="false">工作计划</button>
+                        </div>
+                        <div class="pj-detail__body" id="pjDetailBody">
+                            <div class="pj-detail__empty">加载中…</div>
+                        </div>
+                        <div class="pj-detail__body" id="pjDescBody" style="display:none;">
+                            <div class="pj-detail__empty">加载中…</div>
+                        </div>
+                        <div class="pj-detail__body" id="pjPlansBody" style="display:none;">
+                            <div class="pj-plans__bar">
+                                <span class="pj-plans__count">共 <b id="pjPlansCount">0</b> 个计划　<span class="pj-plans__hint">双击计划查看工单</span></span>
+                                <button type="button" class="el-button el-button--small el-button--primary" id="dtPlansGoto">在计划管理中查看</button>
+                            </div>
+                            <div class="pj-plans__wrap" id="pjPlansWrap">
+                                <table class="pj-plans-table" id="pjPlansTable">
+                                    <thead><tr>
+                                        <th style="width:52px" class="is-center">序号</th>
+                                        <th style="width:110px">计划编号</th>
+                                        <th>计划名称</th>
+                                        <th style="width:88px" class="is-center">状态</th>
+                                        <th style="width:150px">计划起止</th>
+                                        <th style="width:62px" class="is-center">任务数</th>
+                                        <th style="width:78px" class="is-center">完成度</th>
+                                        <th style="width:62px" class="is-center">工单数</th>
+                                        <th style="width:90px">创建人</th>
+                                    </tr></thead>
+                                    <tbody id="pjPlansTbody"></tbody>
+                                </table>
+                            </div>
+                            <div id="pjPlansPager" class="pager-wrap"></div>
+                        </div>
+
+                    </section>
+                </div>
+                <!-- 右 30%：项目关联文件列表 -->
+                <div class="pj-split__right">
+                    <section class="el-card pj-filepanel">
+                        <div class="pj-filepanel__head">
+                            <div class="pj-filepanel__title">
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h8l5 5v15H6V2zm7 1.5V8h4.5L13 3.5zM8 11h8v2H8v-2zm0 4h8v2H8v-2z"/></svg>
+                                <span>项目文件</span>
+                                <em id="pfPanelProject" class="pj-filepanel__project">未选择项目</em>
+                            </div>
+                            <button type="button" class="el-button el-button--small" id="btnPfRefresh"
+                                    title="刷新文件列表" aria-label="刷新文件列表">刷新</button>
+                        </div>
+                        <div class="pj-filepanel__toolbar">
+                            <input class="pf-kw" type="text" id="pfKeyword" placeholder="文件名搜索" autocomplete="off">
+                            <button type="button" class="el-button el-button--small" id="btnPfSearch">搜索</button>
+                        </div>
+                        <div class="pj-filepanel__hint">双击文件行可在线预览（图片 / PDF / Word / Excel / PPT 等）；「目录」页可展开文件夹、双击文件预览，也可把文件拖到某个文件夹（或它里面的文件）上移入该目录</div>
+                        <div class="pj-filetabs" id="pfTabs" role="tablist" aria-label="项目文件展示方式">
+                            <button type="button" class="pj-filetabs__tab is-active" id="pfTabList" role="tab" aria-selected="true">文件列表</button>
+                            <button type="button" class="pj-filetabs__tab" id="pfTabTree" role="tab" aria-selected="false">目录</button>
+                        </div>
+                        <div class="pj-treeview" id="pfTreeView" style="display:none;"></div>
+                        <div class="table-wrapper pj-filepanel__table" id="pfPanelWrapper">
+                            <div class="el-table">
+                                <div class="el-table__inner-wrapper">
+                                    <table id="pfPanelTable">
+                                        <colgroup>
+                                            <col style="width:44px">
+                                            <col>
+                                            <col style="width:62px">
+                                            <col style="width:70px">
+                                            <col style="width:88px">
+                                        </colgroup>
+                                        <thead>
+                                        <tr>
+                                            <th class="is-center">#</th>
+                                            <th>文件名</th>
+                                            <th>类型</th>
+                                            <th class="is-center">大小</th>
+                                            <th>上传时间</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="pfPanelTbody" class="el-table__body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/word-import.js?v=20261106c"></script>
+<script src="js/file-preview.js?v=20261110e"></script>
+<script src="js/project-detail.js?v=20261106l"></script>
+</body>
+</html>

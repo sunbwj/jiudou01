@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>msg probe（真实 Edge：IM 首屏 / 会话 / 收发 / 在线态 / 双窗口隔离）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1440px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：由 8808 同源静态服务托管。
+   在 api.js 之前注入 SSO 会话 + 阻断 jQuery.ajax → api.js 自动回退 Mock → Mock WS（MockImSocket）。
+   断言结果全部写到父页 <html> 的 data-* 属性，供 msedge --headless --dump-dom 后 grep。
+   覆盖：首屏本人/连接态/联系人（全员可互发、排除自己、无 NaN 键）/ 打开会话 / 发消息（乐观气泡→ack）/
+        在线态绿灰点 / 输入中提示 / 实时收信未读 / 第二窗口（empId=2）隔离。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, String(v)); }
+    var fr = document.getElementById('fr');
+
+    function session(empId) {
+        return 'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe-' + empId + '",' +
+            'account:"probe",empId:' + empId + ',ename:"探针",user:{empId:' + empId + ',nameCn:"探针"},' +
+            'expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}';
+    }
+    function makeHtml(src, empId) {
+        src = src.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' + session(empId) +
+            'jQuery.ajax=function(){var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        if (!re.test(src)) { return null; }
+        return src.replace(re, patch + '<script src="js/api.js?v=20261107c"><\/script>');
+    }
+    function load(src, empId) {
+        var html = makeHtml(src, empId);
+        if (!html) { attr('data-done', 'no-api-tag'); return null; }
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        return { w: w, doc: doc };
+    }
+    function waitFor(ctx, selector, min, cb) {
+        var tries = 0;
+        (function loop() {
+            var n = ctx.doc.querySelectorAll(selector).length;
+            if (n >= min || tries >= 60) { return cb(); }
+            tries++;
+            setTimeout(loop, 250);
+        })();
+    }
+    function txt(doc, sel) { var el = doc.querySelector(sel); return el ? (el.textContent || '').trim() : ''; }
+    function n(doc, sel) { return doc.querySelectorAll(sel).length; }
+
+    fetch('../message.html').then(function (r) { return r.text(); }).then(function (src) {
+        var ctx = load(src, 3);                 // 甲：empId=3 = 王多云（后端工程师）
+        if (!ctx) { return; }
+        setTimeout(function () {
+            waitFor(ctx, '#imContacts .im-contact', 5, function () { step1(ctx, src); });
+        }, 900);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    /* ---- 1. 首屏：本人 / 连接 / 联系人 ---- */
+    function step1(ctx, src) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        var keys = Object.keys(IM.state.contacts);
+        attr('data-title', txt(doc, '.page-head__title'));
+        attr('data-crumb', (doc.getElementById('pageHead') || {}).getAttribute('data-crumb') || '');
+        attr('data-me', txt(doc, '#imMeName'));
+        attr('data-me-sub', txt(doc, '#imMeSub'));
+        attr('data-connected', $('#imConn').hasClass('is-online') ? 'yes' : 'no');
+        attr('data-conn-text', txt(doc, '#imConnText'));
+        attr('data-mock-socket', (IM.socket && IM.socket.mock === true) ? 'yes' : 'no');
+        attr('data-online-count', txt(doc, '#imOnlineCount'));
+        attr('data-contact-count', keys.length);
+        attr('data-contact-dom', n(doc, '#imContacts .im-contact'));
+        attr('data-has-self', keys.indexOf('3') > -1 ? 'yes' : 'no');
+        attr('data-nan-key', (keys.length && keys.every(function (k) { return k !== 'NaN'; })) ? 'no' : 'yes');
+        var first = doc.querySelector('#imContacts .im-contact');
+        attr('data-first-name', first ? txt(first, '.im-contact__name') : '');
+        attr('data-first-dept', first ? txt(first, '.im-contact__dept') : '');
+        attr('data-dots-online', n(doc, '#imContacts .im-dot.is-online'));
+        attr('data-first-row-h', first ? Math.round(first.getBoundingClientRect().height) : 0);
+
+        /* ---- 2. 真实点击联系人行 → 打开会话 ---- */
+        var peer = parseInt(keys[0], 10);
+        attr('data-peer', peer);
+        if (first) { first.click(); }
+        setTimeout(function () {
+            attr('data-active-peer', IM.state.activePeer);
+            attr('data-chat-display', ($('#imChat').css('display') || 'none'));
+            attr('data-chat-title', txt(doc, '#imChatTitle'));
+            attr('data-chat-sub', txt(doc, '#imChatSub'));
+            attr('data-btn-markread-disabled', $('#btnMarkRead').prop('disabled') ? 'yes' : 'no');
+            attr('data-input-disabled', $('#imText').prop('disabled') ? 'yes' : 'no');
+            step3(ctx, src, peer);
+        }, 500);
+    }
+
+    /* ---- 3. 发消息：乐观气泡 → 异步 ack ---- */
+    function step3(ctx, src, peer) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        var text = '探针发信 ' + Date.now();
+        $('#imText').val(text);
+        IM.send();
+        var list = IM.state.convo[peer] || [];
+        var last = list[list.length - 1];
+        attr('data-bubble-temp', (last && last.temp === true) ? 'yes' : 'no');
+        attr('data-bubble-text', (last && last.content === text) ? 'yes' : 'no');
+        setTimeout(function () {
+            var l2 = IM.state.convo[peer] || [];
+            var last2 = l2[l2.length - 1];
+            attr('data-ack-temp', (last2 && last2.temp === false) ? 'no-temp' : 'still-temp');
+            attr('data-ack-id', (last2 && last2.id && String(last2.id).indexOf('t') !== 0) ? 'real' : 'temp');
+            attr('data-lastcontent', (IM.state.contacts[peer] || {}).lastContent || '');
+            attr('data-row-msg', txt(doc, '#imContacts .im-contact[data-emp="' + peer + '"] .im-contact__msg'));
+            attr('data-bubble-in-dom', ($('#imChatBody').text().indexOf(text) > -1) ? 'yes' : 'no');
+            step4(ctx, src, peer);
+        }, 500);
+    }
+
+    /* ---- 4. 在线态 / 输入中 / 实时收信 ---- */
+    function step4(ctx, src, peer) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        IM.dispatch({ type: 'presence', empId: peer, online: false });
+        attr('data-dot-after-offline', $('#imContacts .im-contact[data-emp="' + peer + '"] .im-dot')
+            .hasClass('is-online') ? 'online' : 'offline');
+        attr('data-chatsub-after-offline', txt(doc, '#imChatSub'));
+        IM.dispatch({ type: 'presence', empId: peer, online: true });
+        attr('data-dot-after-online', $('#imContacts .im-contact[data-emp="' + peer + '"] .im-dot')
+            .hasClass('is-online') ? 'online' : 'offline');
+
+        IM.dispatch({ type: 'typing', from: peer, on: true });
+        attr('data-typing-on', $('#imTyping').css('display'));
+        IM.dispatch({ type: 'typing', from: peer, on: false });
+        attr('data-typing-off', $('#imTyping').css('display'));
+
+        var others = Object.keys(IM.state.contacts).map(Number).filter(function (k) { return k !== IM.state.activePeer; });
+        var from = others[0];
+        attr('data-from', from);
+        var before = (IM.state.contacts[from] || {}).unread || 0;
+        IM.socket.simulateInbound(from, '探针实时来消息', '同事' + from);
+        var after = (IM.state.contacts[from] || {}).unread || 0;
+        attr('data-unread-before', before);
+        attr('data-unread-after', after);
+        attr('data-badge-count', n(doc, '#imContacts .im-contact[data-emp="' + from + '"] .im-badge'));
+        attr('data-doc-title-prefix', /^\(\d+\)/.test(doc.title) ? 'yes' : 'no');
+        attr('data-no-error', errs.length === 0 ? 'yes' : 'no');
+        attr('data-errs', errs.join(' | '));
+        step5(src);
+    }
+
+    /* ---- 5. 第二窗口 empId=2 → 联系人各排除自己 ---- */
+    function step5(src) {
+        var ctx2 = load(src, 2);
+        if (!ctx2) { attr('data-done', 'ok-one-window'); return; }
+        setTimeout(function () {
+            waitFor(ctx2, '#imContacts .im-contact', 5, function () {
+                var w2 = ctx2.w, doc2 = ctx2.doc, IM2 = w2.IM;
+                var k2 = Object.keys(IM2.state.contacts);
+                attr('data-2-me', txt(doc2, '#imMeName'));
+                attr('data-2-contact-count', k2.length);
+                attr('data-2-has-self', k2.indexOf('2') > -1 ? 'yes' : 'no');
+                attr('data-2-nan-key', (k2.length && k2.every(function (k) { return k !== 'NaN'; })) ? 'no' : 'yes');
+                attr('data-done', 'ok');
+            });
+        }, 900);
+    }
+})();
+</script>
+</body>
+</html>

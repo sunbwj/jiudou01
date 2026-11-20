@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!-- 主框架「消息提醒中心」样式（铃铛 / 下拉 / 菜单上标），只被本页引用 -->
+<link rel="stylesheet" href="css/notify.css?v=20261107b">
+<!-- 主框架右下角「土豆小助手」悬浮按钮样式（只被本页引用） -->
+<link rel="stylesheet" href="css/potato.css?v=20261110h">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body class="frame-page">
+
+<div class="frame">
+    <!-- ============ 1. 顶部：Logo / 系统名称 / 用户信息 ============ -->
+    <header class="frame-header">
+        <button type="button" class="frame-header__toggle" id="frameToggle" aria-label="菜单">☰</button>
+        <div class="frame-header__logo">
+            <img class="logo-mark" id="frameSysLogo" src="assets/logo.svg" alt="九豆">
+            <span id="frameSysName">九豆综合管理平台</span>
+        </div>
+        <div class="frame-header__spacer"></div>
+        <!-- 消息提醒中心：铃铛（右上角红点数字）+ 下拉分「即时对话 / 新邮件」 -->
+        <div class="frame-bell" id="frameBell">
+            <button type="button" class="frame-bell__btn" id="frameBellBtn"
+                    aria-label="消息提醒" aria-haspopup="true" aria-expanded="false" title="消息提醒">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 22a2.2 2.2 0 0 0 2.2-2.2h-4.4A2.2 2.2 0 0 0 12 22zm7-6.3-1.6-1.8v-4.4A5.4 5.4 0 0 0 13 4.1V3a1 1 0 1 0-2 0v1.1a5.4 5.4 0 0 0-4.4 5.4v4.4L5 15.7a1 1 0 0 0 .8 1.6h12.4a1 1 0 0 0 .8-1.6z"/>
+                </svg>
+                <span class="frame-bell__dot" id="frameBellDot" hidden>0</span>
+            </button>
+            <div class="frame-bell__panel" id="frameBellPanel" hidden>
+                <div class="frame-bell__head">
+                    <span class="frame-bell__title">消息提醒</span>
+                    <span class="frame-bell__head-btns">
+                        <button type="button" class="frame-bell__tool" id="frameBellRefresh" title="立即刷新">刷新</button>
+                    </span>
+                </div>
+                <div class="frame-bell__body" id="frameBellBody"></div>
+                <div class="frame-bell__foot">
+                    <label class="frame-bell__sw" title="新消息到达时播放提示音">
+                        <input type="checkbox" id="frameBellSound"> 提示音
+                    </label>
+                    <label class="frame-bell__sw" title="新消息到达时用语音播报（浏览器语音合成）">
+                        <input type="checkbox" id="frameBellVoice"> 语音播报
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="frame-header__user" id="frameUser">
+            <span class="avatar" id="frameAvatar">管</span>
+            <span class="name" id="frameName">系统管理员</span>
+            <button type="button" class="frame-header__pwd" id="frameChangePwd" title="修改当前登录用户的密码">改密</button>
+            <button type="button" class="frame-header__logout" id="frameLogout" title="退出登录">退出</button>
+        </div>
+        <!-- 主题切换：全站（含所有 Tab 内的功能页）风格一起变 -->
+        <div class="theme-switch" id="frameTheme"></div>
+    </header>
+
+    <!-- ============ 2. 中间：左侧导航 + 右侧内容 ============ -->
+    <div class="frame-body">
+        <!-- 左侧：功能菜单（由 /api/nav 按菜单组 + 菜单项 + 绑定关系实时生成） -->
+        <aside class="frame-side" id="frameSide">
+            <!-- 收起 / 展开左侧导航：贴在菜单区右边缘、垂直居中（纯图标，名称走 title / aria-label；
+                 状态记在 localStorage，移动端抽屉模式下自动隐藏） -->
+            <button type="button" class="frame-side__collapse" id="frameSideCollapse"
+                    aria-expanded="true" aria-label="收起导航" title="收起导航">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                </svg>
+            </button>
+            <nav class="frame-side__menu" id="frameMenu">
+                <div class="frame-side__loading">正在加载菜单…</div>
+            </nav>
+        </aside>
+        <div class="frame-side__mask" id="frameMask"></div>
+
+        <!-- 右侧：Tab 标签 + 内容区（每个 Tab 内嵌一个 iframe 加载功能页面） -->
+        <main class="frame-main">
+            <div class="frame-tabs">
+                <div class="frame-tabs__list" id="frameTabs"></div>
+                <div class="frame-tabs__actions">
+                    <button type="button" class="frame-tabs__btn" id="tabCloseOthers" title="关闭其它">关闭其它</button>
+                    <button type="button" class="frame-tabs__btn" id="tabCloseAll" title="关闭全部">关闭全部</button>
+                </div>
+            </div>
+            <div class="frame-panes" id="framePanes"></div>
+        </main>
+    </div>
+
+    <!-- ============ 3. 底部：面包屑 / 版权与邮箱（居中） / 服务状态 / 日期 ============ -->
+    <footer class="frame-footer">
+        <span class="el-breadcrumb clearfix frame-footer__crumb" id="frameCrumb"></span>
+        <span class="frame-footer__copy">&copy; 2026 <span id="frameFooterName">九豆综合管理平台</span> &nbsp;·&nbsp; E-Mail：sunbwj@163.com</span>
+        <span class="frame-footer__right">
+            <span class="dot" id="apiDot"></span><span id="apiStatus">正在检测服务…</span>
+            <span class="sep">|</span><span id="clock">--:--</span>
+        </span>
+    </footer>
+</div>
+
+<!-- ============ 4. 右下角悬浮按钮：卡通土豆 ============
+     纯内联 SVG（不额外请求图片），点击弹一句小提示；不参与业务、不请求后端。 -->
+<div class="potato-fab" id="potatoFab">
+    <div class="potato-fab__bubble" id="potatoBubble" hidden>
+        <button type="button" class="potato-fab__bubble-close" id="potatoBubbleClose" aria-label="关闭提示">×</button>
+        <p class="potato-fab__bubble-text" id="potatoBubbleText" aria-live="polite"></p>
+    </div>
+    <button type="button" class="potato-fab__btn" id="potatoFabBtn"
+            aria-label="九豆小助手" aria-haspopup="true" aria-expanded="false" aria-controls="potatoBubble"
+            title="九豆小助手：点我一下">
+        <svg class="potato" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
+            <defs>
+                <!-- 土豆皮：左上偏亮的暖棕色，像被光晒过 -->
+                <radialGradient id="potatoSkin" cx="38%" cy="28%" r="80%">
+                    <stop offset="0%" stop-color="#f2c488"/>
+                    <stop offset="55%" stop-color="#d99b56"/>
+                    <stop offset="100%" stop-color="#ab6c2c"/>
+                </radialGradient>
+            </defs>
+            <!-- 落地阴影 -->
+            <ellipse class="potato__shadow" cx="48" cy="78" rx="18" ry="3.4"/>
+            <!-- 土豆身体 -->
+            <path class="potato__skin" d="M49 11c15 0 26 8 29 19 3 11 1 22-6 29-6 6-14 9-23 9s-17-3-23-9c-7-7-9-18-6-29C23 19 34 11 49 11z"/>
+            <!-- 表皮斑点 -->
+            <ellipse class="potato__spot" cx="69" cy="35" rx="2.8" ry="1.9" transform="rotate(20 69 35)"/>
+            <ellipse class="potato__spot" cx="27" cy="57" rx="2.4" ry="1.7" transform="rotate(-16 27 57)"/>
+            <ellipse class="potato__spot" cx="63" cy="67" rx="2.1" ry="1.5" transform="rotate(8 63 67)"/>
+            <ellipse class="potato__spot" cx="38" cy="23" rx="1.9" ry="1.4" transform="rotate(-10 38 23)"/>
+            <!-- 头顶嫩芽（会左右摇） -->
+            <g class="potato__sprout">
+                <path class="potato__stem" d="M48.5 12.5c-.6-4 .6-7 3-8.6"/>
+                <path class="potato__leaf" d="M51.4 7.2c2.6-2.6 6-2.6 8-1-2.4 2.2-5.4 3-8 2.6z"/>
+            </g>
+            <!-- 两只小短手（右臂悬停时挥手） -->
+            <path class="potato__arm" d="M22 61c-4 1.8-6 4.6-6 7.6"/>
+            <path class="potato__arm potato__arm--r" d="M76 57c4 1.4 6.4 4 7 7"/>
+            <!-- 眼睛（整组会定时眨） -->
+            <g class="potato__eyes">
+                <g class="potato__eye">
+                    <ellipse class="potato__eyew" cx="38.5" cy="45" rx="5.6" ry="6.4"/>
+                    <circle class="potato__pupil" cx="39.4" cy="46" r="2.9"/>
+                    <circle class="potato__glint" cx="37.9" cy="44" r="1.15"/>
+                </g>
+                <g class="potato__eye">
+                    <ellipse class="potato__eyew" cx="57.5" cy="45" rx="5.6" ry="6.4"/>
+                    <circle class="potato__pupil" cx="58.4" cy="46" r="2.9"/>
+                    <circle class="potato__glint" cx="56.9" cy="44" r="1.15"/>
+                </g>
+            </g>
+            <ellipse class="potato__cheek" cx="29.5" cy="54" rx="5" ry="3.2"/>
+            <ellipse class="potato__cheek" cx="66.5" cy="54" rx="5" ry="3.2"/>
+            <path class="potato__mouth" d="M43 57.5c1.8 3.4 8.2 3.4 10 0"/>
+        </svg>
+    </button>
+</div>
+
+<!-- ============ 5. 右侧「员工IM」抽屉：双击土豆打开 ============
+     只做**通讯录**：「联系人 / 群组」两个标签的名单（含未读 / 在线态 / 最近一条），
+     **没有会话消息列表，也没有发消息输入框**；点条目 → 在框架 Tab 里打开完整即时对话并进入该会话。
+     数据由 js/potato-im.js 直接调 Api.msg（不内嵌 message.html）。 -->
+<aside class="potato-im" id="potatoIm" aria-label="员工IM" aria-hidden="true">
+    <div class="potato-im__head">
+        <span class="potato-im__title">员工IM</span>
+        <span class="potato-im__me" id="piMe">—</span>
+
+        <button type="button" class="potato-im__min" id="potatoImMin" title="最小化" aria-label="最小化">−</button>
+        <button type="button" class="potato-im__close" id="potatoImClose" title="关闭（Esc）" aria-label="关闭">×</button>
+    </div>
+    <div class="pi-body">
+        <div class="pi-search">
+            <input type="text" id="piSearch" placeholder="搜索 姓名 / 部门" autocomplete="off">
+        </div>
+        <div class="pi-tabs" role="tablist">
+            <button type="button" class="pi-tab is-active" data-tab="contact" role="tab">联系人<span class="pi-tab__dot" id="piUnreadContact" hidden></span></button>
+            <button type="button" class="pi-tab" data-tab="group" role="tab">群组<span class="pi-tab__dot" id="piUnreadGroup" hidden></span></button>
+            <button type="button" class="pi-newgroup" id="piNewGroup" title="创建群组" aria-label="创建群组">＋</button>
+        </div>
+        <div class="pi-list" id="piList"><div class="pi-list__tip">正在加载…</div></div>
+        <div class="pi-foot">双击条目打开会话；群组条目可点铅笔改名（仅群主）</div>
+    </div>
+
+    <!-- 建群 / 改名 弹窗（抽屉内自绘，不依赖 UI.dialog） -->
+    <div class="pi-modal" id="piModal" hidden>
+        <div class="pi-modal__mask" id="piModalMask"></div>
+        <div class="pi-modal__box" role="dialog" aria-modal="true" aria-labelledby="piModalTitle">
+            <div class="pi-modal__head">
+                <span class="pi-modal__title" id="piModalTitle">创建群组</span>
+                <button type="button" class="pi-modal__close" id="piModalClose" aria-label="关闭">×</button>
+            </div>
+            <div class="pi-modal__body" id="piModalBody"></div>
+            <div class="pi-modal__err" id="piModalErr"></div>
+            <div class="pi-modal__foot">
+                <button type="button" class="pi-btn" id="piModalCancel">取消</button>
+                <button type="button" class="pi-btn pi-btn--primary" id="piModalOk">确定</button>
+            </div>
+        </div>
+    </div>
+    <div class="pi-toast" id="piToast" hidden></div>
+</aside>
+
+<!-- 最小化后的还原入口（贴在右侧，点一下恢复员工IM） -->
+<button type="button" class="potato-im__pill" id="potatoImPill" hidden title="展开员工IM">员工IM</button>
+
+<!-- 双击联系人 / 群组打开的即时对话小窗（**不走消息中心页面**，就在这里收发） -->
+<div class="pi-chatwin" id="piChatWin" hidden role="dialog" aria-labelledby="piChatWinTitle">
+    <div class="pi-chatwin__head">
+        <span class="pi-chatwin__title" id="piChatWinTitle">会话</span>
+        <span class="pi-chatwin__sub" id="piChatWinSub"></span>
+        <button type="button" class="pi-chatwin__max" id="piChatWinMax" title="最大化" aria-label="最大化">⛶</button>
+        <button type="button" class="pi-chatwin__close" id="piChatWinClose" title="关闭（Esc）" aria-label="关闭">×</button>
+    </div>
+    <div class="pi-chatwin__body" id="piChatWinBody"></div>
+    <div class="pi-chatwin__tools">
+        <button type="button" class="pi-tool" id="piToolImage" title="图片" aria-label="图片">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm1 2v8.6l3.6-3.6 2.9 2.9 2.4-2.4L19 16.6V7H5zm3 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>
+        </button>
+        <button type="button" class="pi-tool" id="piToolEmoji" title="表情" aria-label="表情">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2a8 8 0 110 16 8 8 0 010-16zM8.5 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm7 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM7.6 14.2a1 1 0 011.4.2A3.7 3.7 0 0012 16c1.2 0 2.3-.6 3-1.6a1 1 0 111.6 1.2A5.7 5.7 0 0112 18a5.7 5.7 0 01-4.6-2.4 1 1 0 01.2-1.4z"/></svg>
+        </button>
+        <button type="button" class="pi-tool" id="piToolFile" title="文件" aria-label="文件">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm0 2.5L17.5 8H14V4.5zM8 13h8v1.6H8V13zm0 3.4h8V18H8v-1.6z"/></svg>
+        </button>
+        <button type="button" class="pi-tool" id="piToolVoice" title="语音消息" aria-label="语音消息">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14a3 3 0 003-3V6a3 3 0 10-6 0v5a3 3 0 003 3zm5-3a1 1 0 10-2 0 3 3 0 11-6 0 1 1 0 10-2 0 5 5 0 004 4.9V19H9a1 1 0 100 2h6a1 1 0 100-2h-2v-3.1A5 5 0 0017 11z"/></svg>
+        </button>
+        <button type="button" class="pi-tool" id="piToolShot" title="截屏" aria-label="截屏">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M8.2 7.8 20 19.6M8.2 16.2 20 4.4"/></svg>
+        </button>
+        <span class="pi-chatwin__status" id="piChatWinStatus"></span>
+    </div>
+    <div class="pi-chatwin__emoji" id="piEmojiPanel" hidden></div>
+    <!-- @ 组员浮层：只在群聊里出现，浮在输入区上方 -->
+    <div class="pi-mention" id="piMention" hidden>
+        <div class="pi-mention__hd">选择要 @ 的组员
+            <span class="pi-mention__close" id="piMentionClose" role="button" aria-label="关闭">×</span>
+        </div>
+        <input class="pi-mention__kw" id="piMentionKw" type="text" placeholder="搜索姓名" autocomplete="off">
+        <div class="pi-mention__list" id="piMentionList"></div>
+    </div>
+    <div class="pi-chatwin__input">
+        <div class="pi-chatwin__area" id="piChatWinInput" contenteditable="true" role="textbox"
+             aria-multiline="true" aria-label="消息输入框"
+             data-rt-placeholder="输入消息，Enter 发送 / Shift+Enter 换行"></div>
+        <button type="button" class="pi-chatwin__send" id="piChatWinSend">发送</button>
+    </div>
+    <input type="file" id="piFileImage" accept="image/*" style="display:none">
+    <input type="file" id="piFileAny" style="display:none">
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<!-- 改密弹窗：顶栏「改密」与「帮助中心 → 修改密码」页共用同一份实现 -->
+<script src="js/changepwd.js?v=20261112a"></script>
+<script src="js/frame.js?v=20261112b"></script>
+<!-- 消息提醒中心：顶栏铃铛 + 左侧菜单上标 + 新消息语音提醒（依赖 api.js / frame.js） -->
+<script src="js/notify.js?v=20261107b"></script>
+<!-- 截屏标注编辑器：小窗里的「截屏」按钮要它（组件自带样式，按需初始化） -->
+<script src="js/im-shot.js?v=20261110d"></script>
+<!-- 富文本编辑器（与即时对话页 / 写邮件共用的同一套实现）：小窗输入区用它做富文本与 @ 组员 -->
+<script src="js/rich-text.js?v=20261116a"></script>
+<!-- 右下角「土豆小助手」：单击弹提示 / 双击右侧即时对话抽屉（依赖 jquery） -->
+<script src="js/potato-im.js?v=20261110g"></script>
+<script src="js/potato.js?v=20261107l"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>员工通讯录 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+<style>
+/* 卡片手机 / 邮箱右侧的复制按钮 */
+.ab-copy {
+    flex: 0 0 auto; width: 20px; height: 20px; margin-left: 4px; padding: 0;
+    border: 0; border-radius: 3px; background: transparent; color: #c0c4cc;
+    cursor: pointer; display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.ab-copy:hover { color: #409eff; background: #ecf5ff; }
+.ab-copy .svg-ico { width: 13px; height: 13px; margin: 0; }
+.ab-email { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">人力资源中心</div>
+                <a class="app-side__item is-active" href="address-book.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M5 3h11l3 3v15H5V3zm2 2v14h10V7h-3V5H7zm2 5h6v2H9V10zm0 4h6v2H9v-2z"/></svg></span>员工通讯录
+                </a>
+                <a class="app-side__item" href="org.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 4a3 3 0 100 6 3 3 0 000-6zm-6 15v-1a5 5 0 015-5h2a5 5 0 015 5v1H3zm12-15a3 3 0 110 6 3 3 0 010-6zm-2 15v-1a5 5 0 013-4.6V19h-3z"/></svg></span>组织架构
+                </a>
+                <a class="app-side__item" href="emp.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg></span>员工信息管理
+                </a>
+                <a class="app-side__item" href="user.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 9a3 3 0 100-6 3 3 0 000 6zm0 2c-3.9 0-7 2-7 4.5V18h14v-2.5C19 13 15.9 11 12 11zm7-3h2v2h2v2h-2v2h-2v-2h-2v-2h2V8z"/></svg></span>用户信息管理
+                </a>
+                <a class="app-side__item" href="role.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l7 3v5.5c0 4.2-2.9 7.4-7 8.9-4.1-1.5-7-4.7-7-8.9V6l7-3zm0 2.2L7 7.1v4.4c0 3.1 2 5.6 5 6.9 3-1.3 5-3.8 5-6.9V7.1l-5-1.9z"/></svg></span>用户角色管理
+                </a>
+                <div class="app-side__group-title">系统管理</div>
+                <a class="app-side__item" href="menu.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h12v2H3v-2z"/></svg></span>菜单项管理
+                </a>
+                <a class="app-side__item" href="menu-group.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>菜单组管理
+                </a>
+                <a class="app-side__item" href="role-power.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l8 4v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6l8-4z"/></svg></span>角色权限配置
+                </a>
+                <div class="app-side__group-title">邮件中心</div>
+                <a class="app-side__item" href="service-email.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.8 2L12 12.4 19.2 7H4.8zM4 9.2V17h16V9.2l-7.4 5.5a1 1 0 01-1.2 0L4 9.2z"/></svg></span>服务信箱设置
+                </a>
+                <a class="app-side__item" href="mail.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v10a1 1 0 01-1 1H9l-5 4V5a1 1 0 011-1z"/></svg></span>邮箱助手
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容：左树 + 右通讯录（只读） ============ -->
+        <main class="app-main ab-page">
+            <div class="page-head" id="pageHead" data-crumb="人力资源中心/员工通讯录">
+                <h2 class="page-head__title">员工通讯录</h2>
+            </div>
+
+            <section class="split-layout">
+                <!-- 左：组织架构树 -->
+                <section class="split-col split-col--left">
+                    <div class="group-tip is-active" id="abScopeTip">
+                        当前范围：<b id="abScope">全部员工</b><span id="abScopeCount"></span>
+                    </div>
+                    <section class="el-card tree-card">
+                        <div class="el-card__header">
+                            <span class="el-card__title">组织架构</span>
+                            <label class="el-checkbox ab-children">
+                                <input class="el-checkbox__original" type="checkbox" id="abChildren" checked>
+                                <span class="el-checkbox__inner"></span>
+                                <span class="ab-children__text">含下级部门</span>
+                            </label>
+                        </div>
+                        <div class="el-card__body">
+                            <div class="ab-tree-search">
+                                <div class="el-input el-input--prefix">
+                                    <span class="el-input__prefix">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" style="width:15px;height:15px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                                    </span>
+                                    <input class="el-input__inner" type="text" id="abDeptKeyword" placeholder="搜索部门名称">
+                                </div>
+                            </div>
+                            <div class="el-tree" id="abTree">
+                                <div class="ab-tree__empty">正在加载组织架构…</div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- 右：检索 + 通讯录卡片 -->
+                <section class="split-col split-col--right">
+                    <section class="el-card search-card">
+                        <div class="el-card__body">
+                            <form class="el-form el-form--inline search-form" id="abSearchForm" autocomplete="off" onsubmit="return false;">
+                                <div class="el-form-item search-item--kw">
+                                    <label class="el-form-item__label" for="abKeyword">关键字</label>
+                                    <div class="el-form-item__content">
+                                        <div class="el-input el-input--prefix">
+                                            <span class="el-input__prefix">
+                                                <svg class="svg-ico" viewBox="0 0 24 24" style="width:16px;height:16px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                                            </span>
+                                            <input class="el-input__inner" type="text" id="abKeyword" name="abKeyword" placeholder="姓名 / 工号 / 手机 / 邮箱 / 岗位">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="el-form-item search-item--status">
+                                    <label class="el-form-item__label" for="abStatus">在职状态</label>
+                                    <div class="el-form-item__content">
+                                        <div class="el-input search-input--select">
+                                            <select class="el-input__inner" id="abStatus" name="abStatus">
+                                                <option value="">全部</option>
+                                                <option value="1">在职</option>
+                                                <option value="2">试用</option>
+                                                <option value="0">离职</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="el-form-item search-btns">
+                                    <button type="button" class="el-button el-button--primary" id="btnAbSearch">查询</button>
+                                    <button type="button" class="el-button" id="btnAbReset">重置</button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
+                    <section class="el-card ab-result-card">
+                        <div class="el-card__body">
+                            <div class="ab-summary">
+                                <span>共 <b id="abTotal">0</b> 人</span>
+                                <span class="ab-summary__hint">通讯录仅供查询，如需修改员工信息请到「员工信息管理」</span>
+                            </div>
+                            <div class="ab-scroll">
+                                <div class="ab-grid" id="abGrid"></div>
+                            </div>
+                            <div class="pager-wrap" id="abPager"></div>
+                        </div>
+                    </section>
+                </section>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/address-book.js?v=20261101b"></script>
+</body>
+</html>

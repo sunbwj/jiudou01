@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>project-form geometry probe</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1440px;height:900px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr" src=""></iframe>
+<script>
+(function () {
+    var q = new URLSearchParams(location.search);
+    var tk = q.get('tk') || '';
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+
+    try {
+        localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+            token: tk, account: q.get('acc') || '15724887807', empId: 1,
+            ename: q.get('ename') || '', expireAt: Date.now() + 6 * 3600 * 1000,
+            time: new Date().toISOString(), ttlHours: 8
+        }));
+    } catch (e) { errs.push('localStorage: ' + e.message); }
+
+    var fr = document.getElementById('fr');
+    fr.src = '../project-form.html?probe=1';
+    var t0 = Date.now();
+
+    fr.onload = function () {
+        var w = fr.contentWindow, d = fr.contentDocument;
+        w.onerror = function (m, u, l) { errs.push('iframe error: ' + m + ' @' + l); };
+        var tries = 0;
+        (function waitReady() {
+            var card = d.querySelector('.pjf-card');
+            var layout = d.querySelector('.pjf-layout');
+            if ((!card || !layout) && tries < 80) { tries++; return setTimeout(waitReady, 250); }
+            attr('data-title', d.title || '');
+            attr('data-head', (d.querySelector('.page-head__title') || {}).textContent || '');
+            attr('data-tipcard', String(d.querySelectorAll('.pjf-tipcard').length));
+            attr('data-tip', String(d.querySelectorAll('.pj-tip').length));
+
+            var main = d.querySelector('.app-main');
+            var editor = d.querySelector('.pjf-editor');
+            var base = d.querySelector('.pjf-base');
+            var mb = main ? main.getBoundingClientRect() : { height: 0, bottom: 0 };
+            var cb = card ? card.getBoundingClientRect() : { height: 0, bottom: 0, top: 0 };
+            attr('data-main-h', String(Math.round(mb.height)));
+            attr('data-card-h', String(Math.round(cb.height)));
+            attr('data-card-top', String(Math.round(cb.top)));
+            attr('data-main-bottom', String(Math.round(mb.bottom)));
+            attr('data-gap-bottom', String(Math.round(mb.bottom - cb.bottom)));
+            attr('data-main-scroll', main ? (main.scrollHeight > main.clientHeight + 2 ? 'yes' : 'no') : 'n/a');
+            attr('data-editor-h', String(editor ? Math.round(editor.getBoundingClientRect().height) : 0));
+            attr('data-base-scroll', base ? (base.scrollHeight > base.clientHeight + 2 ? 'yes' : 'no') : 'n/a');
+            attr('data-editor-title', (d.querySelector('.pjf-editor .pjf-section-title') || {}).textContent || '');
+            attr('data-toolbar-count', String(d.querySelectorAll('#pjfToolbar .pjf-tool').length));
+            attr('data-errors', errs.join(' || '));
+            attr('data-elapsed', String(Date.now() - t0));
+            attr('data-done', 'yes');
+            log('main=' + Math.round(mb.height) + ' card=' + Math.round(cb.height) +
+                ' gap=' + Math.round(mb.bottom - cb.bottom) + ' editor=' +
+                (editor ? Math.round(editor.getBoundingClientRect().height) : 0));
+            log('errs=' + errs.join(' | '));
+        })();
+    };
+})();
+</script>
+</body>
+</html>

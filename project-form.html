@@ -1,0 +1,230 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>项目维护 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body class="pjf-page">
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单（被框架页内嵌时由 layout.js 隐藏） ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">项目管理</div>
+                <a class="app-side__item is-active" href="project.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h7l2 2h9v12H3V5zm2 2v10h14V9h-7.2L9.8 7H5z"/></svg></span>项目信息
+                </a>
+                <a class="app-side__item" href="project-file.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h8l5 5v15H6V2zm7 1.5V8h4.5L13 3.5zM8 11h8v2H8v-2zm0 4h8v2H8v-2z"/></svg></span>项目文件
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容：左侧基础信息 30% + 右侧项目说明编辑区 70%（高度吃满页剩余高度） ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="项目管理/项目信息/新增项目">
+                <h2 class="page-head__title" id="pageTitle">新增项目</h2>
+            </div>
+
+            <section class="el-card pjf-card">
+                <div class="el-card__body">
+                    <form class="el-form pjf-form" id="projectForm" autocomplete="off" onsubmit="return false;">
+                        <div class="pjf-layout">
+
+                            <!-- ============ 左：基础信息（30%） ============ -->
+                            <div class="pjf-base">
+                                <div class="pjf-section-title">基础信息</div>
+                                <div class="el-form-item" data-field="projectCode">
+                                    <label class="el-form-item__label">项目编号</label>
+                                    <div class="el-form-item__content">
+                                        <div class="el-input"><input class="el-input__inner" type="text" id="pjCode" readonly tabindex="-1" placeholder="保存后自动生成"></div>
+                                        <div class="form-tip">PRO + 6 位流水号，保存时生成且不可修改</div>
+                                    </div>
+                                </div>
+                                <div class="el-form-item is-required" data-field="projectName">
+                                    <label class="el-form-item__label" for="pjName">项目名称</label>
+                                    <div class="el-form-item__content">
+                                        <div class="el-input"><input class="el-input__inner" type="text" id="pjName" maxlength="150" placeholder="请输入项目名称"></div>
+                                    </div>
+                                </div>
+                                <div class="el-form-item" data-field="projectType">
+                                    <label class="el-form-item__label" for="pjType">项目类型</label>
+                                    <div class="el-form-item__content">
+                                        <div class="el-input"><select class="el-input__inner" id="pjType"></select></div>
+                                    </div>
+                                </div>
+                                <div class="el-form-item" data-field="projectStatus">
+                                    <label class="el-form-item__label" for="pjStatus">项目状态</label>
+                                    <div class="el-form-item__content">
+                                        <div class="el-input"><select class="el-input__inner" id="pjStatus"></select></div>
+                                    </div>
+                                </div>
+                                <div class="el-form-item" data-field="ispub">
+                                    <label class="el-form-item__label" for="pjIspub">公用否</label>
+                                    <div class="el-form-item__content">
+                                        <div class="el-input">
+                                            <select class="el-input__inner" id="pjIspub">
+                                                <option value="1">公用（其他用户可检索）</option>
+                                                <option value="0">私有（仅创建人可检索）</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-tip">创建人由系统按当前登录账号自动记录</div>
+                                    </div>
+                                </div>
+                                <div class="el-form-item" data-field="enabled">
+                                    <label class="el-form-item__label" for="pjEnabled">启用状态</label>
+                                    <div class="el-form-item__content">
+                                        <div class="el-input">
+                                            <select class="el-input__inner" id="pjEnabled">
+                                                <option value="1">启用</option>
+                                                <option value="0">停用</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="pjf-base__note" id="pjfMeta">—</div>
+                                <div class="el-form-item form-actions pjf-actions">
+                                    <div class="el-form-item__content">
+                                        <button type="button" class="el-button el-button--primary" id="btnSave">保存项目</button>
+                                        <button type="button" class="el-button" id="btnBack">返回列表</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ============ 右：项目说明富文本编辑区（70%） ============ -->
+                            <div class="pjf-editor">
+                                <div class="pjf-editor__head">
+                                    <div class="pjf-section-title">项目说明</div>
+                                    <div class="pjf-editor__head-actions">
+                                        <button type="button" class="el-button el-button--small el-button--primary" id="btnImportWord">
+                                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h8l5 5v15H6V2zm7 1.5V8h4.5L13 3.5zM8 11h8v2H8v-2zm0 4h8v2H8v-2z"/></svg>导入 Word
+                                        </button>
+                                        <input type="file" id="pjWordFile" accept=".docx,.docm,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none">
+                                        <button type="button" class="el-button el-button--small" id="btnToggleSource">查看源码</button>
+                                    </div>
+                                </div>
+
+                                <div class="pjf-toolbar" id="pjfToolbar">
+                                    <div class="pjf-tool-group">
+                                        <button type="button" class="pjf-tool" data-cmd="undo" title="撤销">↶</button>
+                                        <button type="button" class="pjf-tool" data-cmd="redo" title="重做">↷</button>
+                                    </div>
+                                    <div class="pjf-tool-group">
+                                        <button type="button" class="pjf-tool" data-cmd="bold" title="加粗"><b>B</b></button>
+                                        <button type="button" class="pjf-tool" data-cmd="italic" title="斜体"><i>I</i></button>
+                                        <button type="button" class="pjf-tool" data-cmd="underline" title="下划线"><u>U</u></button>
+                                        <button type="button" class="pjf-tool" data-cmd="strikeThrough" title="删除线"><s>S</s></button>
+                                    </div>
+                                    <div class="pjf-tool-group">
+                                        <select class="pjf-select" id="pjFontName" title="字体">
+                                            <option value="">字体</option>
+                                            <option value="宋体">宋体</option>
+                                            <option value="微软雅黑">微软雅黑</option>
+                                            <option value="黑体">黑体</option>
+                                            <option value="楷体">楷体</option>
+                                            <option value="Arial">Arial</option>
+                                            <option value="Times New Roman">Times New Roman</option>
+                                        </select>
+                                        <select class="pjf-select pjf-select--size" id="pjFontSize" title="字号">
+                                            <option value="">字号</option>
+                                            <option value="1">小五</option>
+                                            <option value="2">五号</option>
+                                            <option value="3">小四</option>
+                                            <option value="4">四号</option>
+                                            <option value="5">小三</option>
+                                            <option value="6">三号</option>
+                                            <option value="7">小二</option>
+                                        </select>
+                                        <label class="pjf-color" title="字体颜色">A
+                                            <input type="color" id="pjForeColor" value="#303133">
+                                        </label>
+                                        <label class="pjf-color pjf-color--bg" title="背景色">▧
+                                            <input type="color" id="pjBackColor" value="#ffff80">
+                                        </label>
+                                    </div>
+                                    <div class="pjf-tool-group">
+                                        <button type="button" class="pjf-tool" data-cmd="justifyLeft" title="左对齐">≡</button>
+                                        <button type="button" class="pjf-tool" data-cmd="justifyCenter" title="居中">≣</button>
+                                        <button type="button" class="pjf-tool" data-cmd="justifyRight" title="右对齐">≡</button>
+                                        <button type="button" class="pjf-tool" data-cmd="justifyFull" title="两端对齐">≣</button>
+                                    </div>
+                                    <div class="pjf-tool-group">
+                                        <button type="button" class="pjf-tool" data-cmd="insertUnorderedList" title="无序列表">•≡</button>
+                                        <button type="button" class="pjf-tool" data-cmd="insertOrderedList" title="有序列表">1≡</button>
+                                        <button type="button" class="pjf-tool" data-cmd="indent" title="增加缩进">→</button>
+                                        <button type="button" class="pjf-tool" data-cmd="outdent" title="减少缩进">←</button>
+                                    </div>
+                                    <div class="pjf-tool-group">
+                                        <select class="pjf-select pjf-select--block" id="pjBlock" title="段落样式">
+                                            <option value="">段落样式</option>
+                                            <option value="p">正文</option>
+                                            <option value="h1">标题 1</option>
+                                            <option value="h2">标题 2</option>
+                                            <option value="h3">标题 3</option>
+                                            <option value="blockquote">引用</option>
+                                        </select>
+                                        <button type="button" class="pjf-tool" data-cmd="insertTable" title="插入 3×3 表格">▦</button>
+                                        <button type="button" class="pjf-tool" data-cmd="insertHorizontalRule" title="分隔线">—</button>
+                                        <button type="button" class="pjf-tool" data-cmd="removeFormat" title="清除格式">⌫</button>
+                                    </div>
+                                </div>
+
+                                <div class="pjf-editor__body">
+                                    <div class="pjf-editable" id="pjDescEditor" contenteditable="true"
+                                         data-placeholder="在此录入项目说明：可直接从 Word 复制粘贴，或点右上角「导入 Word」选择 .docx 文件…"></div>
+                                    <textarea class="pjf-source" id="pjDescSource" spellcheck="false"
+                                              placeholder="HTML 源码视图，切回编辑时会按白名单自动清洗"></textarea>
+                                </div>
+                                <div class="pjf-editor__foot">
+                                    <span id="pjfCount">0 字 · 0 段</span>
+                                    <span class="pjf-editor__hint" id="pjfHint">支持加粗 / 斜体 / 字号 / 颜色 / 对齐 / 列表 / 表格；Word 粘贴会自动清洗私有样式</span>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/word-import.js?v=20261106c"></script>
+<script src="js/project-form.js?v=20261106c"></script>
+</body>
+</html>

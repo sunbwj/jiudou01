@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>菜单组层级加载探针（临时）</title></head>
+<body data-probe="pending">
+<script>
+/* 同源父页先注入有效 SSO 会话，避免 iframe 子页 401 把顶层送去登录页 */
+(function () {
+  try {
+    localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+      token: '__TOKEN__',
+      time: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      expireAt: Date.now() + 8 * 3600 * 1000,
+      ttlHours: 8,
+      user: { ename: '层级探针', empId: 0, account: 'probe' }
+    }));
+  } catch (e) {
+    document.body.setAttribute('data-probe', 'SESSION-ERROR ' + e.message);
+  }
+  var f = document.createElement('iframe');
+  f.id = 'probeFrame';
+  f.src = '/menu-group.html';
+  f.style.cssText = 'width:1280px;height:900px;border:0';
+  document.body.appendChild(f);
+})();
+</script>
+<script>
+var FRAME = document.getElementById('probeFrame');
+function report(t) { document.body.setAttribute('data-probe', t); }
+
+window.addEventListener('load', function () {
+  setTimeout(function () {
+    var doc, win, rows;
+    try {
+      doc = FRAME.contentDocument;
+      win = FRAME.contentWindow;
+      rows = doc.querySelectorAll('#groupTbody tr[data-id]');
+      if (!rows.length) {
+        report('OK-NODATA url=' + win.location.href);
+        return;
+      }
+      /* 逐行输出：编号|层级|缩进px|上级列文本 */
+      var seq = [];
+      for (var i = 0; i < rows.length; i++) {
+        var tr = rows[i];
+        var tds = tr.querySelectorAll('td');
+        var code = tds[4] ? tds[4].textContent.replace(/\s+/g, '') : '?';
+        var name = tds[5] ? tds[5].textContent.replace(/\s+/g, '') : '?';
+        var tn = tr.querySelector('.tree-name');
+        var pad = tn && tn.style && tn.style.paddingLeft ? parseInt(tn.style.paddingLeft, 10) : 0;
+        var mark = tr.querySelector('.tree-mark') ? 1 : 0;
+        var parent = tds[7] ? tds[7].textContent.replace(/\s+/g, '') : '?';
+        seq.push(code + ':' + name + ':L' + (pad / 16 + 1) + (mark ? '+' : '') + ':' + parent);
+      }
+      report('OK rows=' + rows.length + ' | ' + seq.join(' ; '));
+    } catch (e) {
+      report('ERROR ' + e.message);
+    }
+  }, 3500);
+});
+</script>
+</body>
+</html>

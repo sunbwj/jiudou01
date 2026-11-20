@@ -1,0 +1,37 @@
+# ---------- 运行环境 / 安装包（体积大，不入库）----------
+setup/
+runtime/
+payload/
+
+# ---------- 运行时数据 ----------
+data/
+logs/
+server/uploads/
+server/conf/
+*.log
+.t.log
+_api.log
+_db_check.txt
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# ---------- 编辑器 / 系统 ----------
+.idea/
+.vscode/
+.edge-tools/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 本地临时文件 / 调试产物 ----------
+.tmp-*
+*.tmp
+*.bak
+*-shot.png
+*-shot.jpg
+coverage/

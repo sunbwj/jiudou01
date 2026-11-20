@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>rich text probe（真实 Edge：邮件/IM 富文本 + 气泡宽度 + 群聊 @）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1440px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：由 8808 同源静态服务托管。
+   技巧（与其它 _edge_*_probe.html 一致）：注入 api.js 之前打死 jQuery.ajax → 自动回退 Mock；
+   SSO 会话写进父页 localStorage（iframe 同源共享）。
+   本探针只关心 jsdom 跑不了的部分：execCommand 真实加粗、几何尺寸、超长串换行、真实点击链。
+   结果写到 <html> 的 data-* 上，用 --dump-dom + grep 校验。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function set(k, v) { document.documentElement.setAttribute('data-' + k, String(v)); }
+    var fr = document.getElementById('fr');
+    var ME = 3;
+    var IMREF = null;      /* message.js 就绪后才赋值，后续 then 都读它 */
+
+    function session(empId) {
+        return 'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe-' + empId + '",' +
+            'account:"probe",empId:' + empId + ',ename:"探针",user:{empId:' + empId + ',nameCn:"探针"},' +
+            'expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n';
+    }
+    function makeHtml(src) {
+        src = src.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' + session(ME) +
+            'jQuery.ajax=function(){var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        if (!re.test(src)) { return null; }
+        return src.replace(re, function (m) { return patch + m; });
+    }
+    function load(src) {
+        var html = makeHtml(src);
+        if (!html) { set('done', 'no-api-tag'); return null; }
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        return { w: w, doc: doc };
+    }
+    function later(fn, ms) { return new Promise(function (r) { setTimeout(function () { r(fn()); }, ms); }); }
+
+    function runMail() {
+        return fetch('/mail.html').then(function (r) { return r.text(); }).then(function (src) {
+            var ctx = load(src);
+            if (!ctx) { return; }
+            var w = ctx.w, doc = ctx.doc;
+            return later(function () {}, 1600).then(function () {
+                var $ = w.jQuery;          /* jQuery 是外链脚本，load 返回时可能还没就绪，用时再取 */
+                var btn = doc.getElementById('btnWrite');
+                set('mail-write-btn', btn ? '1' : '0');
+                if (btn) { $(btn).trigger('click'); }
+                return later(function () {}, 900);
+            }).then(function () {
+                /* 注意：写邮件弹窗是从 #mailFormTpl 克隆的，模板里也有一个 #mfBody，
+                   必须限定在弹窗内取，否则拿到隐藏的模板节点（宽高 0、没挂载过编辑器） */
+                var area = doc.querySelector('.el-dialog .mail-form #mfBody');
+                var bar = doc.querySelector('.rt__bar');
+                set('mail-rt', area && area.closest('.rt') ? '1' : '0');
+                set('mail-rt-btns', doc.querySelectorAll('.rt__bar .rt__btn').length);
+                set('mail-editable', area ? String(area.getAttribute('contenteditable')) : 'none');
+                if (area) {
+                    var ar = area.getBoundingClientRect();
+                    set('mail-area-w', Math.round(ar.width));
+                    set('mail-area-h', Math.round(ar.height));
+                    set('mail-area-visible', (ar.width > 200 && ar.height > 60) ? '1' : '0');
+                }
+                if (bar) {
+                    set('mail-bar-h', Math.round(bar.getBoundingClientRect().height));
+                    set('mail-bar-btn-h', Math.round(
+                        (bar.querySelector('.rt__btn') || { getBoundingClientRect: function () { return { height: 0 }; } })
+                            .getBoundingClientRect().height));
+                }
+                /* 真实 execCommand 加粗：全选后点 B 按钮 */
+                var rt = (w.RichText && area) ? w.RichText.of(area) : null;
+                set('mail-editor-api', rt ? '1' : '0');
+                if (!rt) { return; }
+                rt.setHtml('探针加粗验证');
+                area.focus();
+                var sel = w.getSelection(), range = w.document.createRange();
+                range.selectNodeContents(area);
+                sel.removeAllRanges(); sel.addRange(range);
+                var boldBtn = doc.querySelector('.rt__btn[data-rt-cmd="bold"]');
+                if (boldBtn) { w.jQuery(boldBtn).trigger('click'); }
+                var html = area.innerHTML;
+                set('mail-bold-html', html.slice(0, 60));
+                set('mail-bold-ok', (/<(b|strong)\b/i.test(html) || /font-weight:\s*(bold|700)/i.test(html)) ? '1' : '0');
+                /* 字号：下拉选「大」→ 应给选区套 span[style*=font-size] */
+                rt.setHtml('字号验证');
+                area.focus();
+                var sel2 = w.getSelection(), r2 = w.document.createRange();
+                r2.selectNodeContents(area);
+                sel2.removeAllRanges(); sel2.addRange(r2);
+                var selEl = doc.querySelector('.rt__bar [data-rt-size]');
+                if (selEl) { selEl.value = '16px'; w.jQuery(selEl).trigger('change'); }
+                set('mail-size-ok', /font-size:\s*16px/i.test(area.innerHTML) ? '1' : '0');
+                set('mail-size-html', area.innerHTML.slice(0, 80));
+                /* 超长无空格串在编辑器里要换行（不撑出横向滚动） */
+                rt.setHtml('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+                set('mail-scroll-x', (area.scrollWidth <= area.clientWidth + 2) ? '0' : '1');
+                rt.clear();
+            });
+        });
+    }
+
+    function runIm() {
+        return fetch('/message.html').then(function (r) { return r.text(); }).then(function (src) {
+            var ctx = load(src);
+            if (!ctx) { return; }
+            var w = ctx.w, doc = ctx.doc;
+            return later(function () {}, 2400).then(function () {
+                var IM = w.IM;             /* message.js 也是外链脚本，回调里再取 */
+                IMREF = IM;
+                var area = doc.getElementById('imText');
+                set('im-rt', area && area.closest('.rt') ? '1' : '0');
+                set('im-rt-btns', doc.querySelectorAll('.im-input .rt__btn').length);
+                set('im-at-btn', doc.querySelectorAll('.im-input .rt__btn[data-rt-cmd="mention"]').length);
+
+                /* 发一条富文本消息 */
+                var peer = parseInt(Object.keys(IM.state.contacts)[0], 10);
+                IM.openPeer(peer);
+                IM.editor.setHtml('<b>粗体</b>普通文字');
+                IM.send();
+                return later(function () { return { peer: peer }; }, 700);
+            }).then(function (info) {
+                var IM = IMREF;
+                var mine = doc.querySelectorAll('#imChatBody .im-msg.is-me');
+                var bubble = mine.length ? mine[mine.length - 1].querySelector('.im-msg__bubble') : null;
+                var content = mine.length ? mine[mine.length - 1].querySelector('.im-msg__content') : null;
+                set('im-bubble-count', doc.querySelectorAll('#imChatBody .im-msg.is-me').length);
+                set('im-bubble-rich', bubble && bubble.classList.contains('is-rich') ? '1' : '0');
+                set('im-bubble-b', bubble ? bubble.querySelectorAll('b').length : -1);
+                if (content) {
+                    var cr = content.getBoundingClientRect();
+                    set('im-content-w', Math.round(cr.width));
+                    set('im-content-max', Math.round(cr.right - cr.left));
+                }
+                if (bubble) {
+                    var br = bubble.getBoundingClientRect();
+                    set('im-bubble-w', Math.round(br.width));
+                    set('im-bubble-h', Math.round(br.height));
+                }
+                /* 气泡宽度是否与内容长度无关（短消息也占满固定宽度） */
+                set('im-bubble-fixed', (bubble && Math.round(bubble.getBoundingClientRect().width) ===
+                    Math.round(content.getBoundingClientRect().width)) ? '1' : '0');
+                /* 超长无空格串：必须换行（scrollWidth 不超 clientWidth，且高度明显 > 单行） */
+                IM.editor.clear();
+                IM.editor.insertText('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+                IM.send();
+                return later(function () { return info; }, 700);
+            }).then(function (info) {
+                var bubbles = doc.querySelectorAll('#imChatBody .im-msg.is-me .im-msg__bubble');
+                var last = bubbles[bubbles.length - 1];
+                if (last) {
+                    set('im-long-h', Math.round(last.getBoundingClientRect().height));
+                    set('im-long-scroll-x', (last.scrollWidth <= last.clientWidth + 2) ? '0' : '1');
+                    set('im-long-lines', Math.round(last.getBoundingClientRect().height / 22));
+                }
+                /* 群聊 @：切到群组 → 打开群 → @ 按钮 → 选人 → 发送 */
+                var IM = IMREF;
+                var gids = Object.keys(IM.state.groups || {});
+                set('im-groups', gids.length);
+                if (!gids.length) { set('im-at-open', 'no-group'); return info; }
+                IM.openGroup(gids[0]);
+                return later(function () { return info; }, 700).then(function () {
+                    var atBtn = doc.querySelector('.im-input .rt__btn[data-rt-cmd="mention"]');
+                    if (atBtn) { w.jQuery(atBtn).trigger('click'); }
+                    return later(function () {
+                        var panel = doc.getElementById('imMention');
+                        var items = doc.querySelectorAll('#imMention .im-mention__item');
+                        set('im-at-open', panel && !panel.hasAttribute('hidden') ? '1' : '0');
+                        set('im-at-items', items.length);
+                        if (items.length) {
+                            var first = items[0];
+                            set('im-at-first', first.getAttribute('data-name'));
+                            w.jQuery(first).trigger('click');
+                        }
+                        return later(function () {
+                            var ats = doc.querySelectorAll('#imText .im-at[data-emp]');
+                            set('im-at-inserted', ats.length);
+                            set('im-at-emp', ats.length ? ats[0].getAttribute('data-emp') : '');
+                            set('im-at-ids', (IMREF.collectAtIds() || []).join(','));
+                            if (ats.length) {
+                                IMREF.editor.insertText(' 请确认');
+                                IMREF.send();
+                            }
+                            return later(function () {
+                                var list = IMREF.state.convo['g' + gids[0]] || [];
+                                var lastMsg = list[list.length - 1] || {};
+                                set('im-at-sent', String(lastMsg.atEmpIds || ''));
+                                var gb = doc.querySelectorAll('#imChatBody .im-msg.is-me .im-msg__bubble');
+                                var gl = gb[gb.length - 1];
+                                set('im-at-highlight', gl ? gl.querySelectorAll('.im-at').length : -1);
+                                return info;
+                            }, 700);
+                        }, 400);
+                    }, 600);
+                });
+            });
+        });
+    }
+
+    runMail().catch(function (e) { errs.push('mail: ' + (e && e.message ? e.message : e)); })
+        .then(function () {
+            return runIm().catch(function (e) { errs.push('im: ' + (e && e.message ? e.message : e)); });
+        })
+        .then(function () {
+            set('js-errors', errs.length ? errs.slice(0, 4).join(' | ') : 'none');
+            set('done', '1');
+            log('done');
+        });
+    window.addEventListener('error', function (e) { errs.push('parent: ' + e.message); });
+}());
+</script>
+</body>
+</html>

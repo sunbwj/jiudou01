@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>icon toolbar probe（真实浏览器：项目管理操作引导区纯图标按钮几何验证）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1460px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：项目信息页顶部「操作引导区」8 个按钮全改图标按钮后，
+   验证几何（40x40 / 图标居中 / 同一行 / 无文字 / 提示靠右）与交互（选中行后按钮解禁）。
+   后端不参与：注入 api.js 之前打死 jQuery.ajax → api.js 自动回退 Mock。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+    var fr = document.getElementById('fr');
+
+    fetch('../project.html').then(function (r) { return r.text(); }).then(function (html) {
+        html = html.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' +
+            'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe",account:"13813970452",' +
+            'empId:3,ename:"探针",user:{empId:3,nameCn:"探针"},expireAt:Date.now()+6*3600*1000,' +
+            'time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n' +
+            'jQuery.ajax=function(){var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        if (!re.test(html)) { attr('data-done', 'no-api-tag'); return; }
+        html = html.replace(re, patch + '<script src="js/api.js?v=20261107c"><\/script>');
+
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        setTimeout(function () { start(w, doc); }, 1200);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    function start(w, doc) {
+        var tries = 0;
+        (function waitRows() {
+            var rows = doc.querySelectorAll('#pjTbody tr[data-id]');
+            if (!rows.length && tries < 60) { tries++; return setTimeout(waitRows, 250); }
+            attr('data-rows', String(rows.length));
+            var bar = doc.querySelector('.toolbar');
+            if (!bar) { attr('data-done', 'no-toolbar'); return; }
+            attr('data-toolbar-class', bar.className);
+            attr('data-toolbar-role', String(bar.getAttribute('role')));
+
+            var ids = ['btnAdd', 'btnEdit', 'btnEnable', 'btnDisable', 'btnView',
+                       'btnUpload', 'btnDelete', 'btnRefresh'];
+            var sizes = [], texts = [], titles = [], centers = [], tops = [], svgs = [];
+            var allSquare = true, allCentered = true, allNoText = true, allTitled = true, allIcon = true;
+            for (var i = 0; i < ids.length; i++) {
+                var b = doc.getElementById(ids[i]);
+                if (!b) { sizes.push('missing'); continue; }
+                var r = b.getBoundingClientRect();
+                var s = Math.round(r.width) + 'x' + Math.round(r.height);
+                sizes.push(s);
+                if (Math.round(r.width) !== 40 || Math.round(r.height) !== 40) { allSquare = false; }
+                var t = (b.textContent || '').replace(/\s+/g, '');
+                texts.push(t);
+                if (t !== '') { allNoText = false; }
+                var ti = b.getAttribute('title') || '';
+                titles.push(ti);
+                if (!ti || !b.getAttribute('aria-label')) { allTitled = false; }
+                var svg = b.querySelector('svg.svg-ico');
+                svgs.push(svg ? '1' : '0');
+                if (!svg) { allIcon = false; allCentered = false; }
+                else {
+                    var sr = svg.getBoundingClientRect();
+                    var dx = Math.abs((sr.left + sr.width / 2) - (r.left + r.width / 2));
+                    var dy = Math.abs((sr.top + sr.height / 2) - (r.top + r.height / 2));
+                    centers.push(Math.round(dx) + ',' + Math.round(dy));
+                    if (dx > 2 || dy > 2) { allCentered = false; }
+                }
+                tops.push(Math.round(r.top));
+                if (!b.classList.contains('el-button--icon')) { allIcon = false; }
+            }
+            attr('data-btn-count', String(ids.length));
+            attr('data-sizes', sizes.join('|'));
+            attr('data-squares', allSquare ? 'yes' : 'no');
+            attr('data-texts', texts.join('|'));
+            attr('data-no-text', allNoText ? 'yes' : 'no');
+            attr('data-titles', titles.join('|'));
+            attr('data-titled', allTitled ? 'yes' : 'no');
+            attr('data-icon-class', allIcon ? 'yes' : 'no');
+            attr('data-svgs', svgs.join('|'));
+            attr('data-centers', centers.join('|'));
+            attr('data-centered', allCentered ? 'yes' : 'no');
+            attr('data-tops', tops.join('|'));
+            var sameRow = tops.every(function (v) { return v === tops[0]; });
+            attr('data-same-row', sameRow ? 'yes' : 'no');
+
+            var last = doc.getElementById('btnRefresh').getBoundingClientRect();
+            var hint = doc.querySelector('.toolbar .toolbar-hint');
+            var hr = hint ? hint.getBoundingClientRect() : null;
+            attr('data-hint-gap', hr ? String(Math.round(hr.left - last.right)) : 'none');
+            attr('data-hint-right', hr && hr.left > last.right + 20 ? 'yes' : 'no');
+            attr('data-hint-text', hint ? hint.textContent.replace(/\s+/g, ' ').trim() : 'none');
+
+            /* 文件区操作引导区仍应是 32px 紧凑图标按钮，两区尺寸互不影响 */
+            var pf = doc.getElementById('btnPfUpload');
+            if (pf) {
+                var pr = pf.getBoundingClientRect();
+                attr('data-pf-size', Math.round(pr.width) + 'x' + Math.round(pr.height));
+                attr('data-pf-compact', Math.round(pr.width) === 32 && Math.round(pr.height) === 32 ? 'yes' : 'no');
+            }
+
+            /* 交互回归：选中一行后编辑/查看按钮解禁；点击「刷新」不报错 */
+            attr('data-edit-disabled-before', doc.getElementById('btnEdit').disabled ? 'yes' : 'no');
+            if (rows.length) {
+                rows[0].dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+            }
+            attr('data-edit-disabled-after', doc.getElementById('btnEdit').disabled ? 'yes' : 'no');
+            doc.getElementById('btnRefresh').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+            setTimeout(function () {
+                attr('data-rows-after-refresh', String(doc.querySelectorAll('#pjTbody tr[data-id]').length));
+                attr('data-errors', errs.join(' || '));
+                attr('data-done', 'yes');
+                log('sizes=' + sizes.join('|') + ' hintGap=' + (hr ? Math.round(hr.left - last.right) : 'none'));
+            }, 900);
+        })();
+    }
+
+    window.onerror = function (m) { errs.push(String(m)); };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+/* ==========================================================================
+   appinfo.css —— 数据中心 · 应用信息（appinfo.html 专用）
+   1) 检索区：标签与控件留出呼吸感，「数据库类型」这类四字标签不再贴住下拉框；
+      四个筛选项按比例同排（关键字最宽），按钮贴右，窗口变窄自动换行；
+   2) 多选下拉（应用类型 / 数据库类型）：按钮 + 复选面板 + 「清空」；
+   3) 结果卡片撑满剩余页高：检索卡 / 工具栏 / 分页条高度固定，
+      表格区吃掉剩余高度，行高拉伸与空行补位由 appinfo.js 的 layoutRows() 负责。
+   ========================================================================== */
+
+/* ---------- 1. 检索区 ---------- */
+/* 多选面板要「溢出」检索卡显示：.el-card 默认 overflow:hidden 会把它裁掉，
+   后面那张结果卡片又是不带 z-index 的定位元素，会把溢出内容盖住 ——
+   所以检索卡放开溢出并抬到结果卡之上（本文件只被 appinfo.html 引用，不影响别的页面） */
+.search-card {
+    position: relative; z-index: 5;
+    overflow: visible;
+}
+.search-card .el-card__body { overflow: visible; }
+
+#appSearchForm {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    gap: 10px 14px;
+}
+#appSearchForm .el-form-item {
+    margin: 0;                     /* 间距统一交给 gap，避免与 margin 叠加 */
+    min-height: 40px;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+/* 标签：固定 72px（四字标签 56px + 右侧 16px 呼吸位），右对齐 → 各控件左边界统一 */
+#appSearchForm .el-form-item__label {
+    float: none;
+    width: 72px; height: 40px; line-height: 40px;
+    padding: 0 16px 0 0; margin: 0;
+    text-align: right; white-space: nowrap; overflow: hidden;
+    font-size: 13px; color: #606266;
+    -webkit-box-sizing: border-box; box-sizing: border-box;
+    -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto;
+}
+#appSearchForm .el-form-item__content {
+    margin-left: 0; min-width: 0; min-height: 40px;
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+#appSearchForm .el-input,
+#appSearchForm .el-input__inner { width: 100%; max-width: none; }
+
+/* 各项宽度：basis 已含标签宽度。只有关键字随窗口伸缩，三个下拉保持固定宽度，
+   避免「状态」被挤成一条细缝、几个控件宽窄不一 */
+#appSearchForm .search-item--app-kw {
+    -webkit-box-flex: 1; -ms-flex: 1 1 264px; flex: 1 1 264px;
+    max-width: 400px; min-width: 216px;
+}
+#appSearchForm .search-item--app-type {
+    -webkit-box-flex: 0; -ms-flex: 0 1 222px; flex: 0 1 222px;
+    max-width: 222px; min-width: 196px;
+}
+#appSearchForm .search-item--app-db {
+    -webkit-box-flex: 0; -ms-flex: 0 1 232px; flex: 0 1 232px;
+    max-width: 232px; min-width: 206px;
+}
+#appSearchForm .search-item--app-status {
+    -webkit-box-flex: 0; -ms-flex: 0 1 192px; flex: 0 1 192px;
+    max-width: 192px; min-width: 176px;
+}
+/* 按钮组贴右：与下方表格工具栏右侧的「共 N 个应用」对齐 */
+#appSearchForm .search-btns {
+    -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto;
+    margin: 0 0 0 auto; white-space: nowrap;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+}
+#appSearchForm .search-btns .el-button { height: 40px; padding: 0 20px; line-height: 38px; }
+#appSearchForm .search-btns .el-button + .el-button { margin-left: 10px; }
+
+/* ---------- 2. 多选下拉（应用类型 / 数据库类型） ---------- */
+.ai-multi { position: relative; width: 100%; min-width: 0; }
+.ai-multi__box {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    width: 100%; height: 40px; padding: 0 10px;
+    border: 1px solid #dcdfe6; border-radius: 4px; background: #fff;
+    color: #909399; font-size: 13px; text-align: left; cursor: pointer;
+    -webkit-box-sizing: border-box; box-sizing: border-box;
+    -webkit-transition: border-color .15s; transition: border-color .15s;
+}
+.ai-multi__box:hover, .ai-multi__box:focus { border-color: #409eff; outline: none; }
+.ai-multi__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-multi__caret {
+    -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto;
+    margin-left: 6px; color: #c0c4cc; font-size: 12px;
+    -webkit-transition: -webkit-transform .15s; transition: transform .15s;
+}
+.ai-multi.is-open .ai-multi__caret { -webkit-transform: rotate(180deg); transform: rotate(180deg); }
+.ai-multi.has-value .ai-multi__text { color: #303133; }
+.ai-multi.is-open .ai-multi__box { border-color: #409eff; }
+.ai-multi__drop {
+    position: absolute; left: 0; right: 0; top: 44px; z-index: 60;
+    border: 1px solid #e4e7ed; border-radius: 4px; background: #fff;
+    -webkit-box-shadow: 0 4px 14px rgba(0, 0, 0, .12); box-shadow: 0 4px 14px rgba(0, 0, 0, .12);
+}
+.ai-multi__list { max-height: 240px; overflow: auto; padding: 4px; }
+.ai-multi__opt {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    gap: 6px; padding: 5px 8px; border-radius: 3px;
+    font-size: 13px; line-height: 18px; color: #606266; cursor: pointer;
+}
+.ai-multi__opt:hover { background: #f5f7fa; color: #409eff; }
+.ai-multi__opt input { width: auto; -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto; margin: 0; }
+.ai-multi__empty { padding: 10px 8px; font-size: 12px; color: #c0c4cc; text-align: center; }
+.ai-multi__foot {
+    padding: 5px 8px; border-top: 1px solid #f0f2f5;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+}
+.ai-multi__count { font-size: 12px; color: #c0c4cc; }
+.ai-multi__clear {
+    padding: 0; border: 0; background: none; color: #909399;
+    font-size: 12px; cursor: pointer;
+}
+.ai-multi__clear:hover { color: #f56c6c; }
+
+/* ---------- 3. 结果卡片撑满剩余页高（手机端走卡片模式，不启用） ---------- */
+@media screen and (min-width: 769px) {
+    /* app.css 只把 .table-card 设成纵向 flex，中间 body 这一层没接上 →
+       .table-wrapper 的 flex:1 没有可用高度，表格永远只有内容高。这里补全 flex 链 */
+    .table-card > .el-card__body {
+        -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+        display: -webkit-box; display: -ms-flexbox; display: flex;
+        -webkit-box-orient: vertical; -webkit-box-direction: normal;
+        -ms-flex-direction: column; flex-direction: column;
+        min-height: 0;
+    }
+    /* 工具栏与分页条永远保持自身高度，只让表格区吃剩余空间 */
+    .table-card > .el-card__body > .toolbar,
+    .table-card .pager-wrap { -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto; }
+    /* height:0 把 flex-basis 归零：高度只由剩余空间决定，内容再多也不撑高卡片 */
+    .table-card .table-wrapper { height: 0; min-height: 0; overflow: auto; }
+}
+
+/* ---------- 窄屏：检索项整行显示，标签与控件仍同一中线 ---------- */
+@media screen and (max-width: 992px) {
+    #appSearchForm .search-item--app-kw,
+    #appSearchForm .search-item--app-type,
+    #appSearchForm .search-item--app-db,
+    #appSearchForm .search-item--app-status {
+        -webkit-box-flex: 1; -ms-flex: 1 1 100%; flex: 1 1 100%;
+        max-width: none;
+    }
+    #appSearchForm .search-btns { margin-left: 0; }
+}
+@media screen and (max-width: 768px) {
+    #appSearchForm .el-form-item__label {
+        width: 72px; padding-right: 10px; text-align: left;
+    }
+    #appSearchForm .search-btns { width: 100%; }
+    #appSearchForm .search-btns .el-button { -webkit-box-flex: 1; -ms-flex: 1 1 0; flex: 1 1 0; }
+    .ai-multi__box { height: 36px; }
+    .ai-multi__drop { top: 40px; }
+}

@@ -1,0 +1,366 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>数据库 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">数据中心</div>
+                <a class="app-side__item is-active" href="dbinfo.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zm8 6.5v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3c1.7 1.3 4.7 2 8 2s6.3-.7 8-2zm0 6v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3c1.7 1.3 4.7 2 8 2s6.3-.7 8-2z"/></svg></span>数据库
+                </a>
+                <a class="app-side__item" href="report-designer.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm2 3v3h5V6H6zm7 0v3h5V6h-5zM6 11v3h5v-3H6zm7 0v3h5v-3h-5zM6 16v2h12v-2H6z"/></svg></span>报表设计
+                </a>
+                <a class="app-side__item" href="report-center.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>报表中心
+                </a>
+                <div class="app-side__group-title">人力资源中心</div>
+                <a class="app-side__item" href="address-book.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M5 3h11l3 3v15H5V3zm2 2v14h10V7h-3V5H7zm2 5h6v2H9V10zm0 4h6v2H9v-2z"/></svg></span>员工通讯录
+                </a>
+                <a class="app-side__item" href="org.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 4a3 3 0 100 6 3 3 0 000-6zm-6 15v-1a5 5 0 015-5h2a5 5 0 015 5v1H3zm12-15a3 3 0 110 6 3 3 0 010-6zm-2 15v-1a5 5 0 013-4.6V19h-3z"/></svg></span>组织架构
+                </a>
+                <div class="app-side__group-title">邮件中心</div>
+                <a class="app-side__item" href="service-email.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.8 2L12 12.4 19.2 7H4.8z"/></svg></span>服务信箱设置
+                </a>
+                <a class="app-side__item" href="mail.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v10a1 1 0 01-1 1H9l-5 4V5a1 1 0 011-1z"/></svg></span>邮箱助手
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容：左（连接管理）/ 中（库表结构）/ 右（SQL + 结果） ============ -->
+        <main class="app-main db-page">
+            <div class="page-head" id="pageHead" data-crumb="数据中心/数据库">
+                <h2 class="page-head__title">数据库</h2>
+                <!--<span class="page-head__hint">左：连接对象管理与查询 · 中：库表结构（双击表 / 视图加载）· 右：字段明细 / 数据 / SQL 工作台（标签页）</span>-->
+            </div>
+
+            <div class="split-layout db-layout">
+
+                <!-- ---------------- 左区域：连接对象管理与查询 ---------------- -->
+                <section class="db-pane db-pane--left" id="dbLeft">
+                    <div class="db-pane__head">
+                        <span class="db-pane__title">连接对象</span>
+                        <span class="db-pane__count" id="dbCount">0 条</span>
+                    </div>
+
+                    <div class="db-left__search">
+                        <div class="el-input el-input--prefix db-left__kw">
+                            <span class="el-input__prefix">
+                                <svg class="svg-ico" viewBox="0 0 24 24" style="width:15px;height:15px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                            </span>
+                            <input class="el-input__inner" type="text" id="dbKeyword" name="dbKeyword" placeholder="连接名称 / 主机 / 库名 / 账号">
+                        </div>
+                        <div class="db-left__row">
+                            <div class="el-input db-left__sel">
+                                <select class="el-input__inner" id="dbType" name="dbType">
+                                    <option value="">全部类型</option>
+                                </select>
+                            </div>
+                            <div class="el-input db-left__sel">
+                                <select class="el-input__inner" id="dbEnabled" name="dbEnabled">
+                                    <option value="">全部状态</option>
+                                    <option value="1">启用</option>
+                                    <option value="0">停用</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="db-left__row">
+                            <button type="button" class="el-button el-button--primary el-button--small db-left__btn" id="btnSearch">查询</button>
+                            <button type="button" class="el-button el-button--small db-left__btn" id="btnReset">重置</button>
+                        </div>
+                    </div>
+
+                    <!-- 操作引导区：左栏很窄，只显示图标，文案放 title（鼠标悬停可见）与 aria-label -->
+                    <div class="toolbar db-toolbar">
+                        <button type="button" class="el-button el-button--primary db-tool" id="btnAdd" title="新增数据库连接" aria-label="新增数据库连接">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--success db-tool" id="btnEdit" title="编辑选中的连接" aria-label="编辑">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 19h2.4l9.3-9.3-2.4-2.4L5 16.6V19zM3 21v-4.2L15.9 3.9l4.2 4.2L7.2 21H3z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--success db-tool" id="btnEnable" title="启用选中的连接" aria-label="启用">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1.2 14.6l-4.3-4.3 1.4-1.4 2.9 2.9 5.9-5.9 1.4 1.4-7.3 7.3z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--warning db-tool" id="btnDisable" title="停用选中的连接" aria-label="停用">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2a8 8 0 015.3 2L6 17.3A8 8 0 0112 4zm0 16a8 8 0 01-5.3-2L18 6.7A8 8 0 0112 20z"/></svg>
+                        </button>
+                        <button type="button" class="el-button db-tool" id="btnTest" title="测试连接是否可用" aria-label="测试连接">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--primary db-tool" id="btnScan" title="扫描实例 / 表 / 视图结构" aria-label="扫描结构">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--danger db-tool" id="btnDelete" title="删除选中的连接" aria-label="删除">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2zM4 6h16v2H4V6z"/></svg>
+                        </button>
+                        <button type="button" class="el-button db-tool" id="btnRefresh" title="刷新连接列表" aria-label="刷新">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="db-list" id="dbList">
+                        <div class="db-list__empty">正在加载连接…</div>
+                    </div>
+                    <div class="db-pager" id="dbPager"></div>
+                </section>
+
+                <!-- ---------------- 中区域：库表结构（实例 / 表 / 视图） ---------------- -->
+                <section class="db-pane db-pane--mid" id="dbMid">
+                    <div class="db-pane__head">
+                        <span class="db-pane__title">库表结构</span>
+                        <span class="db-pane__sub" id="dbTreeConn">未选择连接</span>
+                        <span class="db-pane__spacer"></span>
+                        <button type="button" class="el-button el-button--small db-pane__act" id="btnTreeRefresh" title="重新扫描该连接的结构">刷新</button>
+                    </div>
+                    <div class="db-pane__hint" id="dbTreeTip"></div>
+                    <div class="el-tree db-tree" id="dbTree">
+                        <div class="db-tree__empty">双击左侧任意一条连接，即可扫描出可用的数据库实例、表、视图；再<b>双击表或视图</b>，右侧的字段明细、数据与 SQL 会一起加载</div>
+                    </div>
+                </section>
+
+                <!-- ---------------- 右区域：标签页（字段明细 / SQL 工作台） ---------------- -->
+                <section class="db-pane db-pane--right" id="dbRight">
+                    <div class="el-tabs db-tabs" id="dbTabs">
+                        <div class="el-tabs__header db-tabs__header">
+                            <div class="el-tabs__nav-wrap">
+                                <div class="el-tabs__nav" id="dbTabNav" role="tablist">
+                                    <span class="el-tabs__active-bar" id="dbTabBar"></span>
+                                    <div class="el-tabs__item is-active" data-tab="cols" role="tab" tabindex="0" aria-selected="true">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h12v2H3v-2z"/></svg>字段明细
+                                    </div>
+                                    <div class="el-tabs__item" data-tab="rows" role="tab" tabindex="0" aria-selected="false">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 4h18v3H3V4zm0 5h18v3H3V9zm0 5h18v3H3v-3zm0 5h12v2H3v-2z"/></svg>数据
+                                    </div>
+                                    <div class="el-tabs__item" data-tab="sql" role="tab" tabindex="0" aria-selected="false">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm2 4l3 5-3 5h2l3-5-3-5H6zm7 9v2h5v-2h-5z"/></svg>SQL 工作台
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="db-tabs__conn" id="sqlConnName">未选择连接</span>
+                        </div>
+
+                        <div class="el-tabs__content">
+                            <!-- 标签页 ① 字段明细 -->
+                            <div class="el-tab-pane is-active" data-pane="cols" role="tabpanel">
+                                <div class="db-cols__head">
+                                    <span class="db-cols__title" id="dbColsTitle">字段明细</span>
+                                    <span class="db-cols__hint" id="dbColsHint">点中间的表名查看字段</span>
+                                </div>
+                                <div class="db-cols__body" id="dbColsBody">
+                                    <div class="db-cols__empty">选中左边的连接并展开库、<b>双击</b>中间的表或视图，这里会列出字段名、字段类型、是否可空、键与字段注解</div>
+                                </div>
+                            </div>
+
+                            <!-- 标签页 ② 数据：双击表 / 视图后懒加载，固定表头 + 列排序 + 筛选 -->
+                            <div class="el-tab-pane" data-pane="rows" role="tabpanel">
+                                <div class="db-rows__bar">
+                                    <span class="db-rows__name" id="dbRowsTable">未选择表</span>
+                                    <span class="db-rows__meta" id="dbRowsMeta"></span>
+                                    <span class="db-pane__spacer"></span>
+                                    <button type="button" class="el-button el-button--small" id="btnRowsFilter" title="按列筛选 / 过滤">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5h18l-7 8v6l-4 2v-8L3 5z"/></svg>筛选
+                                    </button>
+                                    <button type="button" class="el-button el-button--small" id="btnRowsReload" title="重新加载这一页">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>刷新
+                                    </button>
+                                </div>
+                                <div class="db-rows__filter" id="dbRowsFilterBar" hidden>
+                                    <div class="el-input db-rows__sel">
+                                        <select class="el-input__inner" id="rowFilterCol" title="筛选字段"></select>
+                                    </div>
+                                    <div class="el-input db-rows__sel db-rows__sel--op">
+                                        <select class="el-input__inner" id="rowFilterOp" title="筛选方式"></select>
+                                    </div>
+                                    <div class="el-input db-rows__val">
+                                        <input class="el-input__inner" type="text" id="rowFilterValue" placeholder="筛选值（为空/不为空可不填）">
+                                    </div>
+                                    <button type="button" class="el-button el-button--primary el-button--small" id="btnRowFilterAdd">添加</button>
+                                    <button type="button" class="el-button el-button--small" id="btnRowFilterClear">清空</button>
+                                </div>
+                                <div class="db-rows__chips" id="dbRowsChips"></div>
+                                <div class="db-rows__grid" id="dbRowsGrid">
+                                    <div class="db-rows__empty">双击中间的表或视图，这里会懒加载它的数据：表头固定不滚动、点列名排序、可按列筛选、记录多时滚到底自动分页</div>
+                                </div>
+                                <div class="db-rows__foot" id="dbRowsFoot" hidden>
+                                    <button type="button" class="el-button el-button--small" id="btnRowsMore">加载更多</button>
+                                    <span class="db-rows__more" id="dbRowsMoreTip"></span>
+                                </div>
+                            </div>
+
+                            <!-- 标签页 ③ SQL 工作台：上编辑器 / 下 执行结果 -->
+                            <div class="el-tab-pane" data-pane="sql" role="tabpanel">
+                                <div class="db-sql__bar">
+                                    <span class="db-sql__label">实例</span>
+                                    <div class="el-input db-sql__db">
+                                        <select class="el-input__inner" id="sqlDb" title="选择要查询的实例（库）">
+                                            <option value="">默认库</option>
+                                        </select>
+                                    </div>
+                                    <span class="db-pane__spacer"></span>
+                                    <button type="button" class="el-button el-button--primary el-button--small" id="btnSqlRun">执行</button>
+                                    <button type="button" class="el-button el-button--small" id="btnSqlClear">清空</button>
+                                    <button type="button" class="el-button el-button--small" id="btnSqlCopy">复制</button>
+                                </div>
+                                <div class="db-sql__body">
+                                    <textarea class="db-sql__text" id="sqlText" spellcheck="false"
+                                        placeholder="-- 只支持查询语句：SELECT / SHOW / DESC / EXPLAIN / PRAGMA&#10;-- 一次执行一条，Ctrl + Enter 快捷执行&#10;SELECT * FROM empinfos LIMIT 100"></textarea>
+                                    <div class="db-sql__foot">
+                                        <span class="db-sql__tip">只读执行 · 结束自动回滚，不会改动目标库</span>
+                                    </div>
+                                </div>
+                                <div class="db-result">
+                                    <div class="db-result__head">
+                                        <span class="db-pane__title">执行结果</span>
+                                        <span class="db-result__info" id="sqlInfo">尚未执行</span>
+                                    </div>
+                                    <div class="db-result__body" id="sqlResult">
+                                        <div class="db-result__empty">在上面写好 SQL 后点「执行」，结果会显示在这里</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- ============ 新增 / 编辑连接弹窗模板 ============ -->
+<div id="dbFormTpl" style="display:none;">
+    <form class="el-form db-form" id="dbForm" autocomplete="off" onsubmit="return false;">
+        <div class="el-form-item is-required" data-field="name">
+            <label class="el-form-item__label" for="dfName">连接名称</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="dfName" maxlength="100" placeholder="如：九豆生产库（MySQL）"></div>
+            </div>
+        </div>
+        <div class="el-form-item is-required" data-field="dbType">
+            <label class="el-form-item__label" for="dfType">数据库类型</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="dfType"></select>
+                </div>
+            </div>
+        </div>
+        <div class="el-form-item is-required" data-field="host" id="dfHostItem">
+            <label class="el-form-item__label" for="dfHost">主机 / 端口</label>
+            <div class="el-form-item__content db-adv-row">
+                <div class="el-input"><input class="el-input__inner" type="text" id="dfHost" maxlength="120" placeholder="如 127.0.0.1 或 db.example.com"></div>
+                <div class="el-input db-adv-port"><input class="el-input__inner" type="text" id="dfPort" maxlength="5" placeholder="3306"></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="dbName">
+            <label class="el-form-item__label" for="dfDbName" id="dfDbNameLabel">默认库</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="dfDbName" maxlength="120" placeholder="默认库 / 服务名 / SID（可留空）"></div>
+                <div class="form-tip" id="dfDbNameTip">扫描时会列出该实例下的全部库；SQLite 请在这里填库文件完整路径</div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="username">
+            <label class="el-form-item__label" for="dfUser">登录账号</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="dfUser" maxlength="100" placeholder="数据库账号"></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="password">
+            <label class="el-form-item__label" for="dfPassword">密码</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="password" id="dfPassword" maxlength="120" placeholder="数据库密码"></div>
+                <div class="form-tip" id="dfPasswordTip">加密存储、接口不返回；编辑时留空表示不修改</div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="charset">
+            <label class="el-form-item__label" for="dfCharset">字符集</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="dfCharset" maxlength="40" placeholder="可留空（按数据库类型自动适配）"></div>
+                <div class="form-tip" id="dfCharsetTip">可留空：MySQL 默认 utf8mb4，SQL Server 留空即可（varchar 的 GBK 中文会自动还原）</div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="extraParams">
+            <label class="el-form-item__label" for="dfExtra">附加参数</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="dfExtra" maxlength="500" placeholder="key=value&amp;key=value（可留空）"></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="enabled">
+            <label class="el-form-item__label" for="dfEnabled">启用状态</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="dfEnabled">
+                        <option value="1">启用</option>
+                        <option value="0">停用</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="ispub">
+            <label class="el-form-item__label" for="dfIspub">公用否</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="dfIspub">
+                        <option value="1">公用（所有用户可用）</option>
+                        <option value="0">私有（仅创建人可用）</option>
+                    </select>
+                </div>
+                <div class="form-tip">默认公用；创建人由系统按当前登录员工自动记录，无需填写</div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="remark">
+            <label class="el-form-item__label" for="dfRemark">备注</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="dfRemark" maxlength="200" placeholder="选填"></div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/dbinfo.js?v=20261105b"></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+47ab91bf-8f2e-4102-8651-bade440367f1	系统介绍	app_desc	本系统是集产品设计、研发、测试、实施、数据分析、科研、数据资产等一体化的三敏捷开发平台。	0	1	2026-11-04 18:56:56
+a11d2f33-b62c-44db-a1e6-11a4bb8689b6	系统名称	app_name	九豆综合业务管理平台	0	1	2026-11-04 18:21:40
+3bf6e734-81b1-4481-9bfe-4f9c4ba37391	系统版本	app_version	V1.0.0	0	1	2026-11-04 18:22:26

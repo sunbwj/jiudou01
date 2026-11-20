@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>即时对话自检</title>
+<style>
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; margin: 0; padding: 18px 22px; background: #f5f7fa; color: #303133; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: #909399; font-size: 12px; margin-bottom: 14px; }
+  .card { background: #fff; border: 1px solid #ebeef5; border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .row { display: flex; font-size: 13px; padding: 5px 0; border-bottom: 1px dashed #f0f2f5; }
+  .row:last-child { border-bottom: none; }
+  .k { width: 190px; color: #606266; flex: 0 0 auto; }
+  .v { flex: 1; font-family: Consolas, monospace; word-break: break-all; }
+  .ok { color: #67c23a; font-weight: 600; }
+  .bad { color: #f56c6c; font-weight: 600; }
+  .warn { color: #e6a23c; font-weight: 600; }
+  pre { background: #fef0f0; border: 1px solid #fbc4c4; border-radius: 6px; padding: 10px; font-size: 12px;
+        white-space: pre-wrap; word-break: break-all; max-height: 260px; overflow: auto; margin: 6px 0 0; }
+  .tip { background: #f4f8ff; border: 1px solid #d6e4ff; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #606266; }
+  iframe { width: 100%; height: 520px; border: 1px solid #dcdfe6; border-radius: 6px; background: #fff; }
+  .big { font-size: 15px; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>即时对话 · 自检</h1>
+<div class="sub">在浏览器里打开本页即可，会把 <code>message.html</code> 真实加载一遍并收集所有报错（用的就是当前登录态）。</div>
+
+<div class="card" id="summary"><div class="row"><span class="k">状态</span><span class="v" id="verdict">正在自检…</span></div></div>
+
+<div class="card">
+  <div class="row"><span class="k">登录态</span><span class="v" id="vSession">—</span></div>
+  <div class="row"><span class="k">api.js 版本</span><span class="v" id="vApi">—</span></div>
+  <div class="row"><span class="k">页面标题</span><span class="v" id="vTitle">—</span></div>
+  <div class="row"><span class="k">本人 / 连接</span><span class="v" id="vMe">—</span></div>
+  <div class="row"><span class="k">联系人 / 群组</span><span class="v" id="vCounts">—</span></div>
+  <div class="row"><span class="k">输入工具按钮</span><span class="v" id="vTools">—</span></div>
+  <div class="row"><span class="k">未捕获错误</span><span class="v" id="vErrCount">—</span></div>
+</div>
+
+<div class="card">
+  <div class="k" style="font-size:13px;margin-bottom:4px;">报错明细</div>
+  <pre id="vErrs">（暂无）</pre>
+</div>
+
+<div class="tip">
+  如果上面显示「加载成功、0 报错」，说明页面代码本身没问题，那「崩了」多半是浏览器缓存了旧脚本：
+  在页面里按 <b>Ctrl + F5</b> 强制刷新一次即可。<br>
+  如果显示了红色报错，把本页截图发我，我按报错直接修。
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <iframe id="fr" src="about:blank"></iframe>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var errs = [];
+  function set(id, val, cls) {
+    var el = $(id);
+    el.textContent = val;
+    if (cls) { el.className = 'v ' + cls; }
+  }
+
+  var sess = null;
+  try { sess = JSON.parse(localStorage.getItem('menu_admin_login_v1') || 'null'); } catch (e) { }
+  if (!sess || !sess.token) {
+    set('vSession', '未登录（请先登录一次再打开本页）', 'bad');
+    set('verdict', '无法自检：当前浏览器没有登录态', 'bad');
+    return;
+  }
+  var left = sess.expireAt ? Math.round((sess.expireAt - Date.now()) / 60000) : -1;
+  set('vSession', 'empId=' + sess.empId + '，token 剩余约 ' + left + ' 分钟'
+    + (left >= 0 && left < 30 ? '（即将过期）' : ''), left >= 0 && left < 30 ? 'warn' : 'ok');
+
+  var fr = $('fr');
+  var done = false;
+
+  fr.onload = function () {
+    var w = fr.contentWindow, doc = fr.contentDocument;
+    try {
+      w.onerror = function (m, u, l) { errs.push('脚本错误：' + m + '  @' + String(u || '').split('/').pop() + ':' + l); };
+      w.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        errs.push('未处理的 Promise 拒绝：' + ((r && (r.message || r)) || 'unknown'));
+      });
+      var ce = w.console.error;
+      w.console.error = function () {
+        var a = Array.prototype.slice.call(arguments).map(function (x) {
+          return (x && x.message) ? x.message : String(x);
+        }).join(' ');
+        errs.push('console.error：' + a);
+        if (ce) { try { ce.apply(w.console, arguments); } catch (e) { } }
+      };
+    } catch (e) { errs.push('无法挂钩 iframe：' + e.message); }
+    setTimeout(collect, 4000);
+  };
+
+  function collect() {
+    if (done) { return; }
+    done = true;
+    var w = fr.contentWindow, doc = fr.contentDocument;
+    var IM = w.IM;
+
+    var apiSrc = '';
+    Array.prototype.forEach.call(doc.querySelectorAll('script[src]'), function (s) {
+      if (s.getAttribute('src').indexOf('js/api.js') === 0) { apiSrc = s.getAttribute('src'); }
+    });
+    set('vApi', apiSrc || '未找到（页面没加载 api.js）', apiSrc ? 'ok' : 'bad');
+    set('vTitle', doc.title || '（空）', doc.title ? 'ok' : 'bad');
+
+    if (!w.jQuery) {
+      set('verdict', '页面脚本没有执行起来（连 jQuery 都没有）', 'bad');
+      errs.push('jQuery 未加载 —— 页面很可能被浏览器拦在了旧缓存或渲染进程已崩溃，请 Ctrl+F5 强刷');
+    } else if (!IM) {
+      set('verdict', '页面脚本部分失效（message.js 未完成初始化）', 'bad');
+    } else {
+      set('verdict', '页面加载成功，功能代码已就绪', 'ok');
+    }
+
+    set('vMe', ((doc.querySelector('#imMeName') || {}).textContent || '—').trim()
+      + ' / ' + ((doc.querySelector('#imConnText') || {}).textContent || '—').trim());
+    set('vCounts', (IM ? Object.keys(IM.state.contacts || {}).length : '-') + ' 位联系人 · '
+      + (IM ? Object.keys(IM.state.groups || {}).length : '-') + ' 个群');
+    set('vTools', doc.querySelectorAll('.im-input__tools .im-tool').length + ' 个',
+      doc.querySelectorAll('.im-input__tools .im-tool').length === 4 ? 'ok' : 'bad');
+    set('vErrCount', errs.length + ' 条', errs.length ? 'bad' : 'ok');
+    $('vErrs').textContent = errs.length ? errs.join('\n') : '（暂无）';
+    if (!errs.length) { $('vErrs').style.background = '#f0f9eb'; $('vErrs').style.borderColor = '#c2e7b0'; }
+  }
+
+  setTimeout(function () {
+    fr.src = '../message.html?_selfcheck=' + Date.now();
+  }, 100);
+})();
+</script>
+</body>
+</html>

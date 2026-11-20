@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<title>需求管理 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/workplan.css?v=20261112e">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<style>
+.req-emp-list { max-height: 200px; overflow: auto; border: 1px solid #ebeef5; border-radius: 4px; padding: 6px 8px; }
+.req-emp { display: block; padding: 3px 0; font-size: 12px; color: #606266; cursor: pointer; }
+.req-emp input { margin-right: 6px; }
+.req-detail { font-size: 13px; color: #303133; line-height: 1.7; }
+.req-detail__row { margin-bottom: 6px; }
+.req-detail__pre { white-space: pre-wrap; color: #606266; margin-top: 4px; }
+.req-detail__sub { margin-top: 12px; padding-top: 8px; border-top: 1px solid #ebeef5; font-weight: 600; }
+.req-detail__eval { padding: 6px 0; border-bottom: 1px dashed #f0f0f0; font-size: 12px; color: #606266; }
+.req-detail__empty { color: #c0c4cc; font-size: 12px; padding: 6px 0; }
+.req-file { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; }
+.req-file__name { color: #409eff; text-decoration: none; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.req-file__size { color: #909399; flex: 0 0 62px; text-align: right; }
+.el-dialog.req-form-dialog { max-height: calc(100vh - 24px); display: flex; flex-direction: column; margin: 12px auto; }
+.el-dialog.req-form-dialog .el-dialog__body { overflow: auto; max-height: calc(100vh - 150px); }
+.req-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 14px; }
+.req-form-dialog .el-form-item { margin-bottom: 6px; }
+.req-desc { height: 60vh; min-height: 240px; max-height: 60vh; resize: vertical; }
+.req-form-files { font-size: 12px; color: #909399; margin-top: 4px; }
+.el-dialog.req-form-dialog .el-dialog__body { overflow: hidden; }
+.req-form-dialog .rt { height: 40vh; display: flex; flex-direction: column; }
+.req-form-dialog .rt__area { flex: 1 1 auto; height: auto; overflow: auto; }
+.req-desc { height: 40vh; min-height: 200px; max-height: 40vh; overflow: auto; resize: vertical; }
+.req-form-dialog .rt .req-desc { height: auto; min-height: 0; max-height: none; }
+.req-desc-item { display: block; }
+.req-desc-item .el-form-item__content { margin-left: 0; width: 100%; }
+.req-desc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.req-desc-label { font-size: 13px; color: #606266; font-weight: 600; }
+.req-desc-head .el-button { padding: 2px 9px; font-size: 12px; }
+.req-form-files { display: flex; flex-wrap: wrap; gap: 6px; max-height: 56px; overflow-y: auto; margin-top: 6px; }
+.req-file-hint { color: #909399; font-size: 12px; }
+.req-file-chip { display: inline-flex; align-items: center; max-width: 240px; height: 24px; padding: 0 4px 0 8px; border: 1px solid #dcdfe6; border-radius: 4px; background: #f5f7fa; font-size: 12px; color: #606266; }
+.req-file-chip__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.req-file-chip__del { flex: 0 0 auto; width: 18px; height: 18px; margin-left: 6px; padding: 0; border: 0; border-radius: 50%; background: #c0c4cc; color: #fff; font-size: 13px; line-height: 18px; cursor: pointer; }
+.req-file-chip__del:hover { background: #f56c6c; }
+
+.req-eval-field { display: block; margin-bottom: 12px; }
+.req-eval-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.req-eval-head .req-eval-label { padding: 0; }
+.req-eval-head .el-button { padding: 2px 9px; font-size: 12px; }
+.req-eval-label { display: block; width: auto; padding: 0 0 6px; text-align: left; font-size: 13px; color: #606266; line-height: 1.4; }
+.req-eval-field .el-form-item__content { margin-left: 0; width: 100%; }
+.req-emp-picker { position: relative; }
+.req-emp-picker__box { display: flex; align-items: center; justify-content: space-between; min-height: 36px; padding: 0 10px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; cursor: pointer; font-size: 13px; color: #606266; }
+.req-emp-picker__box:hover { border-color: #409eff; }
+.req-emp-picker__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.req-emp-picker__caret { color: #c0c4cc; margin-left: 8px; }
+.req-emp-picker__drop.is-up { top: auto; bottom: 41px; }
+.req-emp-picker__drop { position: absolute; left: 0; right: 0; top: 41px; z-index: 3001; max-height: 280px; overflow: auto; padding: 6px 4px; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.req-tree-row { display: flex; align-items: center; min-height: 26px; font-size: 12px; color: #606266; }
+.req-tree-caret { display: inline-block; width: 16px; text-align: center; color: #909399; cursor: pointer; user-select: none; }
+.req-tree-caret.is-empty { cursor: default; color: transparent; }
+.req-tree-dept-label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 600; }
+.req-tree-emp { display: flex; align-items: center; gap: 4px; min-height: 24px; font-size: 12px; color: #606266; cursor: pointer; }
+.req-tree-emp input, .req-tree-dept-label input { margin: 0 4px 0 0; }
+.req-tree-empty { padding: 10px; color: #c0c4cc; font-size: 12px; text-align: center; }
+.req-eval-reason { min-height: 170px; }
+.req-eval-reason.rt__area { min-height: 170px; max-height: 240px; }
+.req-timeline { position: relative; padding-left: 22px; }
+.req-timeline:before { content: ""; position: absolute; left: 7px; top: 4px; bottom: 4px; width: 2px; background: #e4e7ed; }
+.req-tl-item { position: relative; padding: 0 0 16px 8px; }
+.req-tl-dot { position: absolute; left: -22px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #409eff; border: 2px solid #fff; box-shadow: 0 0 0 1px #409eff; }
+.req-tl-item.is-fail .req-tl-dot { background: #f56c6c; box-shadow: 0 0 0 1px #f56c6c; }
+.req-tl-item.is-final .req-tl-dot { background: #909399; box-shadow: 0 0 0 1px #909399; }
+.req-tl-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #303133; }
+.req-tl-time { color: #909399; font-size: 12px; }
+.req-tl-meta { margin-top: 4px; color: #606266; font-size: 12px; line-height: 1.7; }
+.req-tl-reason { margin-top: 4px; padding: 6px 10px; background: #fafbfc; border-left: 3px solid #e4e7ed; color: #606266; font-size: 12px; }
+.req-tl-files { margin-top: 4px; font-size: 12px; color: #909399; }
+.req-tl-files a { color: #409eff; margin-right: 10px; }
+.req-tl-empty { padding: 18px 0; text-align: center; color: #c0c4cc; }
+.el-dialog.req-eval-dialog { max-height: calc(100vh - 24px); display: flex; flex-direction: column; margin: 12px auto; }
+.el-dialog.req-eval-dialog .el-dialog__body { overflow-y: auto; max-height: calc(100vh - 150px); }
+.search-card { overflow: visible; }
+.req-multi { position: relative; width: 100%; min-width: 130px; }
+.req-multi__box { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; padding: 0 9px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; color: #606266; font-size: 13px; text-align: left; cursor: pointer; }
+.req-multi__box:hover, .req-multi__box:focus { border-color: #409eff; outline: none; }
+.req-multi__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.req-multi__caret { flex: 0 0 auto; margin-left: 6px; color: #c0c4cc; }
+.req-multi.has-value .req-multi__text { color: #303133; }
+.req-multi__drop { position: absolute; left: 0; right: 0; top: 36px; z-index: 60; padding: 0; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.req-multi__list { max-height: 260px; overflow: auto; padding: 5px 4px; }
+.req-multi__opt { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 13px; color: #606266; cursor: pointer; }
+.req-multi__opt:hover { background: #f5f7fa; color: #409eff; }
+.req-multi__opt input { width: auto; flex: 0 0 auto; margin: 0; }
+.req-multi__foot { padding: 4px 8px 2px; border-top: 1px solid #f0f2f5; text-align: right; }
+.req-multi__clear { padding: 0; border: 0; background: none; color: #909399; font-size: 12px; cursor: pointer; }
+.req-multi__clear:hover { color: #f56c6c; }
+
+/* ---------- 结果区撑满剩余页高（PC / 平板；手机端走表格卡片模式，不启用） ----------
+   本页是「检索卡 + 列表卡」两卡片变体：工具栏放在 .table-card > .el-card__body 里，
+   app.css 只把 .table-card 设成了纵向 flex，中间 body 这一层没接上，
+   于是 .table-wrapper 的 flex:1 没有可用高度，表格永远只有内容高 → 这里把 flex 链补全。
+   行高拉伸与空行补位由 requirement.js 的 layoutRows() 负责（与菜单 / 组织架构列表同一套）。 */
+@media screen and (min-width: 769px) {
+    .table-card > .el-card__body {
+        -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+        display: -webkit-box; display: -ms-flexbox; display: flex;
+        -webkit-box-orient: vertical; -webkit-box-direction: normal;
+        -ms-flex-direction: column; flex-direction: column;
+        min-height: 0;
+    }
+    /* 工具栏永远保持自身高度，不被表格挤压 */
+    .table-card > .el-card__body > .toolbar { -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto; }
+    /* height:0 是把 flex-basis 归零：只让剩余空间决定表格区高度，内容再多也不撑高卡片 */
+    .table-card .table-wrapper { height: 0; min-height: 0; overflow: auto; }
+}
+</style>
+</head>
+<body class="wp-page">
+<div class="app">
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo"><img class="logo-mark" src="assets/logo.svg" alt="九豆"><span>九豆综合管理平台</span></div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user"><span class="avatar">管</span><span class="name">系统管理员</span></div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+    <div class="app-body">
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">项目管理</div>
+                <a class="app-side__item" href="project.html">项目信息</a>
+                <a class="app-side__item is-active" href="requirement.html">需求管理</a>
+                <a class="app-side__item" href="bug.html">缺陷管理</a>
+                <a class="app-side__item" href="workplan.html">计划管理</a>
+                <a class="app-side__item" href="workplan-task.html">我的任务</a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="项目管理/需求管理">
+                <h2 class="page-head__title">需求管理</h2>
+            </div>
+
+            <section class="el-card search-card">
+                <div class="el-card__body">
+                    <form class="el-form el-form--inline search-form" id="reqSearchForm" autocomplete="off" onsubmit="return false;">
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="reqProject">所属项目</label>
+                            <div class="el-form-item__content"><div class="el-input search-input--select">
+                                <select class="el-input__inner" id="reqProject"><option value="">全部项目</option></select>
+                            </div></div>
+                        </div>
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="reqStatus">状态</label>
+                            <div class="el-form-item__content">
+                                <div class="req-multi" id="reqStatusMulti" data-placeholder="全部状态">
+                                    <select id="reqStatus" style="display:none">
+                                        <option value="">全部状态</option>
+                                        <option value="待评估">待评估</option><option value="已通过">已通过</option><option value="响应">响应</option><option value="决定不响应">决定不响应</option>
+                                        <option value="已不通过">已不通过</option><option value="已转计划">已转计划</option>
+                                    </select>
+                                    <button type="button" class="el-input__inner req-multi__box" aria-haspopup="true">
+                                        <span class="req-multi__text">全部状态</span>
+                                        <span class="req-multi__caret">▾</span>
+                                    </button>
+                                    <div class="req-multi__drop" hidden>
+                                        <div class="req-multi__list">
+                                            <label class="req-multi__opt"><input type="checkbox" value="待评估"> 待评估</label>
+                                            <label class="req-multi__opt"><input type="checkbox" value="已通过"> 已通过</label>
+                                            <label class="req-multi__opt"><input type="checkbox" value="响应"> 响应</label>
+                                            <label class="req-multi__opt"><input type="checkbox" value="决定不响应"> 决定不响应</label>
+                                            <label class="req-multi__opt"><input type="checkbox" value="已不通过"> 已不通过</label>
+                                            <label class="req-multi__opt"><input type="checkbox" value="已转计划"> 已转计划</label>
+                                        </div>
+                                        <div class="req-multi__foot">
+                                            <button type="button" class="req-multi__clear">清空</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="reqKeyword">关键字</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <input class="el-input__inner" type="text" id="reqKeyword" placeholder="需求编号 / 标题 / 项目">
+                            </div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <button type="button" class="el-button el-button--primary" id="reqBtnSearch">查询</button>
+                            <button type="button" class="el-button" id="reqBtnReset">重置</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <section class="el-card table-card">
+                <div class="el-card__body">
+                    <div class="toolbar toolbar--icons" role="toolbar" aria-label="需求管理操作">
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="reqBtnAdd"
+                                title="新增需求" aria-label="新增需求">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="reqBtnDetail" disabled
+                                title="查看需求详情（先选中一行）" aria-label="查看需求详情">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 2a5 5 0 110 10 5 5 0 010-10zm0 2.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="reqBtnEvaluate" disabled
+                                title="需求评估（先选中待评估/已不通过的需求）" aria-label="需求评估">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16v18H4V3zm2 2v14h12V5H6zm2 3h8v2H8V8zm0 4h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="reqBtnRespond" disabled
+                                title="响应否：最终决定响应 / 决定不响应" aria-label="响应否">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1.2 14.2l-4-4 1.4-1.4 2.6 2.6 5.2-5.2 1.4 1.4-6.6 6.6z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="reqBtnEdit" disabled
+                                title="编辑需求（先选中未转计划的需求）" aria-label="编辑需求">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.2V21h3.8L18 9.8 14.2 6 3 17.2zM20.7 7.1a1 1 0 000-1.4l-2.4-2.4a1 1 0 00-1.4 0l-1.8 1.8L18.9 9l1.8-1.9z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="reqBtnEvals" disabled
+                                title="查看评估记录 / 评估时间线（先选中一条需求）" aria-label="评估记录">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3a9 9 0 100 18 9 9 0 000-18zm0 2a7 7 0 110 14 7 7 0 010-14zm-1 3v5l4 2 .9-1.6-3-1.5V8h-1.9zM3 5h4v2H5v3H3V5zm14 0h4v5h-2V7h-2V5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="reqBtnPlan" disabled
+                                title="生成研发计划（仅响应且未转计划的需求）" aria-label="生成研发计划">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H4v10h16V10zM4 8h16V6h-3v2h-2V6H9v2H7V6H4v2zm5 5h2v2H9v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="reqBtnRefresh"
+                                title="刷新需求列表" aria-label="刷新需求列表">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>
+                        </button>
+                        <span class="toolbar-hint">共 <b id="reqCount">0</b> 条需求</span>
+                    </div>
+                    <div class="table-wrapper" id="reqTableWrap">
+                        <div class="el-table">
+                            <div class="el-table__inner-wrapper">
+                                <table id="reqTable">
+                                    <thead><tr>
+                                        <th class="is-center" style="width:52px">选择</th>
+                                        <th class="is-center" style="width:56px">序号</th>
+                                        <th style="width:110px">需求编号</th>
+                                        <th>标题</th>
+                                        <th style="width:140px">所属项目</th>
+                                        <th style="width:90px">提出人</th>
+                                        <th class="is-center" style="width:64px">优先级</th>
+                                        <th class="is-center" style="width:86px">状态</th>
+                                        <th class="is-center" style="width:90px">评估工时</th>
+                                        <th style="width:120px">关联计划</th>
+                                        <th class="is-center" style="width:86px">评估记录</th>
+                                        <th style="width:140px">创建时间</th>
+                                    </tr></thead>
+                                    <tbody id="reqTbody" class="el-table__body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="reqPager" class="pager-wrap"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+<script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/word-import.js?v=20261106c"></script>
+<script src="js/rich-text.js?v=20261116a"></script>
+<script src="js/requirement.js?v=20261112a"></script>
+</body>
+</html>

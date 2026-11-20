@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>im media probe（真实 Edge：图片 / 文件 / 话音 / 截屏 / 群组）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1440px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：由 8808 同源静态服务托管。
+   在 api.js 之前注入 SSO 会话 + 阻断 jQuery.ajax → api.js 自动回退 Mock → Mock WS。
+   覆盖：输入工具条（图片/文件/语音/截屏）4 按钮 + 隐藏 file input + 群标签 + 图片查看器；
+        真 canvas 造图 → FileReader → Api.msg.upload → 图片气泡（naturalWidth 真加载）→ 点开放大；
+         文本文件 → 文件卡片（download 属性 + 文件名 + 大小）；
+         getDisplayMedia 降级提示（headless 无设备，走「不支持」分支，不抛错）；
+         SpeechRecognition 开关（不支持时给中文提示）；
+         群标签 → 种子群 → 群会话 → 发群消息 → 气泡 is-me；建群弹窗能打开且成员可选。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, String(v)); }
+    var fr = document.getElementById('fr');
+
+    function session(empId) {
+        return 'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe-' + empId + '",' +
+            'account:"probe",empId:' + empId + ',ename:"探针",user:{empId:' + empId + ',nameCn:"探针"},' +
+            'expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}';
+    }
+    function makeHtml(src, empId) {
+        src = src.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' + session(empId) +
+            'jQuery.ajax=function(){var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        if (!re.test(src)) { return null; }
+        return src.replace(re, patch + '<script src="js/api.js?v=20261107c"><\/script>');
+    }
+    function load(src, empId) {
+        var html = makeHtml(src, empId);
+        if (!html) { attr('data-done', 'no-api-tag'); return null; }
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        return { w: w, doc: doc };
+    }
+    function waitFor(ctx, selector, min, cb, tries0) {
+        var tries = tries0 || 0;
+        (function loop() {
+            var n = ctx.doc.querySelectorAll(selector).length;
+            if (n >= min || tries >= 60) { return cb(); }
+            tries++;
+            setTimeout(loop, 250);
+        })();
+    }
+    function waitUntil(cond, ms, cb) {
+        var t0 = Date.now();
+        (function loop() {
+            var ok = false;
+            try { ok = !!cond(); } catch (e) { ok = false; }
+            if (ok || Date.now() - t0 > ms) { return cb(); }
+            setTimeout(loop, 120);
+        })();
+    }
+    function txt(doc, sel) { var el = doc.querySelector(sel); return el ? (el.textContent || '').trim() : ''; }
+    function n(doc, sel) { return doc.querySelectorAll(sel).length; }
+    function box(doc, sel) {
+        var el = doc.querySelector(sel);
+        if (!el) { return '0x0'; }
+        var r = el.getBoundingClientRect();
+        return Math.round(r.width) + 'x' + Math.round(r.height);
+    }
+    /* dataURL → File（在 iframe 的 window 里造，避免跨 realm 的 instanceof 问题） */
+    function fileOf(w, durl, name, mime) {
+        var b64 = durl.split(',')[1] || '';
+        var bin = w.atob(b64);
+        var u8 = new w.Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) { u8[i] = bin.charCodeAt(i); }
+        return new w.File([u8], name, { type: mime });
+    }
+
+    fetch('../message.html').then(function (r) { return r.text(); }).then(function (src) {
+        var ctx = load(src, 3);                 // 甲：empId=3
+        if (!ctx) { return; }
+        setTimeout(function () {
+            waitFor(ctx, '#imContacts .im-contact', 5, function () { step1(ctx, src); });
+        }, 900);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    /* ---- 1. 输入工具条 / 群入口 / 查看器 静态结构 ---- */
+    function step1(ctx, src) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        attr('data-tools-count', n(doc, '.im-input__tools .im-tool'));
+        attr('data-tool-image', $('#imPickImage').length ? 'yes' : 'no');
+        attr('data-tool-file', $('#imPickFile').length ? 'yes' : 'no');
+        attr('data-tool-voice', $('#imVoice').length ? 'yes' : 'no');
+        attr('data-tool-shot', $('#imShot').length ? 'yes' : 'no');
+        attr('data-image-accept', (doc.getElementById('imImageInput') || {}).getAttribute
+            ? doc.getElementById('imImageInput').getAttribute('accept') : '');
+        attr('data-file-input-hidden', $('#imFileInput').css('display'));
+        attr('data-tab-group', n(doc, '.im__tab[data-tab="group"]'));
+        attr('data-btn-group', $('#btnGroup').length ? 'yes' : 'no');
+        attr('data-viewer-hidden', (doc.getElementById('imViewer') || {}).hasAttribute
+            ? (doc.getElementById('imViewer').hasAttribute('hidden') ? 'yes' : 'no') : '');
+        attr('data-status-empty', txt(doc, '#imInputStatus') === '' ? 'yes' : 'no');
+
+        var first = doc.querySelector('#imContacts .im-contact');
+        var peer = parseInt(Object.keys(IM.state.contacts)[0], 10);
+        attr('data-peer', peer);
+        if (first) { first.click(); }
+        setTimeout(function () { step2(ctx, src, peer); }, 450);
+    }
+
+    /* ---- 2. 图片：canvas 造图 → FileReader → upload → 气泡 → 点开放大 ---- */
+    function step2(ctx, src, peer) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        /* 会话已打开，这时量工具条才有尺寸（未开会话时 #imChat 是隐藏的） */
+        attr('data-tool-size', box(doc, '#imPickImage'));
+        attr('data-tool-gap', (function () {
+            var a = doc.querySelector('#imPickImage'), b = doc.querySelector('#imPickFile');
+            if (!a || !b) { return -1; }
+            return Math.round(b.getBoundingClientRect().left - a.getBoundingClientRect().right);
+        })());
+        attr('data-tool-row-top', (function () {
+            var t = doc.querySelector('#imPickImage'), tx = doc.querySelector('#imText');
+            if (!t || !tx) { return -1; }
+            return Math.round(tx.getBoundingClientRect().top - t.getBoundingClientRect().bottom);
+        })());
+        var c = doc.createElement('canvas');
+        c.width = 8; c.height = 6;
+        var g = c.getContext('2d');
+        g.fillStyle = '#e64a19'; g.fillRect(0, 0, 8, 6);
+        var durl = c.toDataURL('image/png');
+        IM.uploadFile(fileOf(w, durl, 'probe.png', 'image/png'), 'image');
+
+        /* 轮询等上传+ack 落地（Mock 有 delay，机器忙时固定 sleep 不可靠） */
+        waitUntil(function () {
+            var l = IM.state.convo[peer] || [];
+            var last = l[l.length - 1] || {};
+            return last.msgType === 'image' && doc.querySelector('#imChatBody .im-img');
+        }, 6000, function () {
+            var list = IM.state.convo[peer] || [];
+            var last = list[list.length - 1] || {};
+            attr('data-img-msgtype', last.msgType || '');
+            attr('data-img-content', last.content || '');
+            attr('data-img-attachurl', last.attach && last.attach.url ? 'yes' : 'no');
+            attr('data-img-bubble-dom', n(doc, '#imChatBody .im-msg__bubble.is-media'));
+            var im = doc.querySelector('#imChatBody .im-img');
+            attr('data-img-exists', im ? 'yes' : 'no');
+            attr('data-img-natural', im ? (im.naturalWidth + 'x' + im.naturalHeight) : '0x0');
+            attr('data-img-box', box(doc, '#imChatBody .im-img'));
+            attr('data-img-radius', im ? (w.getComputedStyle(im).borderRadius || '') : '');
+            attr('data-img-is-me', (function () {
+                var row = doc.querySelector('#imChatBody .im-msg.is-me .im-msg__bubble.is-media');
+                return row ? 'yes' : 'no';
+            })());
+            attr('data-status-after-upload', txt(doc, '#imInputStatus'));
+            if (im) { im.click(); }
+            setTimeout(function () {
+                attr('data-viewer-display', $('#imViewer').css('display'));
+                var vi = doc.getElementById('imViewerImg');
+                attr('data-viewer-src', vi && String(vi.src || '').indexOf('data:image/png') === 0 ? 'dataurl' : 'other');
+                var close = doc.getElementById('imViewerClose');
+                if (close) { close.click(); }
+                setTimeout(function () { step3(ctx, src, peer); }, 250);
+            }, 400);
+        });
+    }
+
+    /* ---- 3. 文本文件：文件卡片（download / 文件名 / 大小） ---- */
+    function step3(ctx, src, peer) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        var raw = 'probe file content\n' + new Date().toISOString();
+        var durl = 'data:text/plain;base64,' + w.btoa(raw);
+        IM.uploadFile(fileOf(w, durl, '探针说明.txt', 'text/plain'), 'file');
+        waitUntil(function () {
+            return doc.querySelector('#imChatBody a.im-file');
+        }, 6000, function () {
+            var list = IM.state.convo[peer] || [];
+            var last = list[list.length - 1] || {};
+            attr('data-file-msgtype', last.msgType || '');
+            attr('data-file-content', last.content || '');
+            var a = doc.querySelector('#imChatBody a.im-file');
+            attr('data-file-card', a ? 'yes' : 'no');
+            attr('data-file-download', a ? (a.getAttribute('download') || '') : '');
+            attr('data-file-name', a ? txt(a, '.im-file__name') : '');
+            attr('data-file-size', a ? txt(a, '.im-file__meta') : '');
+            attr('data-file-ext', a ? txt(a, '.im-file__ico') : '');
+            attr('data-file-count', n(doc, '#imChatBody .im-file'));
+            step4(ctx, src, peer);
+        });
+    }
+
+    /* ---- 4. 截屏：headless 无 getDisplayMedia → 中文降级提示，不抛错 ---- */
+    function step4(ctx, src, peer) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        var before = errs.length;
+        attr('data-gdm', (w.navigator.mediaDevices && w.navigator.mediaDevices.getDisplayMedia) ? 'yes' : 'no');
+        doc.getElementById('imShot').click();
+        setTimeout(function () {
+            var st = txt(doc, '#imInputStatus');
+            attr('data-shot-status', st);
+            attr('data-shot-status-is-cn', /[\u4e00-\u9fa5]/.test(st) ? 'yes' : 'no');
+            attr('data-shot-throw', errs.length > before ? 'yes' : 'no');
+            step5(ctx, src, peer);
+        }, 500);
+    }
+
+    /* ---- 5. 语音：点按钮翻转状态 / 不支持时给提示 ---- */
+    function step5(ctx, src, peer) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        var has = !!(w.SpeechRecognition || w.webkitSpeechRecognition);
+        attr('data-speech-api', has ? 'yes' : 'no');
+        var before = errs.length;
+        doc.getElementById('imVoice').click();
+        setTimeout(function () {
+            attr('data-voice-on', IM.state.voiceOn ? 'yes' : 'no');
+            attr('data-voice-btn-active', $('#imVoice').hasClass('is-active') ? 'yes' : 'no');
+            attr('data-voice-status', txt(doc, '#imInputStatus'));
+            attr('data-voice-throw', errs.length > before ? 'yes' : 'no');
+            IM.stopVoice();
+            setTimeout(function () {
+                attr('data-voice-off-after-stop', IM.state.voiceOn ? 'yes' : 'no');
+                attr('data-voice-btn-inactive', $('#imVoice').hasClass('is-active') ? 'no' : 'yes');
+                step6(ctx, src, peer);
+            }, 300);
+        }, 700);
+    }
+
+    /* ---- 6. 群：群标签 → 种子群 → 群会话 → 发群消息 ---- */
+    function step6(ctx, src, peer) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        $('.im__tab[data-tab="group"]').trigger('click');
+        setTimeout(function () {
+            var gkeys = Object.keys(IM.state.groups);
+            attr('data-group-count', gkeys.length);
+            attr('data-group-dom', n(doc, '#imContacts .im-contact.is-group'));
+            var gid = gkeys[0];
+            attr('data-gid', gid ? 'yes' : 'no');
+            var row = doc.querySelector('#imContacts .im-contact.is-group[data-group="' + gid + '"]')
+                || doc.querySelector('#imContacts .im-contact.is-group');
+            if (row) { row.click(); }
+            setTimeout(function () {
+                attr('data-group-active', IM.state.activeGroup === gid ? 'yes' : 'no');
+                attr('data-group-title', txt(doc, '#imChatTitle'));
+                attr('data-group-sub', txt(doc, '#imChatSub'));
+                attr('data-group-members-btn', doc.getElementById('imGroupMembers')
+                    && !doc.getElementById('imGroupMembers').hasAttribute('hidden') ? 'shown' : 'hidden');
+                doc.getElementById('imGroupMembers').click();
+                setTimeout(function () {
+                    attr('data-group-member-rows', n(doc, '.el-overlay #imGroupMemberList .im-member'));
+                    attr('data-group-member-tip', txt(doc, '.el-overlay #imGroupMemberTip'));
+                    attr('data-group-leave-btn', doc.querySelector('.el-overlay #imGroupLeave') ? 'yes' : 'no');
+                    var c1 = doc.querySelector('.el-overlay .el-dialog__headerbtn');
+                    if (c1) { c1.click(); }
+                }, 400);
+                var text = '探针群消息 ' + Date.now();
+                $('#imText').val(text);
+                IM.send();
+                waitUntil(function () {
+                    var l2 = IM.state.convo['g' + gid] || [];
+                    var la = l2[l2.length - 1] || {};
+                    return la.content === text && la.temp !== true;
+                }, 5000, function () {
+                    var list = IM.state.convo['g' + gid] || [];
+                    var last = list[list.length - 1] || {};
+                    attr('data-gmsg-sent', last.content === text ? 'yes' : 'no');
+                    attr('data-gmsg-temp', last.temp === true ? 'still-temp' : 'acked');
+                    attr('data-gmsg-bubble', $('#imChatBody').text().indexOf(text) > -1 ? 'yes' : 'no');
+                    attr('data-gmsg-is-me', n(doc, '#imChatBody .im-msg.is-me') > 0 ? 'yes' : 'no');
+                    step7(ctx, src);
+                });
+            }, 500);
+        }, 400);
+    }
+
+    /* ---- 7. 建群弹窗：能打开 + 成员可选 ---- */
+    function step7(ctx, src) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        doc.getElementById('btnGroup').click();
+        setTimeout(function () {
+            var ov = doc.querySelector('.el-overlay');
+            var dlgBody = doc.querySelector('.el-overlay .im-group-form');
+            attr('data-group-dialog', ov ? 'open' : 'closed');
+            attr('data-group-dialog-title', txt(doc, '.el-overlay .el-dialog__title'));
+            attr('data-group-dialog-h', dlgBody ? Math.round(dlgBody.getBoundingClientRect().height) : 0);
+            attr('data-group-pick', n(doc, '.el-overlay #imGroupPickList .im-group-pick__item'));
+            var firstPick = doc.querySelector('.el-overlay #imGroupPickList .im-group-pick__item');
+            if (firstPick) { firstPick.click(); }
+            setTimeout(function () {
+                attr('data-group-picked-tip', txt(doc, '.el-overlay #imGroupPicked'));
+                attr('data-group-picked-on', n(doc, '.el-overlay .im-group-pick__item.is-checked'));
+                /* 不提交，避免污染 Mock 群存储；点「取消」关掉弹窗 */
+                var cancel = doc.querySelector('.el-overlay .el-dialog__footer .btn-cancel');
+                if (cancel) { cancel.click(); }
+                setTimeout(function () {
+                    attr('data-group-dialog-closed', doc.querySelector('.el-overlay') ? 'still-open' : 'closed');
+                    step8(ctx, src);
+                }, 300);
+            }, 350);
+        }, 600);
+    }
+
+    /* ---- 8. 群重命名：群主可见 + 改名生效 + 同步到标题与列表 ---- */
+    function step8(ctx, src) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        var Api = w.Api;
+        var gid = Object.keys(IM.state.groups)[0];
+        var g0 = IM.state.groups[gid] || {};
+        attr('data-rename-owner', g0.isOwner ? 'yes' : 'no');
+        /* 种子群的群主不是当前用户 → 先建一个自己的群再改名 */
+        Api.msg.groupAdd({ groupName: '探针改名前', memberIds: [1, 2] }).done(function (res) {
+            var myGid = (res && res.groupId) || '';
+            attr('data-rename-newgid', myGid ? 'yes' : 'no');
+            IM.refreshGroups();
+            var tries = 0;
+            (function waitG() {
+                if (!IM.state.groups[myGid] && tries < 40) { tries++; return setTimeout(waitG, 150); }
+                IM.openGroup(myGid);
+                setTimeout(function () {
+                    doc.getElementById('imGroupMembers').click();
+                    setTimeout(function () {
+                        var ovs = doc.querySelectorAll('.el-overlay');
+                        var box = ovs[ovs.length - 1];
+                        attr('data-rename-btn-shown', box && !box.querySelector('#imGroupRename').hasAttribute('hidden') ? 'yes' : 'no');
+                        /* 群行铅笔 + 聊天头铅笔（已有群的另两个入口） */
+                        var pen = doc.querySelector('#imContacts .im-contact.is-group[data-group="' + myGid + '"] .im-contact__rename');
+                        attr('data-rename-row-pen', pen && !pen.hasAttribute('hidden') ? 'shown' : (pen ? 'hidden' : 'missing'));
+                        attr('data-rename-title-pen', (function () {
+                            var b = doc.getElementById('imChatTitleEdit');
+                            return b && !b.hasAttribute('hidden') ? 'shown' : 'hidden';
+                        })());
+                        attr('data-rename-nameval', box ? (box.querySelector('#imGroupNameVal') || {}).textContent : '');
+                        if (box) { box.querySelector('#imGroupRename').click(); }
+                        setTimeout(function () {
+                            var ovs2 = doc.querySelectorAll('.el-overlay');
+                            var ren = ovs2[ovs2.length - 1];
+                            attr('data-rename-dialog', ren && ren.querySelector('#imGroupRenameInput') ? 'open' : 'closed');
+                            attr('data-rename-prefill', ren ? (ren.querySelector('#imGroupRenameInput') || {}).value : '');
+                            if (ren) {
+                                ren.querySelector('#imGroupRenameInput').value = '   ';
+                                ren.querySelector('.btn-ok').click();
+                                attr('data-rename-empty-err', (ren.querySelector('#imGroupRenameErr') || {}).textContent || '');
+                                ren.querySelector('#imGroupRenameInput').value = '探针改名后';
+                                ren.querySelector('.btn-ok').click();
+                            }
+                            setTimeout(function () {
+                                var g = IM.state.groups[myGid] || {};
+                                attr('data-rename-name', g.name || '');
+                                attr('data-rename-avatar', g.avatarText || '');
+                                attr('data-rename-chattitle', txt(doc, '#imChatTitle'));
+                                attr('data-rename-overlays', doc.querySelectorAll('.el-overlay').length);
+                                /* 清理：关弹窗 + 解散探针群 */
+                                var ovs3 = doc.querySelectorAll('.el-overlay');
+                                var last = ovs3[ovs3.length - 1];
+                                if (last) { var c = last.querySelector('.btn-cancel'); if (c) c.click(); }
+                                setTimeout(function () {
+                                    Api.msg.groupRemove(myGid).always(function () { });
+                                    step9(ctx, src);
+                                }, 300);
+                            }, 900);
+                        }, 500);
+                    }, 500);
+                }, 700);
+            })();
+        }).fail(function () { attr('data-rename-newgid', 'fail'); step9(ctx, src); });
+    }
+
+    /* ---- 9. 截屏编辑器：拖选 + 五种标注 + 撤销 + 导出尺寸 ---- */
+    function step9(ctx, src) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery;
+        var SC = w.IMShot;
+        attr('data-shot-module', SC && typeof SC.open === 'function' ? 'yes' : 'no');
+        if (!SC) { finishAll(); return; }
+        /* 造一张 800x500 的底图，直接开编辑器（跳过 getDisplayMedia 授权） */
+        var c = ctx.doc.createElement('canvas');
+        c.width = 800; c.height = 500;
+        var g2 = c.getContext('2d');
+        g2.fillStyle = '#eef3fb'; g2.fillRect(0, 0, 800, 500);
+        g2.fillStyle = '#223'; g2.font = 'bold 26px sans-serif';
+        g2.fillText('探针截屏底图', 30, 50);
+        w.__shotSent = null;
+        SC.open(c.toDataURL('image/png'), {
+            onSend: function (u, ww, hh) {
+                w.__shotSent = { len: u.length, w: ww, h: hh, png: u.indexOf('data:image/png') === 0 };
+            },
+            onCancel: function () { w.__shotSent = 'cancelled'; }
+        });
+        setTimeout(function () {
+            /* 编辑器挂到了 window.top（探针页自身），不是 iframe 里 → 必须在顶层文档里找 */
+            var HD = w.top.document;
+            var root = HD.getElementById('imShotEd');
+            attr('data-shot-open', root ? 'yes' : 'no');
+            attr('data-shot-in-top', root && root.ownerDocument === HD ? 'yes' : 'no');
+            attr('data-shot-nat', SC.state.natW + 'x' + SC.state.natH);
+            attr('data-shot-phase', SC.state.phase);
+            if (!root) { finishAll(); return; }
+            attr('data-shot-tools-hidden', root.querySelector('#imShotEdTools').hasAttribute('hidden') ? 'yes' : 'no');
+            attr('data-shot-send-disabled', root.querySelector('[data-act="send"]').disabled ? 'yes' : 'no');
+            attr('data-shot-tool-count', root.querySelectorAll('.im-shot__tool').length);
+            attr('data-shot-color-count', root.querySelectorAll('.im-shot__colors i').length);
+
+            var cvs = root.querySelector('#imShotEdCanvas');
+            var cvr = cvs.getBoundingClientRect();
+            attr('data-shot-disp', Math.round(cvr.width) + 'x' + Math.round(cvr.height));
+            function P(fx, fy) {
+                return { x: Math.round(cvr.left + cvr.width * fx), y: Math.round(cvr.top + cvr.height * fy) };
+            }
+            function fire(type, p) {
+                var el = HD.elementFromPoint(p.x, p.y) || cvs;
+                el.dispatchEvent(new w.MouseEvent(type, {
+                    clientX: p.x, clientY: p.y, button: 0, bubbles: true, cancelable: true
+                }));
+            }
+            /* 拖选 20%~70% / 20%~75% */
+            var a = P(0.2, 0.2), b = P(0.7, 0.75);
+            fire('mousedown', a);
+            fire('mousemove', { x: Math.round((a.x + b.x) / 2), y: Math.round((a.y + b.y) / 2) });
+            fire('mousemove', b);
+            fire('mouseup', b);
+            setTimeout(function () {
+                var sel = SC.state.sel;
+                attr('data-shot-phase2', SC.state.phase);
+                attr('data-shot-sel', sel ? [sel.x0, sel.y0, sel.x1, sel.y1].map(function (v) {
+                    return Math.round(v * 100) / 100;
+                }).join(',') : '');
+                attr('data-shot-tools-shown', root.querySelector('#imShotEdTools').hasAttribute('hidden') ? 'no' : 'yes');
+                attr('data-shot-send-enabled', root.querySelector('[data-act="send"]').disabled ? 'no' : 'yes');
+
+                function draw(fx0, fy0, fx1, fy1) {
+                    fire('mousedown', P(fx0, fy0));
+                    fire('mousemove', P(fx1, fy1));
+                    fire('mouseup', P(fx1, fy1));
+                }
+                /* 五种工具各画一个 */
+                root.querySelector('.im-shot__tool[data-tool="rect"]').click();
+                draw(0.25, 0.27, 0.42, 0.40);
+                root.querySelector('.im-shot__tool[data-tool="ellipse"]').click();
+                draw(0.50, 0.27, 0.64, 0.42);
+                root.querySelector('.im-shot__tool[data-tool="line"]').click();
+                draw(0.28, 0.58, 0.48, 0.64);
+                root.querySelector('.im-shot__colors i[data-color="#0a84ff"]').click();
+                root.querySelector('.im-shot__tool[data-tool="arrow"]').click();
+                draw(0.52, 0.64, 0.66, 0.50);
+                root.querySelector('.im-shot__tool[data-tool="text"]').click();
+                var tin = root.querySelector('#imShotEdText');
+                attr('data-shot-text-input', tin.hasAttribute('hidden') ? 'hidden' : 'shown');
+                tin.value = '探针标注';
+                tin.dispatchEvent(new w.Event('input', { bubbles: true }));
+                fire('mousedown', P(0.26, 0.46));
+                fire('mouseup', P(0.26, 0.46));
+
+                setTimeout(function () {
+                    var marks = SC.state.marks || [];
+                    attr('data-shot-marks', marks.length);
+                    attr('data-shot-types', marks.map(function (m) { return m.type; }).join(','));
+                    attr('data-shot-blue', marks.filter(function (m) { return m.color === '#0a84ff'; }).length);
+                    attr('data-shot-text', (marks.filter(function (m) { return m.type === 'text'; })[0] || {}).text || '');
+                    attr('data-shot-canvas', cvs.width + 'x' + cvs.height);
+                    /* 撤销一次 */
+                    root.querySelector('[data-act="undo"]').click();
+                    attr('data-shot-after-undo', (SC.state.marks || []).length);
+                    /* 发送 → 导出尺寸应为 选区 0.5 x 0.55 of 800x500 = 400x275 */
+                    root.querySelector('[data-act="send"]').click();
+                    setTimeout(function () {
+                        var s2 = w.__shotSent;
+                        attr('data-shot-sent', s2 ? 'yes' : 'no');
+                        attr('data-shot-sent-size', s2 ? (s2.w + 'x' + s2.h) : '');
+                        attr('data-shot-sent-png', s2 && s2.png ? 'yes' : 'no');
+                        attr('data-shot-editor-gone', HD.getElementById('imShotEd') ? 'no' : 'yes');
+                        step10(ctx, src);
+                    }, 600);
+                }, 450);
+            }, 550);
+        }, 800);
+    }
+
+    /* ---- 10. 表情面板：开合 / 分组 / 插入光标 / 大表情气泡 / 表情包 ---- */
+    function step10(ctx, src) {
+        var w = ctx.w, doc = ctx.doc, $ = w.jQuery, IM = w.IM;
+        var peer = IM.state.activePeer || parseInt(Object.keys(IM.state.contacts)[0], 10);
+        IM.openPeer(peer);
+        setTimeout(function () {
+            attr('data-emoji-btn', doc.getElementById('imEmoji') ? 'yes' : 'no');
+            attr('data-emoji-panel-hidden', doc.getElementById('imEmojiPanel').hasAttribute('hidden') ? 'yes' : 'no');
+            doc.getElementById('imEmoji').click();
+            setTimeout(function () {
+                var p = doc.getElementById('imEmojiPanel');
+                var pr = p.getBoundingClientRect();
+                var ir = doc.querySelector('.im-input').getBoundingClientRect();
+                attr('data-emoji-open', p.hasAttribute('hidden') ? 'no' : 'yes');
+                attr('data-emoji-box', Math.round(pr.width) + 'x' + Math.round(pr.height));
+                attr('data-emoji-gap', Math.round(ir.top - pr.bottom));
+                attr('data-emoji-tabs', p.querySelectorAll('.im-emoji__tab').length);
+                attr('data-emoji-tab-names', Array.prototype.map.call(
+                    p.querySelectorAll('.im-emoji__tab'), function (t) { return t.textContent.trim(); }).join(','));
+                /* 切到手势组 */
+                p.querySelector('.im-emoji__tab[data-egroup="hand"]').click();
+                attr('data-emoji-hand-count', p.querySelectorAll('.im-emoji__item').length);
+                /* 光标处插入 */
+                var ta = doc.getElementById('imText');
+                ta.value = '你好';
+                ta.focus();
+                try { ta.setSelectionRange(0, 0); } catch (e) { }
+                p.querySelector('.im-emoji__item').click();
+                attr('data-emoji-inserted', ta.value === '👍你好' ? 'yes' : ('no:' + ta.value));
+                attr('data-emoji-recent-saved', (function () {
+                    try {
+                        var r = JSON.parse(w.localStorage.getItem('menu_admin_im_emoji_recent') || '[]');
+                        return r[0] === '👍' ? 'yes' : 'no';
+                    } catch (e) { return 'err'; }
+                })());
+                /* 纯 emoji 气泡 */
+                IM.toggleEmoji();
+                ta.value = '🎉';
+                IM.send();
+                setTimeout(function () {
+                    var b = doc.querySelectorAll('#imChatBody .im-msg__bubble.is-emoji');
+                    var last = b[b.length - 1];
+                    attr('data-emoji-bubble', b.length ? 'yes' : 'no');
+                    attr('data-emoji-bubble-fs', last ? w.getComputedStyle(last).fontSize : '');
+                    attr('data-emoji-bubble-text', last ? last.textContent : '');
+                    step11(ctx, src);
+                }, 900);
+            }, 450);
+        }, 800);
+    }
+
+    /* ---- 11. 表情包：添加（造图上传）→ 面板显示 → 点击发送 → 删除 ---- */
+    function step11(ctx, src) {
+        var w = ctx.w, doc = ctx.doc, IM = w.IM, Api = w.Api;
+        var c = doc.createElement('canvas');
+        c.width = 120; c.height = 120;
+        var g = c.getContext('2d');
+        g.fillStyle = '#ffd666';
+        g.beginPath(); g.arc(60, 60, 56, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#333'; g.font = 'bold 54px sans-serif'; g.textAlign = 'center';
+        g.fillText('赞', 60, 82);
+        w.__emojiId = '';
+        Api.msg.upload({ fileName: '探针表情.png', data: c.toDataURL('image/png'),
+                         kind: 'image', width: 120, height: 120 })
+            .done(function (up) {
+                if (!up || !up.fileId) { attr('data-sticker-added', 'upload-fail'); finishAll(); return; }
+                Api.msg.emojiAdd({ fileId: up.fileId, name: '探针表情' })
+                    .done(function (r) {
+                        w.__emojiId = (r && r.id) || '';
+                        attr('data-sticker-added', w.__emojiId ? 'yes' : 'no');
+                        IM.refreshEmojis(function () {
+                            attr('data-sticker-count', IM.state.emojis.length);
+                            IM.toggleEmoji();
+                            setTimeout(function () {
+                                var p = doc.getElementById('imEmojiPanel');
+                                var tab = p.querySelector('.im-emoji__tab[data-egroup="sticker"]');
+                                attr('data-sticker-tab', tab ? 'yes' : 'no');
+                                if (tab) { tab.click(); }
+                                setTimeout(function () {
+                                    var img = p.querySelector('.im-emoji__sticker img');
+                                    attr('data-sticker-thumbs', p.querySelectorAll('.im-emoji__sticker').length);
+                                    attr('data-sticker-natural', img ? (img.naturalWidth + 'x' + img.naturalHeight) : 'none');
+                                    attr('data-sticker-del-btn', p.querySelectorAll('.im-emoji__del').length);
+                                    var st = p.querySelector('.im-emoji__sticker');
+                                    if (st) { st.click(); }
+                                    setTimeout(function () {
+                                        var imgs = doc.querySelectorAll('#imChatBody .im-sticker');
+                                        var la = imgs[imgs.length - 1];
+                                        attr('data-sticker-bubble', imgs.length ? 'yes' : 'no');
+                                        attr('data-sticker-maxw', la ? w.getComputedStyle(la).maxWidth : '');
+                                        attr('data-sticker-panel-closed',
+                                            doc.getElementById('imEmojiPanel').hasAttribute('hidden') ? 'yes' : 'no');
+                                        attr('data-sticker-msg', (function () {
+                                            var list = IM.state.convo[IM.state.activePeer] || [];
+                                            var m = list[list.length - 1] || {};
+                                            return m.msgType + '/' + m.content;
+                                        })());
+                                        /* 删除自己加的表情包 */
+                                        IM.toggleEmoji();
+                                        setTimeout(function () {
+                                            var p2 = doc.getElementById('imEmojiPanel');
+                                            var t2 = p2.querySelector('.im-emoji__tab[data-egroup="sticker"]');
+                                            if (t2) { t2.click(); }
+                                            setTimeout(function () {
+                                                var d = p2.querySelector('.im-emoji__del');
+                                                if (d) { d.click(); }
+                                                setTimeout(function () {
+                                                    attr('data-sticker-after-del', IM.state.emojis.length);
+                                                    IM.toggleEmoji();
+                                                    finishAll();
+                                                }, 900);
+                                            }, 300);
+                                        }, 400);
+                                    }, 1300);
+                                }, 350);
+                            }, 600);
+                        });
+                    })
+                    .fail(function (e) {
+                        attr('data-sticker-added', 'fail:' + ((e && e.message) || ''));
+                        finishAll();
+                    });
+            })
+            .fail(function (e) {
+                attr('data-sticker-added', 'upload-fail');
+                finishAll();
+            });
+    }
+
+    function finishAll() {
+        attr('data-no-error', errs.length === 0 ? 'yes' : 'no');
+        attr('data-errs', errs.join(' | '));
+        attr('data-done', 'ok');
+    }
+})();
+</script>
+</body>
+</html>

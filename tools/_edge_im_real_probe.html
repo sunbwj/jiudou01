@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>im real probe（真实后端 + 真实 token，量输入区按钮与编辑区是否互相遮挡）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1440px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+(function () {
+    function set(k, v) { document.documentElement.setAttribute('data-' + k, String(v)); }
+    var fr = document.getElementById('fr');
+    var TOKEN = '4255f0997d944b54af04e9caf2271f27';   // empId=1，库里已有 token，不调登录接口
+
+    function session(empId) {
+        return 'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"' + TOKEN + '",' +
+            'account:"13813970452",empId:' + empId + ',ename:"系统管理员",user:{empId:' + empId +
+            ',nameCn:"系统管理员"},expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n';
+    }
+    function later(fn, ms) { return new Promise(function (r) { setTimeout(function () { r(fn && fn()); }, ms); }); }
+    function until(test, cb, tries) {
+        var n = 0;
+        (function loop() {
+            var ok = false;
+            try { ok = !!test(); } catch (e) { ok = false; }
+            if (ok || n >= (tries || 50)) { return cb(ok); }
+            n++;
+            setTimeout(loop, 200);
+        })();
+    }
+
+    fetch('/message.html').then(function (r) { return r.text(); }).then(function (src) {
+        src = src.replace('<head>', '<head>\n<base href="/">\n<script>' + session(1) + '<\/script>');
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(src); doc.close();
+        return new Promise(function (res) {
+            until(function () {
+                var w2 = fr.contentWindow;
+                return w2.IM && w2.IM.state && Object.keys(w2.IM.state.contacts || {}).length > 0;
+            }, function (ok) { set('im-ready', ok ? '1' : '0'); res(ok); });
+        });
+    }).then(function (ready) {
+        if (!ready) { set('done', '1'); return null; }
+        var IM = fr.contentWindow.IM;
+        var peer = parseInt(Object.keys(IM.state.contacts)[0], 10);
+        IM.openPeer(peer);
+        return later(null, 1200);
+    }).then(function () {
+        var doc = fr.contentDocument;
+        var IDS = ['imPickImage', 'imEmoji', 'imPickFile', 'imVoice', 'imShot'];
+        var area = doc.getElementById('imText');
+        var bar = doc.querySelector('.im-input .rt__bar');
+        var tools = doc.getElementById('imInputTools');
+        set('tools-in-bar', (tools && bar && tools.parentNode === bar) ? '1' : '0');
+        if (bar) {
+            var br = bar.getBoundingClientRect();
+            set('bar-h', Math.round(br.height));
+            set('bar-btn-count', bar.querySelectorAll('.rt__btn').length);
+        }
+        var i, out = [];
+        if (area) {
+            var ar = area.getBoundingClientRect();
+            set('area-top', Math.round(ar.top));
+            for (i = 0; i < IDS.length; i++) {
+                var el = doc.getElementById(IDS[i]);
+                if (!el) { out.push(IDS[i] + '=missing'); continue; }
+                var r = el.getBoundingClientRect();
+                var inter = !(r.right <= ar.left || ar.right <= r.left ||
+                              r.bottom <= ar.top || ar.bottom <= r.top);
+                var hit = 'n/a';
+                try {
+                    var h = doc.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+                    hit = h ? (h.id || h.tagName) : 'none';
+                } catch (e) { hit = 'err'; }
+                out.push(IDS[i] + '=' + Math.round(r.width) + 'x' + Math.round(r.height) +
+                    (inter ? ' OVERLAP' : ' ok') + ' hit=' + hit);
+            }
+            set('buttons', out.join(' | '));
+            if (bar) {
+                set('bar-vs-area', bar.getBoundingClientRect().bottom <= ar.top + 0.5 ? 'ok' : 'OVERLAP');
+            }
+        }
+        set('js-errors', 'see-console');
+        set('done', '1');
+    }).catch(function (e) {
+        set('js-errors', 'probe: ' + (e && e.message ? e.message : e));
+        set('done', '1');
+    });
+}());
+</script>
+</body>
+</html>

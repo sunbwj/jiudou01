@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>mail attach probe（真实 Edge：两个邮箱阅读区附件下载列表）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1440px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：由 8808 同源托管。
+   注入 api.js 之前打死 jQuery.ajax → api.js 自动回退 Mock，保证演示数据稳定；
+   会话按 empId 注入 localStorage。结果全部写成 <html> 的 data-*，--dump-dom 后 grep 校验。
+   验证：服务信箱阅读区 → 2 个下载按钮 + 真实几何；我的邮箱 → 历史邮件「获取附件」→ 补拉出下载列表。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function set(k, v) { document.documentElement.setAttribute('data-' + k, String(v)); }
+    var fr = document.getElementById('fr');
+
+    function session(empId) {
+        return 'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe-' + empId + '",' +
+            'account:"probe",empId:' + empId + ',ename:"探针",user:{empId:' + empId + ',nameCn:"探针"},' +
+            'expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n';
+    }
+    function makeHtml(src, empId) {
+        src = src.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' + session(empId) +
+            'jQuery.ajax=function(){var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /(<script src="js\/api\.js[^"]*"><\/script>)/;
+        var m = re.exec(src);
+        if (!m) { return null; }
+        return src.replace(re, patch + m[1]);
+    }
+    function load(src, empId) {
+        var html = makeHtml(src, empId);
+        if (!html) { set('done', 'no-api-tag'); return null; }
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        return { w: w, doc: doc };
+    }
+    function waitFor(ctx, selector, min, cb, label) {
+        var tries = 0;
+        (function loop() {
+            var n = ctx.doc.querySelectorAll(selector).length;
+            if (n >= min || tries >= 60) { return cb(n); }
+            tries++;
+            setTimeout(loop, 250);
+        })();
+    }
+    function clickRow(ctx, keyword) {
+        var rows = ctx.doc.querySelectorAll('#mailList .mail-item'), i;
+        for (i = 0; i < rows.length; i++) {
+            if ((rows[i].textContent || '').indexOf(keyword) >= 0) {
+                ctx.w.jQuery(rows[i]).trigger('click');
+                return true;
+            }
+        }
+        return false;
+    }
+    function geom(ctx, prefix, selector) {
+        var el = ctx.doc.querySelector(selector);
+        if (!el) { set(prefix + '-w', 'none'); set(prefix + '-h', 'none'); return null; }
+        var r = el.getBoundingClientRect();
+        set(prefix + '-w', Math.round(r.width));
+        set(prefix + '-h', Math.round(r.height));
+        return r;
+    }
+
+    window.onerror = function (m, u, l) { errs.push('parent: ' + m + ' @' + l); };
+
+    /* ---------------- 1. 服务信箱（mail.html）：开箱即有的下载列表 ---------------- */
+    fetch('../mail.html').then(function (r) { return r.text(); }).then(function (src) {
+        var ctx = load(src, 3);
+        if (!ctx) { return; }
+        setTimeout(function () {
+            waitFor(ctx, '#mailList .mail-item', 3, function (n) {
+                set('mail-items', n);
+                set('mail-row-hit', clickRow(ctx, '接口对接联调时间确认'));
+                setTimeout(function () {
+                    waitFor(ctx, '.mail-attach__dl', 2, function (cnt) {
+                        var doc = ctx.doc;
+                        set('mail-dl-btns', cnt);
+                        set('mail-attach-title',
+                            (doc.querySelector('.mail-read__attach-title') || {}).textContent || 'none');
+                        set('mail-attach-names',
+                            /联调接口说明\.txt/.test(doc.getElementById('mailRead').textContent) &&
+                            /测试环境清单\.csv/.test(doc.getElementById('mailRead').textContent));
+                        set('mail-no-legacy-tip',
+                            doc.getElementById('mailRead').textContent.indexOf('附件内容没有下载') < 0);
+                        var b0 = doc.querySelector('.mail-attach__dl');
+                        var br = b0 ? b0.getBoundingClientRect() : null;
+                        var rr = geom(ctx, 'mail-attach', '.mail-read__attach');
+                        var mr = geom(ctx, 'mail-read', '.mail-read');
+                        set('mail-btn-w', br ? Math.round(br.width) : 'none');
+                        set('mail-btn-h', br ? Math.round(br.height) : 'none');
+                        set('mail-btn-visible', !!(br && br.width > 30 && br.height > 18));
+                        set('mail-attach-in-read', !!(rr && mr && rr.left >= mr.left - 1 &&
+                            rr.right <= mr.right + 1));
+                        set('mail-btn-id', b0 ? (b0.getAttribute('data-file-id') || '').length : 0);
+                        /* 真实点击：Mock 下载返回 dataURL，页面创建 <a download> 触发保存 */
+                        var before = doc.querySelectorAll('a[download]').length;
+                        if (b0) { b0.click(); }
+                        setTimeout(function () {
+                            set('mail-dl-clicked', !!b0);
+                            set('mail-btn-enabled-after',
+                                b0 ? !b0.disabled : false);
+                            set('mail-anchor-before', before);
+                            nextEmp(src);
+                        }, 700);
+                    });
+                }, 500);
+            });
+        }, 900);
+    }).catch(function (e) { set('done', 'mail-fetch-fail:' + e.message); finish(); });
+
+    /* ---------------- 2. 我的邮箱（emp-mail.html）：历史邮件补拉 ---------------- */
+    function nextEmp(src) {
+        fetch('../emp-mail.html').then(function (r) { return r.text(); }).then(function (s) {
+            var ctx = load(s, 3);
+            if (!ctx) { return finish(); }
+            setTimeout(function () {
+                waitFor(ctx, '#mailList .mail-item', 3, function (n) {
+                    set('emp-items', n);
+                    set('emp-row-hit', clickRow(ctx, '11 月考勤确认提醒'));
+                    setTimeout(function () {
+                        waitFor(ctx, '#btnMailAttachFetch', 1, function (fetchBtns) {
+                            var doc = ctx.doc;
+                            set('emp-fetch-btns', fetchBtns);
+                            set('emp-fetch-tip',
+                                /历史收件/.test(doc.getElementById('mailRead').textContent));
+                            set('emp-dl-before', doc.querySelectorAll('.mail-attach__dl').length);
+                            var btn = doc.getElementById('btnMailAttachFetch');
+                            if (btn) { btn.click(); }
+                            setTimeout(function () {
+                                waitFor(ctx, '.mail-attach__dl', 2, function (cnt) {
+                                    set('emp-dl-after', cnt);
+                                    set('emp-attach-title',
+                                        (doc.querySelector('.mail-read__attach-title') || {}).textContent || 'none');
+                                    var b0 = doc.querySelector('.mail-attach__dl');
+                                    var br = b0 ? b0.getBoundingClientRect() : null;
+                                    set('emp-btn-w', br ? Math.round(br.width) : 'none');
+                                    set('emp-btn-h', br ? Math.round(br.height) : 'none');
+                                    set('emp-btn-visible', !!(br && br.width > 30 && br.height > 18));
+                                    set('emp-fetch-gone', !doc.getElementById('btnMailAttachFetch'));
+                                    geom(ctx, 'emp-attach', '.mail-read__attach');
+                                    finish();
+                                });
+                            }, 800);
+                        });
+                    }, 500);
+                });
+            }, 900);
+        }).catch(function (e) { set('done', 'emp-fetch-fail:' + e.message); finish(); });
+    }
+
+    function finish() {
+        set('js-errors', errs.length ? errs.join(' | ') : 'none');
+        set('done', '1');
+        log('done');
+    }
+})();
+</script>
+</body>
+</html>

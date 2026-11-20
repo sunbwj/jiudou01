@@ -1,0 +1,26 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Collation	Null	Key	Default	Extra	Privileges	Comment
+id	char(36)	utf8mb4_general_ci	NO	PRI			select,insert,update,references	主键（UUID）
+appId	char(36)	utf8mb4_general_ci	NO	MUL	NULL		select,insert,update,references	所属应用（appinfos.id）
+dbName	varchar(120)	utf8mb4_general_ci	NO				select,insert,update,references	库名
+targetObj	varchar(120)	utf8mb4_general_ci	NO		NULL		select,insert,update,references	目标对象：视图，或被写入的表
+targetType	varchar(12)	utf8mb4_general_ci	NO		view		select,insert,update,references	目标类型：view/table
+targetCol	varchar(120)	utf8mb4_general_ci	NO		NULL		select,insert,update,references	目标字段
+sourceObj	varchar(120)	utf8mb4_general_ci	NO		NULL		select,insert,update,references	来源对象（已展开到最内层，通常是基表）
+sourceType	varchar(12)	utf8mb4_general_ci	NO		table		select,insert,update,references	来源类型：table/view
+sourceCol	varchar(120)	utf8mb4_general_ci	NO		NULL		select,insert,update,references	来源字段
+transform	varchar(500)	utf8mb4_general_ci	YES		NULL		select,insert,update,references	最内层表达式（怎么算出来的）
+via	varchar(300)	utf8mb4_general_ci	YES		NULL		select,insert,update,references	途经对象链（视图套视图时记录，可直接来源则为空）
+depth	int(11)	NULL	NO		0		select,insert,update,references	展开层数（0=直接来源）
+kind	varchar(12)	utf8mb4_general_ci	NO		view		select,insert,update,references	来源：view/trigger/procedure/function
+linkType	varchar(12)	utf8mb4_general_ci	NO		DIRECT		select,insert,update,references	血缘类型：DIRECT 直接派生 / INDIRECT 间接影响（过滤、连接、分组、排序）
+subType	varchar(16)	utf8mb4_general_ci	NO				select,insert,update,references	子类型：IDENTITY/TRANSFORMATION/AGGREGATION；INDIRECT 侧 JOIN/FILTER/GROUP_BY/SORT/WINDOW
+masked	tinyint(1)	NULL	NO		0		select,insert,update,references	值是否经过脱敏 / 哈希（依赖在，原值不传播）
+createTime	datetime	NULL	NO		CURRENT_TIMESTAMP		select,insert,update,references	解析时间
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+appschemalink	0	uk_appschemalink	1	appId	A	0	NULL	NULL		BTREE		
+appschemalink	0	uk_appschemalink	2	targetObj	A	0	NULL	NULL		BTREE		
+appschemalink	0	uk_appschemalink	3	targetCol	A	0	NULL	NULL		BTREE		
+appschemalink	0	uk_appschemalink	4	sourceObj	A	0	NULL	NULL		BTREE		
+appschemalink	0	uk_appschemalink	5	sourceCol	A	0	NULL	NULL		BTREE		
+appschemalink	0	uk_appschemalink	6	subType	A	0	NULL	NULL		BTREE		

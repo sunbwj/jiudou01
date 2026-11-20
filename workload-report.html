@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>工作量统计 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/workload.css?v=20261112c">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user"><span class="avatar">管</span><span class="name">系统管理员</span></div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单（项目中心） ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">项目中心</div>
+                <a class="app-side__item" href="project.html">项目信息</a>
+                <a class="app-side__item" href="project-file.html">文件管理</a>
+                <a class="app-side__item" href="workplan.html">计划管理</a>
+                <a class="app-side__item" href="workplan-task.html">我的任务</a>
+                <a class="app-side__item" href="requirement.html">需求管理</a>
+                <a class="app-side__item" href="bug.html">缺陷管理</a>
+                <a class="app-side__item is-active" href="workload-report.html">工作量统计</a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <main class="app-main wl-page">
+            <div class="page-head" id="pageHead" data-crumb="项目中心/工作量统计">
+                <h2 class="page-head__title">员工工作量统计</h2>
+            </div>
+
+            <!-- ---------------- ① 检索区：时间区间 / 项目 / 员工 ---------------- -->
+            <section class="el-card search-card wl-search">
+                <div class="el-card__body">
+                    <form class="el-form el-form--inline search-form" id="searchForm" autocomplete="off" onsubmit="return false;">
+                        <div class="el-form-item">
+                            <label class="el-form-item__label">统计区间</label>
+                            <div class="el-form-item__content">
+                                <div class="wl-range">
+                                    <input class="el-input__inner" type="date" id="wlStart" aria-label="开始日期">
+                                    <span class="wl-range__dash">至</span>
+                                    <input class="el-input__inner" type="date" id="wlEnd" aria-label="结束日期">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--status">
+                            <label class="el-form-item__label" for="wlProject">所属项目</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input">
+                                    <select class="el-input__inner" id="wlProject"><option value="">全部项目</option></select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="wlKeyword">员工</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input el-input--prefix">
+                                    <span class="el-input__prefix">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                                    </span>
+                                    <input class="el-input__inner" type="text" id="wlKeyword" placeholder="姓名 / 工号 / 部门">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-btns">
+                            <button type="button" class="el-button el-button--primary" id="wlBtnSearch">查询</button>
+                            <button type="button" class="el-button" id="wlBtnReset">重置</button>
+                        </div>
+                    </form>
+
+                    <div class="wl-quick" id="wlQuick">
+                        <span class="wl-quick__label">快捷区间</span>
+                        <button type="button" class="wl-quick__btn" data-quick="week">本周</button>
+                        <button type="button" class="wl-quick__btn is-active" data-quick="month">本月</button>
+                        <button type="button" class="wl-quick__btn" data-quick="lastMonth">上月</button>
+                        <button type="button" class="wl-quick__btn" data-quick="quarter">本季</button>
+                        <button type="button" class="wl-quick__btn" data-quick="year">本年</button>
+                        <span class="wl-quick__tip" id="wlRangeText">—</span>
+                    </div>
+
+                    <p class="wl-note">
+                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                        <span class="wl-note__text">统计口径：区间按<b>派单时间</b>（含结束日整天）· <b>完成率</b> = 已完成 ÷ 接单数 ·
+                        <b>逾期</b> = 未完成且计划完成日已过 · <b>平均耗时</b> = 派单日 → 实际完成日（天）·
+                        缺陷<b>验收工单</b>不计入（只算研发 / 测试）</span>
+                    </p>
+                </div>
+            </section>
+
+            <!-- ---------------- ② 汇总指标 ---------------- -->
+            <section class="el-card wl-kpi-card">
+                <div class="el-card__body">
+                    <div class="wl-kpi" id="wlKpi">
+                        <div class="wl-kpi__item">
+                            <span class="wl-kpi__label">派单总数</span>
+                            <strong class="wl-kpi__num" id="wlKpiOrders">—</strong>
+                            <em class="wl-kpi__sub" id="wlKpiOrdersSub">—</em>
+                        </div>
+                        <div class="wl-kpi__item">
+                            <span class="wl-kpi__label">已完成</span>
+                            <strong class="wl-kpi__num is-ok" id="wlKpiDone">—</strong>
+                            <em class="wl-kpi__sub" id="wlKpiDoneSub">—</em>
+                        </div>
+                        <div class="wl-kpi__item">
+                            <span class="wl-kpi__label">整体完成率</span>
+                            <strong class="wl-kpi__num" id="wlKpiRate">—</strong>
+                            <em class="wl-kpi__sub" id="wlKpiRateSub">—</em>
+                        </div>
+                        <div class="wl-kpi__item">
+                            <span class="wl-kpi__label">逾期未完成</span>
+                            <strong class="wl-kpi__num is-warn" id="wlKpiOverdue">—</strong>
+                            <em class="wl-kpi__sub" id="wlKpiOverdueSub">—</em>
+                        </div>
+                        <div class="wl-kpi__item">
+                            <span class="wl-kpi__label">涉及员工</span>
+                            <strong class="wl-kpi__num" id="wlKpiPeople">—</strong>
+                            <em class="wl-kpi__sub" id="wlKpiPeopleSub">—</em>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ---------------- ③ 操作引导区 ---------------- -->
+            <section class="el-card">
+                <div class="el-card__body">
+                    <!-- 标准 .toolbar：纳入 pageopbtn 扫描 + btnperm.js 按角色授权加载 -->
+                    <div class="toolbar toolbar--icons" role="toolbar" aria-label="工作量统计操作">
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="wlBtnRefresh"
+                                title="刷新统计" aria-label="刷新统计">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wlBtnExport"
+                                title="导出 Excel（员工汇总 + 工单明细）" aria-label="导出 Excel">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3h2v8h3l-4 4-4-4h3V3zM4 15h3v3h10v-3h3v5H4v-5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wlBtnMine"
+                                title="仅看我的派单（切换）" aria-label="仅看我的">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a4 4 0 110 8 4 4 0 010-8zm0 10c4.4 0 8 2.1 8 4.6V20H4v-2.4C4 15.1 7.6 13 12 13z"/></svg>
+                        </button>
+                        <span class="toolbar-hint">
+                            覆盖 <b id="wlPlanCount">0</b> 个计划 · 排序按 <b id="wlSortText">接单数</b>
+                            <span class="wl-gen" id="wlGenerated">—</span>
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ---------------- ④ 结果列表 ---------------- -->
+            <section class="el-card table-card">
+                <div class="table-wrapper" id="wlTableWrapper">
+                    <div class="el-table">
+                        <div class="el-table__inner-wrapper">
+                            <table id="wlTable">
+                                <colgroup>
+                                    <col style="width:56px"><col>
+                                    <col style="width:86px"><col style="width:86px"><col style="width:86px">
+                                    <col style="width:86px"><col style="width:74px"><col style="width:170px">
+                                    <col style="width:100px"><col style="width:150px"><col style="width:78px">
+                                </colgroup>
+                                <thead><tr>
+                                    <th class="is-center">序号</th>
+                                    <th>员工</th>
+                                    <th class="is-center wl-sort" data-sort="orderCount">接单数</th>
+                                    <th class="is-center wl-sort" data-sort="doneCount">已完成</th>
+                                    <th class="is-center wl-sort" data-sort="doingCount">处理中</th>
+                                    <th class="is-center wl-sort" data-sort="todoCount">待处理</th>
+                                    <th class="is-center wl-sort" data-sort="overdueCount">逾期</th>
+                                    <th class="is-center wl-sort" data-sort="doneRate">完成率</th>
+                                    <th class="is-center wl-sort" data-sort="avgDays">平均耗时</th>
+                                    <th class="is-center wl-sort" data-sort="lastDispatch">最近派单</th>
+                                    <th class="is-center">明细</th>
+                                </tr></thead>
+                                <tbody id="wlTbody" class="el-table__body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="wl-empty" id="wlEmpty" hidden>
+                        <div class="wl-empty__icon">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm2 3v3h12V7H6zm0 5v2h7v-2H6zm0 4v2h12v-2H6z"/></svg>
+                        </div>
+                        <p class="wl-empty__title">这个区间没有派单记录</p>
+                        <p class="wl-empty__hint">换个时间区间试试；工单只有在计划「启动」后才会派给责任人。</p>
+                    </div>
+                </div>
+                <div class="pager-wrap" id="wlPager"></div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+<script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/workload-report.js?v=20261112b"></script>
+</body>
+</html>

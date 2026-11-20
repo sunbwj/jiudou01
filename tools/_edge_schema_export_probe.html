@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>appschema 导出表结构探针（真实浏览器 + 真实后端）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1460px;height:1000px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：应用结构页「勾选表 → 导出表结构文档」
+   验证点：
+     ① 结构树上每张表 / 视图都有勾选框（过程 / 函数只有占位，不能勾）；
+     ② 勾两张表 → 工具栏出现「已勾选 2 张」，库勾选框变成半选；
+     ③ 勾库 = 全选本库的表；
+     ④ 点导出按钮弹出「导出表结构文档」弹窗，两张格式卡片在位（Excel / Word）；
+     ⑤ 页面无 JS 报错。
+   不带 Mock：直接连 8808 的真实后端（token 从库里取的有效登录态）。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+    var fr = document.getElementById('fr');
+    var TOKEN = decodeURIComponent((location.search.match(/[?&]token=([^&]+)/) || [])[1] || '');
+
+    fetch('../appschema.html').then(function (r) { return r.text(); }).then(function (html) {
+        html = html.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' +
+            'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"' + TOKEN + '",' +
+            'account:"13813970452",empId:3,ename:"探针",expireAt:Date.now()+6*3600*1000,' +
+            'time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n' +
+            '<\/script>\n';
+        html = html.replace('<script src="js/theme.js', patch + '<script src="js/theme.js');
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        setTimeout(function () { start(w, doc); }, 1500);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    function start(w, doc) {
+        var tries = 0;
+        (function waitTree() {
+            var picks = doc.querySelectorAll('#asTree .as-node__pick');
+            if (!picks.length && tries < 80) { tries++; return setTimeout(waitTree, 250); }
+            var objs = doc.querySelectorAll('#asTree .as-node[data-kind=obj]');
+            var proc = doc.querySelectorAll('#asTree .as-node[data-objtype=procedure],' +
+                                            '#asTree .as-node[data-objtype=function],' +
+                                            '#asTree .as-node[data-objtype=index],' +
+                                            '#asTree .as-node[data-objtype=trigger]');
+            attr('data-objnodes', String(objs.length));
+            attr('data-picks', String(picks.length));
+            attr('data-extra-nodes', String(proc.length));
+            if (!picks.length) { attr('data-done', 'no-picks'); return; }
+
+            /* ① 勾选前两张表（表 / 视图节点里的勾选框） */
+            var objPicks = doc.querySelectorAll('#asTree .as-node[data-kind=obj] .as-node__pick');
+            var picked = 0;
+            for (var i = 0; i < objPicks.length && picked < 2; i++) {
+                objPicks[i].checked = true;
+                objPicks[i].dispatchEvent(new w.Event('change', { bubbles: true }));
+                picked++;
+            }
+            setTimeout(function () {
+                var hint = doc.querySelector('#asPickHint');
+                attr('data-pickhint', (hint ? hint.textContent : '').trim());
+                var dbPick = doc.querySelector('#asTree .as-node[data-kind=db] > .as-node__row .as-node__pick');
+                attr('data-db-indeterminate', dbPick && dbPick.indeterminate ? '1' : '0');
+                attr('data-db-checked', dbPick && dbPick.checked ? '1' : '0');
+
+                /* ② 勾库 = 全选本库 */
+                if (dbPick) {
+                    dbPick.checked = true;
+                    dbPick.dispatchEvent(new w.Event('change', { bubbles: true }));
+                }
+                setTimeout(function () {
+                    var all = doc.querySelectorAll('#asTree .as-node[data-kind=obj] .as-node__pick:checked').length;
+                    attr('data-after-db-pick', String(all));
+                    attr('data-db-checked2', dbPick && dbPick.checked ? '1' : '0');
+
+                    /* 只留 2 张，回到「部分勾选」再打开导出弹窗 */
+                    var ps = doc.querySelectorAll('#asTree .as-node[data-kind=obj] .as-node__pick');
+                    for (var j = 0; j < ps.length; j++) {
+                        var keep = j < 2;
+                        if (ps[j].checked !== keep) {
+                            ps[j].checked = keep;
+                            ps[j].dispatchEvent(new w.Event('change', { bubbles: true }));
+                        }
+                    }
+
+                    var btn = doc.querySelector('#asBtnExport');
+                    attr('data-btn-visible', btn && btn.style.display !== 'none' ? '1' : '0');
+                    attr('data-btn-title', btn ? (btn.getAttribute('title') || '').slice(0, 40) : '');
+                    if (!btn) { attr('data-done', 'no-export-btn'); return; }
+                    btn.click();
+                    setTimeout(function () {
+                        var dlg = doc.querySelector('.as-dialog, .el-dialog');
+                        var cards = doc.querySelectorAll('.as-doc__card');
+                        attr('data-cards', String(cards.length));
+                        attr('data-range', (doc.querySelector('#asDocRange') || {}).textContent || '');
+                        attr('data-count', (doc.querySelector('#asDocCount') || {}).textContent || '');
+                        attr('data-title', (doc.querySelector('.el-dialog__title') || {}).textContent || '');
+                        attr('data-errs', errs.join(' | '));
+                        attr('data-done', '1');
+                        log('picks=' + picks.length + ' objs=' + objs.length + ' cards=' + cards.length);
+                        log('range=' + ((doc.querySelector('#asDocRange') || {}).textContent || ''));
+                        log('errs=' + errs.join(' | '));
+                    }, 700);
+                }, 400);
+            }, 400);
+        })();
+    }
+})();
+</script>
+</body>
+</html>

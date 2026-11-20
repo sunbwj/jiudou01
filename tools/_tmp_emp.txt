@@ -1,0 +1,22 @@
+Field	Type	Null	Key	Default	Extra
+id	bigint(20) unsigned	NO	PRI	NULL	auto_increment
+code	varchar(16)	NO	UNI	NULL	
+nameCn	varchar(50)	NO	MUL	NULL	
+gender	tinyint(3) unsigned	NO		1	
+phone	varchar(20)	YES	MUL	NULL	
+email	varchar(100)	NO	MUL	NULL	
+deptId	bigint(20) unsigned	NO	MUL	0	
+jobTitle	varchar(50)	YES		NULL	
+status	tinyint(3) unsigned	NO	MUL	1	
+hireDate	date	YES	MUL	NULL	
+birthDate	date	YES		NULL	
+idCard	varchar(18)	YES		NULL	
+education	varchar(20)	YES		NULL	
+school	varchar(100)	YES		NULL	
+major	varchar(100)	YES		NULL	
+certificates	varchar(200)	YES		NULL	
+titleName	varchar(50)	YES		NULL	
+photo	mediumtext	YES		NULL	
+remark	varchar(200)	YES		NULL	
+createTime	datetime	NO		CURRENT_TIMESTAMP	
+updateTime	datetime	NO		CURRENT_TIMESTAMP	on update CURRENT_TIMESTAMP

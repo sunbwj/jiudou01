@@ -1,0 +1,9 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+dbinfo_cols	id,name,dbType,host,port,dbName,username,password,charset,extraParams,enabled,lastScanTime,lastError,remark,createempinfosid,ispub,createTime,updateTime
+project_test_left	0
+sysdict_test_left	0
+syspara_total	3
+dbinfo_total	4
+report_total	4
+project_total	0
+tables_total	22

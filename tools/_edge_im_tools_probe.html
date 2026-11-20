@@ -1,0 +1,183 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>im tools probe（量输入区五个媒体按钮的几何与可见性）</title>
+<style>body{font-family:monospace;padding:8px}iframe{height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function set(k, v) { document.documentElement.setAttribute('data-' + k, String(v)); }
+    var fr = document.getElementById('fr');
+    /* ?w=<px> 可调 iframe 宽度，模拟窄窗口下的输入区布局 */
+    var W = parseInt((location.search.match(/[?&]w=(\d+)/) || [])[1], 10) || 1440;
+    fr.style.width = W + 'px';
+    set('probe-w', W);
+
+    function session(empId) {
+        return 'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe-' + empId + '",' +
+            'account:"probe",empId:' + empId + ',ename:"探针",user:{empId:' + empId + ',nameCn:"探针"},' +
+            'expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n';
+    }
+    function makeHtml(src) {
+        src = src.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' + session(3) +
+            'jQuery.ajax=function(){var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        return src.replace(re, function (m) { return patch + m; });
+    }
+    function later(fn, ms) { return new Promise(function (r) { setTimeout(function () { r(fn()); }, ms); }); }
+    /* 等某个全局/元素就绪（外链脚本异步，固定 sleep 不稳） */
+    function until(test, cb, tries) {
+        var n = 0;
+        (function loop() {
+            var ok = false;
+            try { ok = !!test(); } catch (e) { ok = false; }
+            if (ok || n >= (tries || 40)) { return cb(ok); }
+            n++;
+            setTimeout(loop, 200);
+        })();
+    }
+
+    fetch('/message.html').then(function (r) { return r.text(); }).then(function (src) {
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(makeHtml(src)); doc.close();
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        return new Promise(function (res) {
+            until(function () {
+                var w2 = fr.contentWindow;
+                return w2.IM && w2.IM.state && Object.keys(w2.IM.state.contacts || {}).length > 0;
+            }, function (ok) {
+                set('im-ready', ok ? '1' : '0');
+                res(ok);
+            });
+        });
+    }).then(function (ready) {
+        var doc = fr.contentDocument, w = fr.contentWindow;
+        var IM = w.IM;
+        if (!IM || !ready) { set('js-errors', 'IM not ready'); set('done', '1'); return null; }
+        /* 打开一个会话，让 #imChat 真正显示（否则输入区是 display:none，量出来全是 0） */
+        var peer = parseInt(Object.keys(IM.state.contacts)[0], 10);
+        IM.openPeer(peer);
+        return later(function () {}, 900);
+    }).then(function () {
+        var doc = fr.contentDocument;
+        var IDS = ['imPickImage', 'imEmoji', 'imPickFile', 'imVoice', 'imShot'];
+        var tools = doc.querySelector('#imInputTools');
+        var bar = doc.querySelector('.im-input .rt__bar');
+        set('tools-exists', tools ? '1' : '0');
+        /* 布局对齐员工IM 小窗：媒体行在「富文本框（格式栏 + 编辑区）」正上方，属于输入区里独立一行 */
+        var row = doc.querySelector('.im-input > .im-input__row');
+        set('tools-before-row', (tools && row && tools.nextElementSibling === row) ? '1' : '0');
+        set('tools-above-bar', (tools && bar &&
+            tools.getBoundingClientRect().bottom <= bar.getBoundingClientRect().top + 1) ? '1' : '0');
+        set('tools-after-bar', '0');
+        set('tools-before-area', '0');
+        if (bar) {
+            var br0 = bar.getBoundingClientRect();
+            set('bar-h', Math.round(br0.height));
+            set('bar-w', Math.round(br0.width));
+            set('bar-btn-count', bar.querySelectorAll('.rt__btn').length);
+        }
+        set('tools-cls', tools ? String(tools.className) : 'none');
+        set('tools-css-display', tools ? doc.defaultView.getComputedStyle(tools).display : 'none');
+        set('tools-count', tools ? tools.querySelectorAll('.im-tool').length : -1);
+        if (tools) {
+            var tr = tools.getBoundingClientRect();
+            set('tools-w', Math.round(tr.width));
+            set('tools-h', Math.round(tr.height));
+            set('tools-top', Math.round(tr.top));
+            set('tools-display', (doc.defaultView.getComputedStyle(tools).display));
+            set('tools-visible', (tr.width > 0 && tr.height > 0) ? '1' : '0');
+        }
+        var i, html = [];
+        for (i = 0; i < IDS.length; i++) {
+            var el = doc.getElementById(IDS[i]);
+            if (!el) { html.push(IDS[i] + '=missing'); continue; }
+            var r = el.getBoundingClientRect();
+            var cs = doc.defaultView.getComputedStyle(el);
+            html.push(IDS[i] + '=' + Math.round(r.left) + ',' + Math.round(r.top) + ',' +
+                Math.round(r.width) + 'x' + Math.round(r.height) + ',' + cs.display + ',' +
+                cs.visibility + ',op' + cs.opacity);
+            /* 中心点是否真的能点到（不被别的元素盖住） */
+            try {
+                var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+                var hit = doc.elementFromPoint(cx, cy);
+                set(IDS[i] + '-hit', hit ? (hit.id || hit.className || hit.tagName) : 'none');
+            } catch (e) { set(IDS[i] + '-hit', 'err'); }
+            set(IDS[i] + '-w', Math.round(r.width));
+            set(IDS[i] + '-h', Math.round(r.height));
+        }
+        set('tools-rects', html.join(' | '));
+        /* 输入区整体高度与内部顺序 */
+        var input = doc.querySelector('.im-input');
+        var row = doc.querySelector('.im-input__row');
+        var rt = doc.querySelector('.im-input .rt');
+        var area = doc.getElementById('imText');
+        if (input) { set('input-h', Math.round(input.getBoundingClientRect().height)); }
+        if (row) { set('row-h', Math.round(row.getBoundingClientRect().height)); }
+        if (rt) {
+            set('rt-in-row', rt.parentNode === row ? '1' : '0');
+            set('rt-h', Math.round(rt.getBoundingClientRect().height));
+            set('rt-w', Math.round(rt.getBoundingClientRect().width));
+        }
+        if (area) {
+            var ar = area.getBoundingClientRect();
+            set('area-h', Math.round(ar.height));
+            set('area-w', Math.round(ar.width));
+            set('area-top', Math.round(ar.top));
+            set('area-bottom', Math.round(ar.bottom));
+            /* 每个媒体按钮与编辑区矩形是否相交（相交 = 编辑区遮挡按钮） */
+            var ov = [];
+            for (i = 0; i < IDS.length; i++) {
+                var bel = doc.getElementById(IDS[i]);
+                if (!bel) { ov.push(IDS[i] + '=missing'); continue; }
+                var br2 = bel.getBoundingClientRect();
+                var inter = !(br2.right <= ar.left || ar.right <= br2.left ||
+                              br2.bottom <= ar.top || ar.bottom <= br2.top);
+                ov.push(IDS[i] + '=' + (inter ? 'OVERLAP' : 'ok'));
+            }
+            set('area-overlap', ov.join(' '));
+            /* 工具栏底边 vs 编辑区顶边 */
+            if (bar) {
+                var barR = bar.getBoundingClientRect();
+                set('bar-bottom', Math.round(barR.bottom));
+                set('bar-vs-area', barR.bottom <= ar.top + 0.5 ? 'ok' : 'OVERLAP');
+            }
+        }
+        /* 输入区子节点顺序 */
+        var kids = [], k;
+        if (input) {
+            for (k = 0; k < input.children.length; k++) {
+                kids.push(input.children[k].className || input.children[k].id || input.children[k].tagName);
+            }
+        }
+        set('input-kids', kids.join(' > '));
+        /* 视口内（是否被挤到 iframe 可视区外） */
+        if (tools) {
+            var br = tools.getBoundingClientRect();
+            var vh = doc.documentElement.clientHeight || 940;
+            set('tools-in-view', (br.top >= 0 && br.bottom <= vh + 1) ? '1' : '0');
+            set('tools-bottom', Math.round(br.bottom));
+            set('viewport-h', vh);
+        }
+        set('js-errors', errs.length ? errs.slice(0, 3).join(' | ') : 'none');
+        set('done', '1');
+        log('done');
+    }).catch(function (e) {
+        set('js-errors', 'probe: ' + (e && e.message ? e.message : e));
+        set('done', '1');
+    });
+}());
+</script>
+</body>
+</html>

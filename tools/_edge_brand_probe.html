@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>brand probe</title>
+<style>body{font-family:monospace;padding:6px}iframe{width:1400px;height:860px;border:1px solid #999;margin:4px}</style>
+</head>
+<body>
+<pre id="out">等待 main.html / home.html 加载…</pre>
+<iframe id="frMain"></iframe>
+<iframe id="frHome"></iframe>
+<script>
+(function () {
+    function set(k, v) { document.documentElement.setAttribute('data-' + k, String(v)); }
+    /* 真实后端验证：token 取自库中已有会话（不调登录接口，避免顶掉用户会话） */
+    var TK = 'f4e1a2b25b444fe99a576282ad902c02';
+    try {
+        window.localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+            token: TK, time: '2026-11-12 09:00:00',
+            expireAt: new Date().getTime() + 8 * 3600 * 1000, ttlHours: 8,
+            user: { empId: 1, account: '13800138001', empName: '系统管理员' }
+        }));
+    } catch (e) { set('js-errors', 'ls:' + e.message); }
+    var fr = document.getElementById('frMain');
+    var fh = document.getElementById('frHome');
+    /* 预热：真实 fetch 打一次 /api/health（挂起的网络会暂停虚拟时钟，给 iframe 内的探测留出真实往返） */
+    if (window.fetch) {
+        fetch('/api/health', { cache: 'no-store' }).then(function (r) { return r.json(); })
+            .then(function (j) { set('pre-health', j && j.code === 0 ? 'ok' : 'bad'); })
+            .catch(function (e) { set('pre-health', 'err:' + e.message); });
+    }
+    setTimeout(function () { fr.src = '/main.html'; }, 1200);
+    setTimeout(function () { fh.src = '/home.html'; }, 1800);
+    var t0 = Date.now();
+    function until(fn, ms, done) {
+        (function poll() {
+            var r = null;
+            try { r = fn(); } catch (e) { }
+            if (r) { done(r); return; }
+            if (Date.now() - t0 > ms) { done(null); return; }
+            setTimeout(poll, 300);
+        })();
+    }
+    function readMain() {
+        var w = fr.contentWindow, d = w && w.document;
+        if (!d || !d.querySelector('#frameSysName') || !w.AppFrame) { return null; }
+        if (String(d.querySelector('#frameSysName').textContent).indexOf('…') === 0) { return null; }
+        return d;
+    }
+    until(readMain, 25000, function (d) {
+        try {
+            if (!d) {
+                try {
+                    set('m-state', 'href=' + String((fr.contentWindow && fr.contentWindow.location.href) || 'null') +
+                        ' ready=' + String(fr.contentDocument && fr.contentDocument.readyState));
+                } catch (e2) { set('m-state', 'href-err:' + e2.message); }
+                set('done', 'main-timeout');
+                return;
+            }
+            set('m-name', d.querySelector('#frameSysName').textContent.trim());
+            set('m-logo', d.querySelector('#frameSysLogo').getAttribute('src'));
+            set('m-footer', d.querySelector('#frameFooterName').textContent.trim());
+            set('m-title', d.title);
+            try { set('m-usemock', fr.contentWindow.Api && fr.contentWindow.Api.config.useMock ? '1' : '0'); }
+            catch (e3) { set('m-usemock', 'err'); }
+        } catch (e) { set('js-errors', 'main:' + e.message); }
+        until(function () {
+            var w = fh.contentWindow, d2 = w && w.document;
+            if (!d2 || !d2.querySelector('#homeSysName')) { return null; }
+            var t = String(d2.querySelector('#homeSysName').textContent).trim();
+            return t ? d2 : null;
+        }, 20000, function (d2) {
+            try {
+                if (!d2) {
+                    set('h-state', 'href=' + String((fh.contentWindow && fh.contentWindow.location.href) || 'null') +
+                        ' ready=' + String(fh.contentDocument && fh.contentDocument.readyState));
+                    set('done', 'home-timeout');
+                    return;
+                }
+                set('h-name', d2.querySelector('#homeSysName').textContent.trim());
+                set('h-en', d2.querySelector('#homeSysNameEn').textContent.trim());
+                set('h-title', d2.title);
+                set('done', '1');
+            } catch (e) { set('js-errors', 'home:' + e.message); set('done', 'err'); }
+        });
+    });
+})();
+</script>
+</body>
+</html>

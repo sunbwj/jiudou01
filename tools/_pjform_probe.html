@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>项目维护页几何与字典探针（临时）</title></head>
+<body data-probe="pending">
+<script>
+/* 同源父页先注入有效 SSO 会话，避免 iframe 子页 401 把顶层送去登录页 */
+(function () {
+  try {
+    localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+      token: '__TOKEN__',
+      time: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      expireAt: Date.now() + 8 * 3600 * 1000,
+      ttlHours: 8,
+      user: { ename: '布局探针', empId: 0, account: 'probe' }
+    }));
+  } catch (e) {
+    document.body.setAttribute('data-probe', 'SESSION-ERROR ' + e.message);
+  }
+  var f = document.createElement('iframe');
+  f.id = 'probeFrame';
+  f.src = '/project-form.html?mode=add';
+  f.style.cssText = 'width:1280px;height:900px;border:0';
+  document.body.appendChild(f);
+})();
+</script>
+<script>
+var FRAME = document.getElementById('probeFrame');
+function report(t) { document.body.setAttribute('data-probe', t); }
+function round(n) { return Math.round(n); }
+function bottom(el) { var r = el.getBoundingClientRect(); return r.top + r.height; }
+
+window.addEventListener('load', function () {
+  setTimeout(function () {
+    var parts = [];
+    try {
+      var doc = FRAME.contentDocument, win = FRAME.contentWindow;
+      var card = doc.querySelector('.pjf-card');
+      var layout = doc.querySelector('.pjf-layout');
+      var base = doc.querySelector('.pjf-base');
+      var editor = doc.querySelector('.pjf-editor');
+      var body = doc.querySelector('.pjf-editor__body');
+      var editable = doc.querySelector('#pjDescEditor');
+      var tip = doc.querySelector('.pjf-tipcard');
+      if (!card || !layout || !base || !editor) {
+        report('MISSING card=' + !!card + ' layout=' + !!layout +
+               ' base=' + !!base + ' editor=' + !!editor + ' url=' + win.location.href);
+        return;
+      }
+      var vh = win.innerHeight;
+      parts.push('vh=' + round(vh));
+      parts.push('cardBottom=' + round(bottom(card)));
+      parts.push('cardFillPct=' + round((bottom(card) - bottom(tip)) / (vh - bottom(tip)) * 100));
+      parts.push('layoutH=' + round(layout.getBoundingClientRect().height));
+      parts.push('baseScroll=' + (base.scrollHeight > base.clientHeight));
+      parts.push('editorBodyH=' + round(body.getBoundingClientRect().height));
+      parts.push('editableH=' + round(editable.getBoundingClientRect().height));
+      parts.push('ratioGone=' + (doc.querySelectorAll('.pjf-ratio').length === 0 &&
+                                 !/占本页/.test(doc.querySelector('.pjf-tipcard').textContent)));
+      parts.push('titleText=' + doc.querySelector('.pjf-editor .pjf-section-title').textContent
+          .replace(/^\s+|\s+$/g, ''));
+      var opts = [];
+      var sel = doc.querySelector('#pjType');
+      for (var i = 0; i < sel.options.length; i++) { opts.push(sel.options[i].value); }
+      parts.push('types=' + opts.join(','));
+      parts.push('typeCount=' + opts.length);
+      parts.push('defaultType=' + sel.value);
+      report('OK ' + parts.join(' '));
+    } catch (e) {
+      report('ERROR ' + e.message);
+    }
+  }, 3600);
+});
+</script>
+</body>
+</html>

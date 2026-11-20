@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>登录页品牌探针</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1440px;height:900px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr" src="/login.html"></iframe>
+<script>
+(function () {
+    var out = document.getElementById('out');
+    var fr = document.getElementById('fr');
+    function log(s) { out.textContent += s + '\n'; }
+    function set(k, v) { document.documentElement.setAttribute('data-' + k, String(v)); }
+    function until(fn, timeout, done) {
+        var start = new Date().getTime();
+        (function tick() {
+            var v = null;
+            try { v = fn(); } catch (e) { v = null; }
+            if (v) { return done(v); }
+            if (new Date().getTime() - start > timeout) { return done(null); }
+            window.setTimeout(tick, 120);
+        })();
+    }
+    function read() {
+        var w = fr.contentWindow, d = fr.contentDocument;
+        try {
+            set('use-mock', w.Api.config.useMock ? '1' : '0');
+            set('name', d.getElementById('loginSysName').textContent.trim());
+            set('en-text', d.getElementById('loginSysNameEn').textContent.trim());
+            var cs = w.getComputedStyle(d.getElementById('loginSysNameEn'));
+            set('en-transform', cs.textTransform);
+            set('logo-src', d.getElementById('loginSysLogo').getAttribute('src'));
+            set('logo-w', Math.round(d.getElementById('loginSysLogo').getBoundingClientRect().width));
+            set('favicon-href', d.getElementById('loginFavicon').getAttribute('href'));
+            set('favicon-type', d.getElementById('loginFavicon').getAttribute('type'));
+            set('foot', d.getElementById('loginFootName').textContent.trim());
+            set('title', d.title);
+            set('js-errors', 'none');
+            set('done', '1');
+            log('ok');
+        } catch (e) {
+            set('js-errors', e.message);
+            set('done', 'err');
+        }
+    }
+    fr.addEventListener('load', function () {
+        /* 等 api.js 探测出结果（useMock 已定），再给品牌请求留出渲染时间 */
+        until(function () {
+            var w = fr.contentWindow;
+            return (w && w.Api && w.Api.config && typeof w.Api.config.useMock === 'boolean') ? w : null;
+        }, 15000, function (w) {
+            if (!w) { set('js-errors', 'api 未就绪'); set('done', 'timeout'); return; }
+            window.setTimeout(read, 1500);
+        });
+    });
+})();
+</script>
+</body>
+</html>

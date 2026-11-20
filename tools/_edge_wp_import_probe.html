@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>工作计划 · 导入任务弹窗（真实 Edge 探针）</title>
+<style>html,body{margin:0;background:#fff}iframe{width:100%;height:1000px;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="fr"></iframe>
+<script>
+/* 真实浏览器探针：打开「工作计划 → 导入任务」弹窗，把一份真 xlsx 塞进文件框，
+   走真实 FileReader + 真实 /api/workplan/importtasks，等预览表渲染完再让 Edge 截图。
+
+   用法：
+     msedge --headless=new --disable-gpu --window-size=1440,1080 \
+            --virtual-time-budget=30000 --screenshot=shot.png \
+            "http://127.0.0.1:8808/tools/_edge_wp_import_probe.html?tk=<token>&me=<empId>"
+
+   结果写在 <html data-*>，可用 --dump-dom 后 grep 校验。
+   ⚠ 探针自己建临时计划、用完同步删除；不碰库里任何真实计划。 */
+(function () {
+    'use strict';
+    var q = new URLSearchParams(location.search);
+    var TK = q.get('tk') || '';
+    var ME = parseInt(q.get('me') || '1', 10) || 1;
+    var D = document.documentElement;
+    var PLAN_ID = '', ERRS = [];
+    function set(k, v) { D.setAttribute('data-' + k, String(v)); }
+    function sess() {
+        localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+            token: TK, user: { empId: ME, nameCn: '系统管理员' },
+            expireAt: Date.now() + 8 * 3600 * 1000
+        }));
+    }
+    function api(path, data, method) {
+        var body = Object.assign({}, data || {}, { token: TK });
+        if (!method || method === 'GET') {
+            return fetch('/api' + path + '?' + new URLSearchParams(body).toString())
+                .then(function (r) { return r.json(); });
+        }
+        return fetch('/api' + path, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(function (r) { return r.json(); });
+    }
+    function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function until(fn, ms) {
+        var end = Date.now() + (ms || 8000);
+        return new Promise(function (res, rej) {
+            (function loop() {
+                var v;
+                try { v = fn(); } catch (e) { v = null; }
+                if (v) { return res(v); }
+                if (Date.now() > end) { return rej(new Error('timeout')); }
+                setTimeout(loop, 120);
+            })();
+        });
+    }
+    function cleanup() {
+        if (!PLAN_ID) { set('cleanup', 'no-plan'); return; }
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/workplan/delete', false);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({ id: PLAN_ID, token: TK }));
+            set('cleanup', JSON.parse(xhr.responseText).code);
+        } catch (e) { set('cleanup', 'ERR:' + e.message); }
+    }
+
+    async function run() {
+        sess();
+        var a = await api('/workplan/add', {
+            planName: 'WP_EDGE_IMPORT_PROBE', startDate: '2026-12-01', endDate: '2026-12-31',
+            scale: 'week', skipWeekend: 1
+        }, 'POST');
+        if (a.code !== 0) { throw new Error('add: ' + a.message); }
+        PLAN_ID = a.data.id;
+        set('plan', PLAN_ID);
+
+        var fr = document.getElementById('fr');
+        fr.src = '/workplan-design.html?id=' + PLAN_ID + '&tk=' + encodeURIComponent(TK) + '&me=' + ME;
+        await new Promise(function (res) { fr.onload = res; });
+        var doc = fr.contentDocument, iw = fr.contentWindow, $ = iw.jQuery;
+
+        await until(function () { return $ && $('#wpDBtnImport').length; }, 10000);
+        /* 等计划详情回填完（#wpDCode 变成真编号），否则 openImport 里 state.plan.status 取不到 */
+        await until(function () {
+            var t = ($('#wpDCode').text() || '').trim();
+            return t && t !== 'WP------';
+        }, 12000);
+        set('plan-code', ($('#wpDCode').text() || '').trim());
+        await wait(300);
+        set('btn-title', $('#wpDBtnImport').attr('title') || '');
+
+        var btn = doc.getElementById('wpDBtnImport');
+        var r = btn.getBoundingClientRect();
+        set('btn-rect', [Math.round(r.left), Math.round(r.top), Math.round(r.width),
+                         Math.round(r.height)].join(','));
+
+        $('#wpDBtnImport').trigger('click');
+        var $dlg = await until(function () {
+            var el = $('.wp-imp');
+            return el.length ? el : null;
+        }, 8000);
+        set('dialog', '1');
+        set('dialog-title', ($('.el-dialog__title').last().text() || '').trim());
+
+        /* 真文件：fetch 样例 → File → DataTransfer → input.files → change */
+        var blob = await fetch('/tools/_edge_wp_import_sample.xlsx').then(function (x) {
+            if (!x.ok) { throw new Error('sample http ' + x.status); }
+            return x.blob();
+        });
+        set('sample-bytes', blob.size);
+        var file = new File([blob], '导入演示.xlsx', {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        var dt = new DataTransfer();
+        dt.items.add(file);
+        var input = doc.getElementById('wpImpInput');
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+
+        await until(function () { return $('.wp-imp__table tbody tr').length; }, 15000);
+        set('rows', $('.wp-imp__table tbody tr').length);
+        set('rows-bad', $('.wp-imp__table tbody tr.is-bad').length);
+        set('stats', ($('#wpImpStats').text() || '').replace(/\s+/g, ' ').trim());
+        set('ok-text', ($('.el-dialog__footer .el-button--primary').last().text() || '').trim());
+        set('file-name', ($('#wpImpFile').text() || '').trim());
+        set('tips', $('.wp-imp__tip').length);
+        /* 责任人 / 参与人员列的文字（验证「工号 姓名」→ 姓名 / 多人逗号） */
+        var owner = [], parts = [];
+        $('.wp-imp__table tbody tr').each(function () {
+            var tds = $(this).find('td');
+            owner.push($(tds[7]).text().trim());
+            parts.push($(tds[8]).text().trim());
+        });
+        set('owners', owner.join('|'));
+        set('parts', parts.join('|'));
+
+        var dlgRect = $('.wp-imp').closest('.el-dialog')[0].getBoundingClientRect();
+        set('dialog-rect', [Math.round(dlgRect.left), Math.round(dlgRect.top),
+                            Math.round(dlgRect.width), Math.round(dlgRect.height)].join(','));
+        var scroll = $('.wp-imp__scroll')[0];
+        set('scroll', scroll ? (scroll.scrollWidth + 'x' + scroll.clientWidth) : '-');
+    }
+
+    run().catch(function (e) {
+        ERRS.push(e && e.message ? e.message : String(e));
+        set('err', ERRS.join(' / '));
+    }).then(function () {
+        cleanup();
+        set('done', '1');
+    });
+})();
+</script>
+</body>
+</html>

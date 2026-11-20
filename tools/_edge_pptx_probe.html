@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>pptx probe</title>
+<link rel="stylesheet" href="../vendor/pptxjs.css">
+<link rel="stylesheet" href="../vendor/nv.d3.css">
+<style>
+  body { font-family: monospace; padding: 12px; }
+  #host { border: 1px solid #ccc; min-height: 200px; }
+</style>
+</head>
+<body>
+<div id="host"></div>
+<pre id="log"></pre>
+<script src="../vendor/jquery-3.7.1.min.js"></script>
+<script src="../vendor/jszip.min.js"></script>
+<script>window.JSZipV3 = window.JSZip;</script>
+<script src="../vendor/jszip.v2.min.js"></script>
+<script>
+    window.JSZipV2 = window.JSZip;
+    window.JSZip = window.JSZipV3;   // 还原 3.x，模拟真实页面的隔离策略
+</script>
+<script src="../vendor/filereader.js"></script>
+<script src="../vendor/d3.v3.min.js"></script>
+<script src="../vendor/nv.d3.min.js"></script>
+<script src="../vendor/pptxjs.js"></script>
+<script>
+(function () {
+    var params = new URLSearchParams(location.search);
+    var src = params.get('src') || '';
+    var logEl = document.getElementById('log');
+    var errors = [];
+    window.onerror = function (m, u, l, c, e) { errors.push('onerror: ' + m + ' @' + l); };
+    function log(s) { logEl.textContent += s + '\n'; }
+    document.documentElement.setAttribute('data-errors', '');
+
+    log('jQuery=' + (typeof window.jQuery));
+    log('JSZip=' + (typeof window.JSZip));
+    log('FileReaderJS=' + (typeof window.FileReaderJS));
+    log('JSZipUtils=' + (typeof window.JSZipUtils));
+    log('pptxToHtml=' + !!(window.jQuery && window.jQuery.fn && window.jQuery.fn.pptxToHtml));
+    log('d3=' + (typeof window.d3) + ' nv=' + (typeof window.nv));
+
+    if (!src) { log('NO SRC'); return; }
+    window.fetch(src, { credentials: 'same-origin' }).then(function (r) {
+        log('fetch ' + r.status + ' ' + r.headers.get('content-type'));
+        return r.arrayBuffer();
+    }).then(function (buf) {
+        log('bytes=' + buf.byteLength);
+        log('JSZip.version=' + (window.JSZip && window.JSZip.version) +
+            ' v2=' + (window.JSZipV2 && window.JSZipV2.version));
+        if (params.get('v2') === '1') { window.JSZip = window.JSZipV2; }
+        var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+        var url = URL.createObjectURL(blob);
+        var t0 = Date.now();
+        try {
+            window.jQuery('#host').pptxToHtml({
+                pptxFileUrl: url,
+                slideMode: false,
+                keyBoardShortCut: false,
+                mediaProcess: false,
+                themeProcess: true
+            });
+            log('plugin invoked ok');
+        } catch (e) {
+            log('plugin threw: ' + (e && e.message));
+            document.documentElement.setAttribute('data-threw', String(e && e.message));
+        }
+        var waited = 0;
+        (function poll() {
+            var $h = window.jQuery('#host');
+            var slides = $h.find('.slide').length;
+            var sections = $h.find('section').length;
+            var divs = $h.find('div').length;
+            document.documentElement.setAttribute('data-slides', String(slides));
+            document.documentElement.setAttribute('data-sections', String(sections));
+            document.documentElement.setAttribute('data-divs', String(divs));
+            document.documentElement.setAttribute('data-elapsed', String(Date.now() - t0));
+            document.documentElement.setAttribute('data-errors', errors.join(' || '));
+            if (slides > 0) {
+                document.documentElement.setAttribute('data-done', 'yes');
+                var first = $h.find('.slide').first();
+                document.documentElement.setAttribute('data-first-size',
+                    first.width() + 'x' + first.height());
+                document.documentElement.setAttribute('data-first-text',
+                    (first.text() || '').replace(/\s+/g, ' ').slice(0, 120));
+                log('DONE slides=' + slides + ' in ' + (Date.now() - t0) + 'ms');
+                return;
+            }
+            if (waited > 20000) {
+                document.documentElement.setAttribute('data-done', 'timeout');
+                log('TIMEOUT slides=0 html=' + $h.html().slice(0, 300));
+                return;
+            }
+            waited += 250;
+            setTimeout(poll, 250);
+        })();
+    }).catch(function (e) {
+        log('fetch failed: ' + (e && e.message));
+        document.documentElement.setAttribute('data-done', 'fetchfail');
+    });
+})();
+</script>
+</body>
+</html>

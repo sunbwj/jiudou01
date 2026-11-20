@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>preview path probe</title>
+<style>
+  body { font-family: monospace; padding: 12px; max-width: 860px; }
+  .fp-stage { min-height: 300px; border: 1px solid #ddd; }
+</style>
+</head>
+<body>
+<pre id="out"></pre>
+<script src="../vendor/jquery-3.7.1.min.js"></script>
+<script src="../js/word-import.js"></script>
+<script>
+    /* 最小 UI 桩：真实页面用 UI.dialog，这里把内容直接挂到 body */
+    window.UI = {
+        dialog: function (o) {
+            var $wrap = window.jQuery('<div class="probe-dialog"></div>').appendTo('body');
+            $wrap.append(o.content);
+            if (typeof o.onReady === 'function') { o.onReady(o.content); }
+            return { close: function () { }, destroy: function () { } };
+        },
+        message: function () { }, loading: function () { }, confirm: function () { }
+    };
+    /* AppAuth 桩：真实页面由 api.js 提供，这里从 ?tk= 取会话 token */
+    window.AppAuth = {
+        token: function () { return new URLSearchParams(location.search).get('tk') || ''; }
+    };
+</script>
+<script src="../js/file-preview.js?v=20261106d"></script>
+<script>
+(function () {
+    var q = new URLSearchParams(location.search);
+    var name = q.get('name') || 'DataOps.pptx';
+    var path = q.get('path') || '';
+    var id = q.get('id') || '';
+    var out = document.getElementById('out');
+    var errs = [];
+    window.onerror = function (m, u, l) { errs.push('onerror: ' + m + ' @' + l); };
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+
+    log('kind=' + window.FilePreview.kindOf(name));
+    var t0 = Date.now();
+    window.FilePreview.preview({
+        id: id, fileName: name, downloadUrl: path, filePath: path, fileSizeText: 'probe'
+    }, { onDownload: function () { log('onDownload called'); } });
+
+    var waited = 0;
+    (function poll() {
+        var $doc = window.jQuery(document);
+        var slides = $doc.find('.fp-pptx .slide').length;
+        var pdf = $doc.find('iframe.fp-frame').length;
+        var err = $doc.find('.fp-error__msg').length;
+        var textish = $doc.find('.fp-slides .fp-slide').length;
+        var docxKids = $doc.find('.fp-docx').children().length;
+        attr('data-docx', String(docxKids));
+        attr('data-slides', String(slides));
+        attr('data-pdf', String(pdf));
+        attr('data-error', String(err));
+        attr('data-textfallback', String(textish));
+        attr('data-elapsed', String(Date.now() - t0));
+        attr('data-errors', errs.join(' || '));
+        attr('data-tip', (window.jQuery('.fp-tip').text() || '').slice(0, 80));
+        if (err) {
+            attr('data-done', 'error');
+            attr('data-errmsg', (window.jQuery('.fp-error__msg').text() || '').slice(0, 160));
+            return;
+        }
+        if (slides > 0 || pdf > 0 || docxKids > 0) {
+            attr('data-done', 'yes');
+            if (slides > 0) {
+                var first = window.jQuery('.fp-pptx .slide').first();
+                attr('data-first-size', first[0].getBoundingClientRect().width.toFixed(0) + 'x' +
+                    first[0].getBoundingClientRect().height.toFixed(0));
+                attr('data-first-text', (first.text() || '').replace(/\s+/g, ' ').slice(0, 80));
+            }
+            log('DONE in ' + (Date.now() - t0) + 'ms slides=' + slides + ' pdf=' + pdf);
+            return;
+        }
+        if (waited > 30000) { attr('data-done', 'timeout'); log('TIMEOUT'); return; }
+        waited += 300;
+        setTimeout(poll, 300);
+    })();
+})();
+</script>
+</body>
+</html>

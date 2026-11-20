@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>扫描结果真实浏览器探针</title>
+<style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    iframe { display: block; width: 100%; height: 100%; border: 0; }
+</style>
+</head>
+<body>
+<script>
+/* 真实浏览器验证「扫描导入」：设置登录态 → iframe 打开应用结构页 → 等树渲染 → 按 stage 操作
+   stage=tree   只看树（表在前、索引在后）
+   stage=index  再点一个索引节点，看定义原文与字段区提示
+   完成后在 <html> 上写 data-* 方便 --dump-dom / CDP 取值 */
+(function () {
+    var q = String(location.search || '');
+    var m = function (name) {
+        var hit = q.match(new RegExp('[?&]' + name + '=([^&]*)'));
+        return hit ? decodeURIComponent(hit[1]) : '';
+    };
+    var appId = m('appId');
+    var stage = m('stage') || 'tree';
+    var TOKEN = m('token');
+    var EMP = m('emp') || '1';
+    document.documentElement.setAttribute('data-stage', stage);
+
+    try {
+        localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+            token: TOKEN,
+            user: { empId: parseInt(EMP, 10) || 1, account: '13813970452', nameCn: '管理员' },
+            time: new Date().toISOString(),
+            expireAt: Date.now() + 8 * 3600 * 1000,
+            ttlHours: 8
+        }));
+    } catch (e) { }
+
+    function attr(name, value) {
+        document.documentElement.setAttribute('data-' + name, value == null ? '' : String(value));
+    }
+    function text(el) { return el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+    function waitFor(fn, timeout) {
+        return new Promise(function (resolve) {
+            var started = Date.now();
+            (function tick() {
+                var v = null;
+                try { v = fn(); } catch (e) { v = null; }
+                if (v) { resolve(v); return; }
+                if (Date.now() - started > (timeout || 30000)) { resolve(null); return; }
+                setTimeout(tick, 200);
+            })();
+        });
+    }
+
+    var frame = document.createElement('iframe');
+    frame.src = '../appschema.html?appId=' + encodeURIComponent(appId);
+    document.body.appendChild(frame);
+
+    frame.onload = async function () {
+        var doc = frame.contentDocument;
+        var win = frame.contentWindow;
+        var rows = await waitFor(function () {
+            return doc.querySelectorAll('#asTree .as-node[data-kind=obj]').length ? true : null;
+        }, 60000);
+        if (!rows) { attr('done', '1'); attr('error', 'tree-timeout'); return; }
+
+        var nodes = Array.prototype.slice.call(doc.querySelectorAll('#asTree .as-node[data-kind=obj]'));
+        attr('obj-count', nodes.length);
+        attr('tree-count', text(doc.getElementById('asTreeCount')));
+        var kinds = {};
+        nodes.forEach(function (n) {
+            var t = n.getAttribute('data-objtype');
+            kinds[t] = (kinds[t] || 0) + 1;
+        });
+        attr('kinds', JSON.stringify(kinds));
+        attr('first-10', nodes.slice(0, 10).map(function (n) {
+            return n.getAttribute('data-objtype') + ':' + n.getAttribute('data-name');
+        }).join(' | '));
+
+        var idxNode = null, trgNode = null, fnNode = null;
+        nodes.forEach(function (n) {
+            var t = n.getAttribute('data-objtype');
+            if (t === 'index' && !idxNode) { idxNode = n; }
+            if (t === 'trigger' && !trgNode) { trgNode = n; }
+            if (t === 'function' && !fnNode) { fnNode = n; }
+        });
+        attr('last-table-index', (function () {
+            var lastTable = -1, firstAux = -1;
+            nodes.forEach(function (n, i) {
+                var t = n.getAttribute('data-objtype');
+                if (t === 'table' || t === 'view') { lastTable = i; }
+                if ((t === 'index' || t === 'trigger' || t === 'function') && firstAux < 0) { firstAux = i; }
+            });
+            return 'lastTable=' + lastTable + ' firstAux=' + firstAux;
+        })());
+
+        if (stage === 'index' && idxNode) {
+            var $ = win.jQuery;
+            $(idxNode.querySelector('.as-node__row')).trigger('click');
+            try { idxNode.scrollIntoView({ block: 'center' }); } catch (e) { }
+            try { idxNode.scrollIntoView({ block: 'center' }); } catch (e) { }
+            await waitFor(function () {
+                return String(doc.getElementById('asObjDdl').value || '').length > 10;
+            }, 20000);
+            attr('idx-name', idxNode.getAttribute('data-name'));
+            attr('ddl-title', text(doc.getElementById('asObjDdlTitle')));
+            attr('idx-ddl', String(doc.getElementById('asObjDdl').value || '').slice(0, 200));
+            attr('col-add-disabled', doc.getElementById('asBtnColAdd').disabled);
+            attr('col-save-disabled', doc.getElementById('asBtnColSave').disabled);
+            attr('cols-hint', text(doc.getElementById('asColsBody')));
+        }
+        if (stage === 'index' && !idxNode) { attr('error', 'no-index-node'); }
+        attr('done', '1');
+    };
+})();
+</script>
+</body>
+</html>

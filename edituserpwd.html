@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>修改密码 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!-- 页面级样式：只服务本页，所以写在这里而不进 app.css（避免全站 ?v= 升级） -->
+<style>
+.pwd-card { max-width: 760px; }
+.pwd-hero {
+  display: flex; align-items: center; gap: 14px;
+  padding-bottom: 16px; margin-bottom: 16px;
+  border-bottom: 1px solid #f2f6fc;
+}
+.pwd-hero__ico {
+  flex: 0 0 46px; width: 46px; height: 46px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #409eff; color: var(--theme-primary, #409eff);
+  background-color: #ecf5ff; background-color: var(--theme-primary-light-9, #ecf5ff);
+}
+.pwd-hero__ico svg { width: 24px; height: 24px; }
+.pwd-hero__t { font-size: 16px; font-weight: 600; color: #303133; line-height: 1.4; }
+.pwd-hero__d { margin-top: 4px; font-size: 13px; color: #909399; line-height: 1.6; }
+
+.pwd-info {
+  display: flex; flex-wrap: wrap; gap: 12px 0; margin: 0 0 18px 0; padding: 0; list-style: none;
+}
+.pwd-info > li { flex: 0 0 50%; min-width: 0; display: flex; align-items: baseline; }
+.pwd-info .k { flex: 0 0 76px; color: #909399; font-size: 13px; }
+.pwd-info .v {
+  flex: 1 1 auto; min-width: 0; color: #303133; font-size: 14px;
+  word-break: break-all;
+}
+
+.pwd-rules { padding: 12px 14px; border-radius: 4px; background-color: #f5f7fa; }
+.pwd-rules__t { margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: #606266; }
+.pwd-rules ul { margin: 0; padding-left: 18px; color: #606266; font-size: 13px; line-height: 1.9; }
+.pwd-rules li::marker { color: #c0c4cc; }
+
+/* 操作区刻意用 .pwd-actions 而不是 .toolbar：
+   server/page_scan.py 只扫 .toolbar / .pick-toolbar / .form-actions，
+   这里一旦被收录成「页面操作按钮」，未授权角色就点不到改密了 */
+.pwd-actions {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid #f2f6fc;
+}
+.pwd-actions__hint { font-size: 12px; color: #909399; line-height: 1.6; }
+.pwd-foot { margin-top: 10px; font-size: 12px; color: #909399; line-height: 1.8; }
+.pwd-foot a { color: #409eff; color: var(--theme-primary, #409eff); text-decoration: none; }
+.pwd-foot a:hover { text-decoration: underline; }
+
+@media (max-width: 768px) {
+  .pwd-info > li { flex: 0 0 100%; }
+  .pwd-actions .el-button { width: 100%; }
+}
+@media print { .app-header, .app-side, .pwd-actions { display: none !important; } }
+</style>
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航（被框架页内嵌时由 layout.js 隐藏） ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar" id="pwdAvatar">管</span>
+            <span class="name" id="pwdHello">你好</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单（被框架页内嵌时由 layout.js 隐藏） ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">帮助中心</div>
+                <a class="app-side__item is-active" href="edituserpwd.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a5 5 0 015 5v3h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V7a5 5 0 015-5zm0 2a3 3 0 00-3 3v3h6V7a3 3 0 00-3-3zm0 10a2 2 0 00-1 3.7V19h2v-1.3A2 2 0 0012 14z"/></svg></span>修改密码
+                </a>
+                <a class="app-side__item" href="help.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h9l5 5v15H6V2zm8 1.7V8h4.3L14 3.7zM8 11h8v1.6H8V11zm0 3.4h8V16H8v-1.6zm0 3.4h5v1.6H8v-1.6z"/></svg></span>使用说明书
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="帮助中心/修改密码">
+                <h2 class="page-head__title">修改密码</h2>
+            </div>
+
+            <section class="el-card pwd-card">
+                <div class="el-card__body">
+                    <div class="pwd-hero">
+                        <span class="pwd-hero__ico">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 015 5v3h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V7a5 5 0 015-5zm0 2a3 3 0 00-3 3v3h6V7a3 3 0 00-3-3zm0 10a2 2 0 00-1 3.7V19h2v-1.3A2 2 0 0012 14z"/></svg>
+                        </span>
+                        <div style="min-width:0">
+                            <div class="pwd-hero__t">修改当前账号的登录密码</div>
+                            <div class="pwd-hero__d">页面打开时会自动弹出改密对话框；关掉后也可以点下面的按钮再次打开。</div>
+                        </div>
+                    </div>
+
+                    <ul class="pwd-info">
+                        <li><span class="k">当前账号</span><span class="v" id="pwdAccount">—</span></li>
+                        <li><span class="k">员工姓名</span><span class="v" id="pwdName">—</span></li>
+                        <li><span class="k">所属部门</span><span class="v" id="pwdDept">—</span></li>
+                        <li><span class="k">当前角色</span><span class="v" id="pwdRoles">—</span></li>
+                    </ul>
+
+                    <div class="pwd-rules">
+                        <p class="pwd-rules__t">密码规则</p>
+                        <ul>
+                            <li>长度 6~32 位，不能是同一个字符重复（如 <b>111111</b>）。</li>
+                            <li>新密码不能与原密码相同，两次输入必须一致。</li>
+                            <li>修改成功后，当前登录会<b>立即失效</b>，需要用新密码重新登录。</li>
+                            <li>忘记原密码时，请在登录页点「忘记密码？」，用员工信息里登记的邮箱接收验证码重置。</li>
+                        </ul>
+                    </div>
+
+                    <div class="pwd-actions">
+                        <button type="button" class="el-button el-button--primary" id="btnChangePwd">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a5 5 0 015 5v3h1a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h1V7a5 5 0 015-5zm0 2a3 3 0 00-3 3v3h6V7a3 3 0 00-3-3z"/></svg>
+                            修改登录密码
+                        </button>
+                        <span class="pwd-actions__hint">所有账号都能使用本功能，不受角色权限限制。</span>
+                    </div>
+
+                    <div class="pwd-foot">
+                        说明：本页与 <a href="help.html?p=start">使用说明书 · 快速开始</a> 里的「改密」是同一个功能；
+                        也可以点界面右上角的「改密」按钮。
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+<script src="js/btnperm.js?v=20261112a"></script>
+<!-- 改密弹窗：与 main.html 顶栏「改密」共用同一份实现 -->
+<script src="js/changepwd.js?v=20261112a"></script>
+<script src="js/edituserpwd.js?v=20261112a"></script>
+</body>
+</html>

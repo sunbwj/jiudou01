@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>filepanel hint probe（真实浏览器：文件区操作说明移除后的布局验证）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1460px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：项目信息页去掉「项目文件区操作引导区下方操作说明」后，
+   验证右栏布局（标签栏紧随图标按钮、列表 / 目录两个视图都撑满、无空隙无溢出）与交互回归。
+   后端不参与：注入 api.js 之前打死 jQuery.ajax → api.js 自动回退 Mock。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+    var fr = document.getElementById('fr');
+
+    fetch('../project.html').then(function (r) { return r.text(); }).then(function (html) {
+        html = html.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' +
+            'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe",account:"13813970452",' +
+            'empId:3,ename:"探针",user:{empId:3,nameCn:"探针"},expireAt:Date.now()+6*3600*1000,' +
+            'time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n' +
+            'jQuery.ajax=function(){var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        if (!re.test(html)) { attr('data-done', 'no-api-tag'); return; }
+        html = html.replace(re, patch + '<script src="js/api.js?v=20261107c"><\/script>');
+
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        setTimeout(function () { start(w, doc); }, 1200);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    function start(w, doc) {
+        var tries = 0;
+        (function waitRows() {
+            var rows = doc.querySelectorAll('#pjTbody tr[data-id]');
+            if (!rows.length && tries < 60) { tries++; return setTimeout(waitRows, 250); }
+            attr('data-rows', String(rows.length));
+
+            var panel = doc.querySelector('.pj-filepanel');
+            var acts = doc.querySelector('.pj-filepanel__actions');
+            var tabs = doc.querySelector('.pj-filetabs');
+            var list = doc.getElementById('pfPanelWrapper');
+            var tree = doc.getElementById('pfTreeView');
+            attr('data-hint-count', String(doc.querySelectorAll('.pj-filepanel__hint').length));
+            attr('data-panel-text-tail', panel ? panel.textContent.replace(/\s+/g, ' ').trim().slice(-70) : 'none');
+            attr('data-next-after-actions', acts && acts.nextElementSibling ? acts.nextElementSibling.className : 'none');
+
+            var ar = acts.getBoundingClientRect(), tr = tabs.getBoundingClientRect();
+            attr('data-actions-bottom', String(Math.round(ar.bottom)));
+            attr('data-tabs-top', String(Math.round(tr.top)));
+            attr('data-gap', String(Math.round(tr.top - ar.bottom)));
+            attr('data-gap-ok', (tr.top - ar.bottom) >= 0 && (tr.top - ar.bottom) <= 14 ? 'yes' : 'no');
+
+            var pr = panel.getBoundingClientRect(), lr = list.getBoundingClientRect();
+            attr('data-panel-height', String(Math.round(pr.height)));
+            attr('data-list-height', String(Math.round(lr.height)));
+            attr('data-list-fills', lr.height > 200 && lr.bottom <= pr.bottom + 2 ? 'yes' : 'no');
+            attr('data-list-visible', lr.height > 0 && tr.bottom < lr.top + 2 ? 'yes' : 'no');
+
+            /* 双击左侧项目行 → 文件列表有数据；切「目录」标签 → 树视图可见且撑满 */
+            if (rows.length) {
+                rows[0].dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+                rows[0].dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true }));
+            }
+            setTimeout(function () {
+                attr('data-file-rows', String(doc.querySelectorAll('#pfPanelTbody tr[data-id]').length));
+                var tabTree = doc.getElementById('pfTabTree');
+                if (tabTree) { tabTree.click(); }
+                setTimeout(function () {
+                    var rr = tree.getBoundingClientRect();
+                    attr('data-tree-display', w.getComputedStyle(tree).display);
+                    attr('data-tree-height', String(Math.round(rr.height)));
+                    attr('data-tree-nodes', String(doc.querySelectorAll('#pfTreeView .pj-tnode').length));
+                    attr('data-tree-fills', rr.height > 200 && rr.bottom <= pr.bottom + 2 ? 'yes' : 'no');
+                    /* 顶部项目管理操作引导区图标按钮回归 */
+                    var add = doc.getElementById('btnAdd').getBoundingClientRect();
+                    attr('data-icon-btn-size', Math.round(add.width) + 'x' + Math.round(add.height));
+                    attr('data-errors', errs.join(' || '));
+                    attr('data-done', 'yes');
+                    log('gap=' + Math.round(tr.top - ar.bottom) + ' listH=' + Math.round(lr.height) +
+                        ' treeH=' + Math.round(rr.height));
+                }, 1000);
+            }, 1200);
+        })();
+    }
+
+    window.onerror = function (m) { errs.push(String(m)); };
+})();
+</script>
+</body>
+</html>

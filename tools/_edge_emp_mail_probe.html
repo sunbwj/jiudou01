@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>emp-mail probe（真实 Edge：我的邮箱首屏 / 设置 / 自动收件 / 员工隔离）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1440px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：直接由 8808 同源静态服务托管（无需另起 8899）。
+   注入 api.js 之前打死 jQuery.ajax → api.js 自动回退 Mock；SSO 会话注入父页 localStorage。
+   断言结果全部写到 <html> 的 data-* 属性，供 --dump-dom 后 grep 校验。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+    var fr = document.getElementById('fr');
+
+    function session(empId) {
+        return 'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe-' + empId + '",' +
+            'account:"probe",empId:' + empId + ',ename:"探针",user:{empId:' + empId + ',nameCn:"探针"},' +
+            'expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n';
+    }
+    function makeHtml(src, empId) {
+        src = src.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' + session(empId) +
+            'jQuery.ajax=function(){var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        if (!re.test(src)) { return null; }
+        return src.replace(re, patch + '<script src="js/api.js?v=20261107c"><\/script>');
+    }
+    function load(src, empId) {
+        var html = makeHtml(src, empId);
+        if (!html) { attr('data-done', 'no-api-tag'); return; }
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        return { w: w, doc: doc };
+    }
+    function waitFor(ctx, selector, min, cb) {
+        var tries = 0;
+        (function loop() {
+            var n = ctx.doc.querySelectorAll(selector).length;
+            if (n >= min || tries >= 60) { return cb(); }
+            tries++;
+            setTimeout(loop, 250);
+        })();
+    }
+
+    fetch('../emp-mail.html').then(function (r) { return r.text(); }).then(function (src) {
+        var ctx = load(src, 3);                 // 甲：杨伟康 empId=3
+        if (!ctx) { return; }
+        setTimeout(function () {
+            waitFor(ctx, '#mailList .mail-item', 3, function () { check3(ctx, src); });
+        }, 800);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    function check3(ctx, src) {
+        var w = ctx.w, doc = ctx.doc;
+        var $ = w.jQuery;
+        var list = doc.getElementById('mailList');
+        var email = doc.getElementById('mailEmail');
+        var meta = doc.getElementById('mailMeta');
+        var items = doc.querySelectorAll('#mailList .mail-item');
+        attr('data-title', (doc.querySelector('.page-head__title') || {}).textContent || '');
+        attr('data-crumb', (doc.getElementById('pageHead') || {}).getAttribute('data-crumb') || '');
+        attr('data-email', (email.textContent || '').trim());
+        attr('data-meta', (meta.textContent || '').replace(/\s+/g, ' ').trim());
+        attr('data-only-me', /仅本人可见/.test(doc.querySelector('.mail-status__tag').textContent) &&
+            /仅本人可见/.test(meta.textContent) ? 'yes' : 'no');
+        attr('data-autosync-on', /自动收件：开启/.test(meta.textContent) &&
+            /信箱已启用/.test(meta.textContent) ? 'yes' : 'no');
+        attr('data-imap', /IMAP imap\.jiudou\.com:993/.test(meta.textContent) ? 'yes' : 'no');
+        attr('data-lastsync', /最近收件：2026/.test((doc.getElementById('mailLastSync') || {}).textContent || '')
+            ? 'yes' : 'no');
+        attr('data-inbox-count', String(items.length));
+        attr('data-demo-mail', /【演示】自动收件成功/.test(list.textContent) ? 'yes' : 'no');
+        attr('data-other-secret-hidden', !/【机密】管理员专用邮件/.test(list.textContent) ? 'yes' : 'no');
+        attr('data-badges', (doc.getElementById('badgeInbox') || {}).textContent + '/' +
+            (doc.getElementById('badgeSent') || {}).textContent);
+        attr('data-sync-enabled', String($(doc.getElementById('btnSync')).prop('disabled') === false));
+
+        /* 真实浏览器几何：邮件卡片吃满剩余高度，列表与阅读区都在视口内 */
+        var card = doc.querySelector('.mail-card').getBoundingClientRect();
+        var body = doc.querySelector('.mail-body').getBoundingClientRect();
+        var lst = doc.querySelector('.mail-list').getBoundingClientRect();
+        var read = doc.querySelector('.mail-read').getBoundingClientRect();
+        attr('data-card-height', String(Math.round(card.height)));
+        attr('data-body-height', String(Math.round(body.height)));
+        attr('data-list-height', String(Math.round(lst.height)));
+        attr('data-read-height', String(Math.round(read.height)));
+        attr('data-layout-ok', card.height > 400 && lst.height > 300 && read.height > 300 &&
+            Math.abs(lst.height - read.height) < 60 ? 'yes' : 'no');
+
+        /* 设置弹窗：编辑态回填 + 脱敏 + 自动收件开关 */
+        doc.getElementById('btnMailSetting').click();
+        setTimeout(function () {
+            var dlg = doc.querySelector('.el-overlay .el-dialog');
+            attr('data-dialog-title', dlg ? (dlg.querySelector('.el-dialog__title') || {}).textContent : 'none');
+            var f = dlg ? dlg.querySelector('.em-form') : null;
+            attr('data-form-email', f ? (f.querySelector('#efEmail') || {}).value : 'none');
+            attr('data-form-pwd', f ? (f.querySelector('#efPassword') || {}).value : 'none');
+            attr('data-form-autosync', f ? (f.querySelector('#efAutoSync') || {}).value : 'none');
+            attr('data-form-notice', f && /只有您自己能看到/.test(f.querySelector('.em-form__notice').textContent)
+                ? 'yes' : 'no');
+            attr('data-form-no-empid', f && !f.querySelector('#efEmpId') ? 'yes' : 'no');
+            if (dlg) {
+                var cancel = dlg.querySelector('.btn-cancel');
+                if (cancel) { cancel.click(); }
+            }
+            /* 换成乙（empId=1）重新加载同一 iframe，验证真实浏览器里的强隔离 */
+            setTimeout(function () {
+                var ctx2 = load(src, 1);
+                if (!ctx2) { return; }
+                setTimeout(function () {
+                    waitFor(ctx2, '#mailList .mail-item', 1, function () { check1(ctx2); });
+                }, 700);
+            }, 350);
+        }, 450);
+    }
+
+    function check1(ctx) {
+        var doc = ctx.doc;
+        var list = doc.getElementById('mailList');
+        attr('data-emp1-email', (doc.getElementById('mailEmail').textContent || '').trim());
+        attr('data-emp1-meta', (doc.getElementById('mailMeta').textContent || '').replace(/\s+/g, ' ').trim());
+        attr('data-emp1-count', String(doc.querySelectorAll('#mailList .mail-item').length));
+        attr('data-emp1-secret-visible', /【机密】管理员专用邮件/.test(list.textContent) ? 'yes' : 'no');
+        attr('data-emp1-no-emp3-mail', !/关于下周需求评审的安排/.test(list.textContent) ? 'yes' : 'no');
+        attr('data-emp1-autosync-off', /自动收件：关闭/.test(doc.getElementById('mailMeta').textContent)
+            ? 'yes' : 'no');
+        attr('data-errors', errs.join(' || ') || 'none');
+        attr('data-done', 'yes');
+        log('done');
+    }
+})();
+</script>
+</body>
+</html>

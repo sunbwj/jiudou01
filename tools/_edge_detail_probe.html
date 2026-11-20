@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>detail page probe（真实浏览器：左栏双 Tab + 右栏目录标签）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1460px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：验证项目详情页左右两组 Tab 的可见性与目录树交互。
+   后端不参与：注入 api.js 之前打死 jQuery.ajax → api.js 回退 Mock。
+   详情页需要 ?id=，document.write 的 iframe 拿不到查询串，所以把 project-detail.js
+   源码内联执行并给 projectId 补一个兜底值（不改线上文件）。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+    var fr = document.getElementById('fr');
+
+    Promise.all([
+        fetch('../project-detail.html').then(function (r) { return r.text(); }),
+        fetch('../js/project-detail.js').then(function (r) { return r.text(); })
+    ]).then(function (res) {
+        var html = res[0], js = res[1];
+        html = html.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' +
+            'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe",account:"13813970452",' +
+            'empId:3,ename:"探针",user:{empId:3,nameCn:"探针"},expireAt:Date.now()+6*3600*1000,' +
+            'time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n' +
+            'window.__ajaxBlocked=0;\n' +
+            'jQuery.ajax=function(){window.__ajaxBlocked++;var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var reApi = /<script src="js\/api\.js[^"]*"><\/script>/;
+        var reJs = /<script src="js\/project-detail\.js[^"]*"><\/script>/;
+        if (!reApi.test(html) || !reJs.test(html)) { attr('data-done', 'no-script-tags'); return; }
+        html = html.replace(reApi, patch + '<script src="js/api.js?v=20261107c"><\/script>');
+        var id = 'prj-0000-4000-8000-000000000001';
+        js = js.replace("projectId = queryParam('id');",
+            "projectId = queryParam('id') || '" + id + "';");
+        html = html.replace(reJs, '<script>\n' + js + '\n<\/script>');
+
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        setTimeout(function () { start(w, doc); }, 1400);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    function start(w, doc) {
+        var d = fr.contentDocument;
+        var tries = 0;
+        (function waitDetail() {
+            var body = d.querySelector('#pjDetailBody');
+            if ((!body || /加载中/.test(body.textContent)) && tries < 60) {
+                tries++; return setTimeout(waitDetail, 250);
+            }
+            run(w, d);
+        })();
+    }
+
+    function vis(el) { return el ? getComputedStyle(el).display !== 'none' : false; }
+    function rect(el) { return el ? el.getBoundingClientRect() : { width: 0, height: 0 }; }
+
+    function run(w, d) {
+        var $ = function (s) { return d.querySelector(s); };
+        var $$ = function (s) { return [].slice.call(d.querySelectorAll(s)); };
+
+        // ① 左栏双 Tab
+        attr('data-dt-tab-count', String($$('#dtTabs .pj-filetabs__tab').length));
+        attr('data-dt-tab-width', String(Math.round(rect($('#dtTabs')).width)));
+        attr('data-info-active', $('#dtTabInfo').classList.contains('is-active') ? 'yes' : 'no');
+        attr('data-info-visible', vis($('#pjDetailBody')) ? 'yes' : 'no');
+        attr('data-desc-hidden-init', !vis($('#pjDescBody')) ? 'yes' : 'no');
+        attr('data-info-text', $('#pjDetailBody').textContent.replace(/\s+/g, ' ').trim().slice(0, 50));
+        $('#dtTabDesc').click();
+        attr('data-after-desc-visible', vis($('#pjDescBody')) ? 'yes' : 'no');
+        attr('data-after-info-hidden', !vis($('#pjDetailBody')) ? 'yes' : 'no');
+        attr('data-desc-text', $('#pjDescBody').textContent.replace(/\s+/g, ' ').trim().slice(0, 60));
+        attr('data-desc-height', String(Math.round(rect($('#pjDescBody')).height)));
+        $('#dtTabInfo').click();
+        attr('data-back-info-visible', vis($('#pjDetailBody')) ? 'yes' : 'no');
+
+        // ② 右栏双 Tab + 目录树
+        attr('data-pf-tab-count', String($$('#pfTabs .pj-filetabs__tab').length));
+        attr('data-pf-tab-width', String(Math.round(rect($('#pfTabs')).width)));
+        attr('data-tree-hidden-init', !vis($('#pfTreeView')) ? 'yes' : 'no');
+        attr('data-list-visible-init', vis($('#pfPanelWrapper')) ? 'yes' : 'no');
+        $('#pfTabTree').click();
+        attr('data-tree-visible', vis($('#pfTreeView')) ? 'yes' : 'no');
+        attr('data-list-hidden', !vis($('#pfPanelWrapper')) ? 'yes' : 'no');
+        attr('data-tree-height', String(Math.round(rect($('#pfTreeView')).height)));
+        attr('data-dir-count', String($$('#pfTreeView .pj-tnode--dir').length));
+        attr('data-dir-names', $$('#pfTreeView .pj-tnode--dir').map(function (n) {
+            return (n.querySelector('.pj-tnode__name') || {}).textContent || '';
+        }).join('|'));
+        attr('data-file-count', String($$('#pfTreeView .pj-tnode--file').length));
+        attr('data-root-node', String($$('#pfTreeView .pj-tnode[data-kind=root]').length));
+        attr('data-rootdrop', String($$('#pfTreeView .pj-tree__rootdrop').length));
+        var fnode = $$('#pfTreeView .pj-tnode--file').filter(function (n) {
+            return /架构设计\.png/.test(n.textContent);
+        })[0];
+        attr('data-file-node-height', fnode ? String(Math.round(rect(fnode).height)) : 'none');
+        if (fnode) {
+            fnode.dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+        }
+        setTimeout(function () {
+            var dlgs = $$('.el-dialog');
+            var last = dlgs[dlgs.length - 1] || null;
+            var title = last ? (last.querySelector('.el-dialog__title') || {}).textContent || '' : '';
+            attr('data-preview-title', title.trim().slice(0, 40));
+            attr('data-preview-stage', last && last.querySelector('.fp-stage') ? 'yes' : 'no');
+            attr('data-errors', errs.join(' || '));
+            attr('data-done', 'yes');
+            log('dtTabs=' + $$('#dtTabs .pj-filetabs__tab').length +
+                ' pfTabs=' + $$('#pfTabs .pj-filetabs__tab').length +
+                ' dirs=' + $$('#pfTreeView .pj-tnode--dir').length +
+                ' files=' + $$('#pfTreeView .pj-tnode--file').length + ' preview=' + title.trim());
+        }, 900);
+    }
+
+    window.onerror = function (m) { errs.push(String(m)); };
+})();
+</script>
+</body>
+</html>

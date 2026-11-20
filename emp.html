@@ -1,0 +1,361 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>员工信息管理 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+<style>
+/* 操作引导区：图标按钮 + 右侧选中提示 */
+.toolbar--icons .toolbar-hint { margin-left: auto; }
+</style>
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">系统管理</div>
+                <a class="app-side__item" href="menu.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h12v2H3v-2z"/></svg></span>菜单项管理
+                </a>
+                <a class="app-side__item" href="menu-group.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>菜单组管理
+                </a>
+                <a class="app-side__item" href="menu-group-item.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h2v12H4V6zm4 0h10v2H8V6zm0 5h10v2H8v-2zm0 5h7v2H8v-2zm12-9h2v12h-2V7z"/></svg></span>菜单组项目管理
+                </a>
+                <a class="app-side__item" href="org.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 4a3 3 0 100 6 3 3 0 000-6zm-6 15v-1a5 5 0 015-5h2a5 5 0 015 5v1H3zm12-15a3 3 0 110 6 3 3 0 010-6zm-2 15v-1a5 5 0 013-4.6V19h-3z"/></svg></span>组织架构
+                </a>
+                <a class="app-side__item is-active" href="emp.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg></span>员工信息管理
+                </a>
+                <a class="app-side__item" href="role.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l7 3v5.5c0 4.2-2.9 7.4-7 8.9-4.1-1.5-7-4.7-7-8.9V6l7-3zm0 2.2L7 7.1v4.4c0 3.1 2 5.6 5 6.9 3-1.3 5-3.8 5-6.9V7.1l-5-1.9z"/></svg></span>用户角色管理
+                </a>
+                <a class="app-side__item" href="role-power.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l8 4v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6l8-4zm0 4.6L8 8.4V12c0 3.2 1.9 5.6 4 6.7 2.1-1.1 4-3.5 4-6.7V8.4l-4-1.8zm-1 3l3.2 2.4L11 14.4v-2.2L9.8 11 11 9.6z"/></svg></span>角色权限配置
+                </a>
+                <a class="app-side__item" href="page-op-btn.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 5h16v3H4V5zm0 5h9v3H4v-3zm0 5h9v3H4v-3zm12-4l4 2.5L16 16v-5z"/></svg></span>页面操作按钮管理
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="员工信息管理">
+                <h2 class="page-head__title">员工信息管理</h2>
+            </div>
+
+            <!-- 1.1 检索区域 -->
+            <section class="el-card search-card">
+                <div class="el-card__body">
+                    <form class="el-form el-form--inline search-form" id="searchForm" autocomplete="off" onsubmit="return false;">
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="keyword">关键字</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input el-input--prefix">
+                                    <span class="el-input__prefix">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" style="width:16px;height:16px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                                    </span>
+                                    <input class="el-input__inner" type="text" id="keyword" name="keyword" placeholder="请输入工号 / 姓名 / 身份证号 / 手机号 / 邮箱 / 岗位">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--status">
+                            <label class="el-form-item__label" for="status">在职状态</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input search-input--select">
+                                    <select class="el-input__inner" id="status" name="status">
+                                        <option value="">全部</option>
+                                        <option value="1">在职</option>
+                                        <option value="2">试用</option>
+                                        <option value="0">离职</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--status">
+                            <label class="el-form-item__label" for="deptFilter">所属部门</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input search-input--select">
+                                    <select class="el-input__inner" id="deptFilter" name="deptId">
+                                        <option value="">全部</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-btns">
+                            <button type="button" class="el-button el-button--primary" id="btnSearch">查询</button>
+                            <button type="button" class="el-button" id="btnReset">重置</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 1.2 操作引导区域 -->
+            <section class="el-card">
+                <div class="el-card__body">
+                    <div class="toolbar toolbar--icons" role="toolbar" aria-label="员工信息操作">
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="btnAdd" title="新增员工" aria-label="新增员工"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg></button>
+                        <button type="button" class="el-button el-button--success el-button--icon" id="btnEdit" title="编辑员工" aria-label="编辑员工"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M5 19h2.4l9.3-9.3-2.4-2.4L5 16.6V19zM3 21v-4.2L15.9 3.9l4.2 4.2L7.2 21H3z"/></svg></button>
+                        <button type="button" class="el-button el-button--danger el-button--icon" id="btnDelete" title="删除员工" aria-label="删除员工"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 7h12l1 13H7L6 7zm3-4h6l1 2h4v2H4V5h4l1-2z"/></svg></button>
+                        <button type="button" class="el-button el-button--warning el-button--icon" id="btnArchive" title="归档员工" aria-label="归档员工"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h18v4H3V4zm1 6h16v10H4V10zm5 3v2h6v-2H9z"/></svg></button>
+                        <button type="button" class="el-button el-button--icon" id="btnHistory" title="历史归档" aria-label="历史归档"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a9 9 0 109 9h-2a7 7 0 11-7-7v3l4-4-4-4v3zm1 5h-2v5.2l4 2.4 1-1.7-3-1.8V8z"/></svg></button>
+                        <button type="button" class="el-button el-button--icon" id="btnRefresh" title="刷新员工列表" aria-label="刷新员工列表"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg></button>
+                        <span class="toolbar-hint">当前选中：<b id="selTip" style="color:#409eff">未选择任何员工</b></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 1.3 查询结果列表区域 -->
+            <section class="el-card table-card">
+                <div class="table-wrapper" id="tableWrapper">
+                    <div class="el-table">
+                        <div class="el-table__inner-wrapper">
+                            <table id="empTable">
+                                <colgroup>
+                                    <col style="width:64px">
+                                    <col style="width:56px">
+                                    <col style="width:100px">
+                                    <col style="width:132px">
+                                    <col style="width:64px">
+                                    <col style="width:170px">
+                                    <col style="width:120px">
+                                    <col style="width:120px">
+                                    <col>
+                                    <col style="width:92px">
+                                    <col style="width:108px">
+                                    <col style="width:150px">
+                                    <col style="width:108px">
+                                </colgroup>
+                                <thead>
+                                <tr>
+                                    <th class="is-center">序号</th>
+                                    <th class="is-center">选择</th>
+                                    <th>工号</th>
+                                    <th>姓名</th>
+                                    <th class="is-center">性别</th>
+                                    <th>所属部门</th>
+                                    <th>岗位</th>
+                                    <th>手机号</th>
+                                    <th>邮箱</th>
+                                    <th class="is-center">在职状态</th>
+                                    <th>入职日期</th>
+                                    <th>学历 / 职称</th>
+                                    <th>出生日期</th>
+                                </tr>
+                                </thead>
+                                <tbody id="empTbody" class="el-table__body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="pager-wrap" id="pagerWrap"></div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- ============ 新增 / 编辑弹窗表单模板（本页完成，不跳转） ============ -->
+<div id="empFormTpl" style="display:none;">
+    <form class="el-form emp-form" id="empForm" autocomplete="off" onsubmit="return false;">
+        <div class="emp-form__grid">
+            <div class="emp-form__section">基本信息</div>
+            <div class="el-form-item is-required" data-field="code">
+                <label class="el-form-item__label" for="empCode">工号</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empCode" name="code" maxlength="16" placeholder="E00001"></div>
+                    <div class="form-tip" id="empCodeTip">自动生成（E + 5 位流水号），可手工修改，全局唯一</div>
+                </div>
+            </div>
+            <div class="el-form-item is-required" data-field="nameCn">
+                <label class="el-form-item__label" for="empName">姓名</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empName" name="nameCn" maxlength="50" placeholder="请输入姓名"></div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="gender">
+                <label class="el-form-item__label" for="empGender">性别</label>
+                <div class="el-form-item__content">
+                    <div class="el-input">
+                        <select class="el-input__inner" id="empGender" name="gender">
+                            <option value="1">男</option>
+                            <option value="2">女</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="deptId">
+                <label class="el-form-item__label" for="empDept">所属部门</label>
+                <div class="el-form-item__content">
+                    <div class="el-input">
+                        <select class="el-input__inner" id="empDept" name="deptId">
+                            <option value="0">（未分配部门）</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="jobTitle">
+                <label class="el-form-item__label" for="empJob">岗位</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empJob" name="jobTitle" maxlength="50" placeholder="如：前端工程师"></div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="phone">
+                <label class="el-form-item__label" for="empPhone">手机号</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empPhone" name="phone" maxlength="20" placeholder="11 位手机号"></div>
+                </div>
+            </div>
+            <div class="el-form-item is-required" data-field="email">
+                <label class="el-form-item__label" for="empEmail">邮箱</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empEmail" name="email" maxlength="100" placeholder="name@example.com"></div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="status">
+                <label class="el-form-item__label" for="empStatus">在职状态</label>
+                <div class="el-form-item__content">
+                    <div class="el-input">
+                        <select class="el-input__inner" id="empStatus" name="status">
+                            <option value="1">在职</option>
+                            <option value="2">试用</option>
+                            <option value="0">离职</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="hireDate">
+                <label class="el-form-item__label" for="empHireDate">入职日期</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="date" id="empHireDate" name="hireDate"></div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="birthDate">
+                <label class="el-form-item__label" for="empBirthDate">出生日期</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="date" id="empBirthDate" name="birthDate"></div>
+                    <div class="form-tip">选填；填写身份证号且此项为空时自动带出</div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="idCard">
+                <label class="el-form-item__label" for="empIdCard">身份证号</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empIdCard" name="idCard" maxlength="18" placeholder="选填，15 / 18 位"></div>
+                </div>
+            </div>
+
+            <div class="emp-form__section">学历与资质</div>
+            <div class="el-form-item" data-field="education">
+                <label class="el-form-item__label" for="empEducation">最高学历</label>
+                <div class="el-form-item__content">
+                    <div class="el-input">
+                        <select class="el-input__inner" id="empEducation" name="education">
+                            <option value="">（未填写）</option>
+                            <option value="高中及以下">高中及以下</option>
+                            <option value="中专">中专</option>
+                            <option value="大专">大专</option>
+                            <option value="本科">本科</option>
+                            <option value="硕士">硕士</option>
+                            <option value="博士">博士</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="titleName">
+                <label class="el-form-item__label" for="empTitleName">职称</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empTitleName" name="titleName" maxlength="50" placeholder="如：主管护师 / 高级工程师"></div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="school">
+                <label class="el-form-item__label" for="empSchool">毕业院校</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empSchool" name="school" maxlength="100" placeholder="如：XX 大学"></div>
+                </div>
+            </div>
+            <div class="el-form-item" data-field="major">
+                <label class="el-form-item__label" for="empMajor">所学专业</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empMajor" name="major" maxlength="100" placeholder="如：临床医学"></div>
+                </div>
+            </div>
+            <div class="el-form-item emp-form__full" data-field="certificates">
+                <label class="el-form-item__label" for="empCertificates">执业资格证书</label>
+                <div class="el-form-item__content">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="empCertificates" name="certificates" maxlength="200" placeholder="多个证书用顿号分隔，如：执业医师资格证、执业药师资格证"></div>
+                </div>
+            </div>
+
+            <div class="emp-form__section">照片与备注</div>
+            <div class="el-form-item emp-form__full" data-field="photo">
+                <label class="el-form-item__label" for="empPhotoFile">照片</label>
+                <div class="el-form-item__content">
+                    <div class="emp-photo">
+                        <div class="emp-photo__preview" id="empPhotoPreview">
+                            <span class="emp-photo__ph">暂无照片</span>
+                        </div>
+                        <div class="emp-photo__ops">
+                            <input type="file" id="empPhotoFile" accept="image/png,image/jpeg,image/webp" class="emp-photo__file">
+                            <div class="emp-photo__btns">
+                                <button type="button" class="el-button el-button--small" id="btnPickPhoto">选择图片</button>
+                                <button type="button" class="el-button el-button--small" id="btnClearPhoto">清除照片</button>
+                            </div>
+                            <div class="form-tip">支持 JPG / PNG / WebP，自动压缩至 300px 以内再上传；随表单一起保存</div>
+                        </div>
+                        <input type="hidden" name="photo" id="empPhoto" value="">
+                    </div>
+                </div>
+            </div>
+            <div class="el-form-item emp-form__full" data-field="remark">
+                <label class="el-form-item__label" for="empRemark">备注</label>
+                <div class="el-form-item__content">
+                    <div class="el-textarea"><textarea class="el-textarea__inner" id="empRemark" name="remark" rows="2" maxlength="200" placeholder="选填，最多 200 字"></textarea></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/emp.js?v=20261101a"></script>
+</body>
+</html>

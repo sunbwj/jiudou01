@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>工作计划 · 真实 Edge 探针（组织树选人 / 启动 / 我的任务 / 几何）</title>
+<style>html,body{margin:0;background:#fff}iframe{width:1400px;height:900px;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="fr"></iframe>
+<script>
+/* 真实浏览器探针：真后端 + 真几何 + 真拖拽 + 组织树选人 + 启动派单 + 我的任务页。
+   用法：msedge --headless=new --dump-dom "http://127.0.0.1:8808/tools/_edge_workplan_probe.html?tk=<token>"
+   结果写在 <html data-*> 上，供 --dump-dom 后 grep 校验。
+   ⚠ 探针任务不带责任人 / 参与人：启动只建工单，不给真实员工发消息或邮件。 */
+(function () {
+    'use strict';
+    var TK = (new URLSearchParams(location.search)).get('tk') || '';
+    var D = document.documentElement;
+    var PLAN_ID = '', PROJECT_ID = '', PROJECT_NAME = '';
+    var ME = parseInt((new URLSearchParams(location.search)).get('me') || '1', 10) || 1;
+    var ERRS = [];
+    var PERM_HIDDEN = 0;
+    function set(k, v) { D.setAttribute('data-' + k, String(v)); }
+    function sess() {
+        localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+            token: TK, user: { empId: ME, nameCn: '系统管理员' },
+            expireAt: Date.now() + 8 * 3600 * 1000
+        }));
+    }
+    function api(path, data, method) {
+        var body = Object.assign({}, data || {}, { token: TK });
+        var url = '/api' + path;
+        if (!method || method === 'GET') {
+            return fetch(url + '?' + new URLSearchParams(body).toString()).then(function (r) { return r.json(); });
+        }
+        return fetch(url, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(function (r) { return r.json(); });
+    }
+    function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    function cleanup() {
+        if (!PLAN_ID) { set('cleanup', 'no-plan'); return; }
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/workplan/delete', false);      // 同步：保证 dump-dom 前已清理
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify({ id: PLAN_ID, token: TK }));
+            set('cleanup', JSON.parse(xhr.responseText).code);
+        } catch (e) { set('cleanup', 'ERR:' + e.message); }
+    }
+    function rectOf(el) {
+        if (!el) { return null; }
+        var r = el.getBoundingClientRect();
+        return { left: Math.round(r.left), width: Math.round(r.width), top: Math.round(r.top) };
+    }
+    function overlayWith(doc, sel) {
+        var list = doc.querySelectorAll('.el-overlay'), i;
+        for (i = 0; i < list.length; i++) { if (list[i].querySelector(sel)) { return list[i]; } }
+        return null;
+    }
+    /* 操作引导区「纯图标按钮」校验：40×40 方形、图标 17px、无可见文字、title/aria-label 齐全 */
+    function iconBar(doc, sel) {
+        var bar = doc.querySelector(sel || '.wp-toolbar');
+        if (!bar) { return { n: 0, bad: 'no-bar', h: 0 }; }
+        var btns = bar.querySelectorAll('.el-button'), bad = [], i;
+        for (i = 0; i < btns.length; i++) {
+            var b = btns[i], r = b.getBoundingClientRect();
+            var svg = b.querySelector('svg.svg-ico');
+            if (!b.classList.contains('el-button--icon')) { bad.push('class:' + b.id); }
+            if (!svg) { bad.push('svg:' + b.id); }
+            else if (Math.abs(svg.getBoundingClientRect().width - 17) > 1) {
+                bad.push('svgw:' + Math.round(svg.getBoundingClientRect().width));
+            }
+            if (Math.abs(r.width - 40) > 1 || Math.abs(r.height - 40) > 1) {
+                bad.push('box:' + Math.round(r.width) + 'x' + Math.round(r.height));
+            }
+            if ((b.textContent || '').replace(/\s+/g, '')) { bad.push('text:' + b.id); }
+            if (!b.getAttribute('title')) { bad.push('title:' + b.id); }
+            if (!b.getAttribute('aria-label')) { bad.push('aria:' + b.id); }
+        }
+        return { n: btns.length, bad: bad.length ? bad.join('|') : 'none',
+                 h: Math.round(bar.getBoundingClientRect().height) };
+    }
+    function load(fr, url, ms) {
+        return new Promise(function (resolve) {
+            fr.onload = function () {
+                try {
+                    fr.contentWindow.addEventListener('error', function (e) {
+                        ERRS.push((e.message || 'error') + '@' + url);
+                    });
+                } catch (e) { /* ignore */ }
+                setTimeout(resolve, ms);
+            };
+            fr.src = url;
+        });
+    }
+    async function run() {
+        try {
+            sess();
+            /* 选一个真正有项目组成员的项目，让「项目组成员」来源不是空面板 */
+            var opts = await api('/project/options');
+            for (var oi = 0; oi < ((opts.data || {}).list || []).length; oi++) {
+                var o = opts.data.list[oi];
+                var pp = await api('/workplan/people', { projectId: o.id });
+                if (((pp.data || {}).members || []).length > 0) {
+                    PROJECT_ID = o.id; PROJECT_NAME = o.projectName; break;
+                }
+            }
+            set('project-picked', PROJECT_ID ? '1' : '0');
+            var a = await api('/workplan/add', {
+                planName: 'WP_EDGE_PROBE', startDate: '2026-11-01', endDate: '2026-12-31',
+                scale: 'week', skipWeekend: 1,
+                projectId: PROJECT_ID || '', projectName: PROJECT_NAME || ''
+            }, 'POST');
+            if (a.code !== 0) { throw new Error('add: ' + a.message); }
+            PLAN_ID = a.data.id;
+            var T1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+            var T2 = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+            var T3 = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+            var s = await api('/workplan/save', {
+                plan: { id: PLAN_ID, planName: 'WP_EDGE_PROBE', scale: 'week', skipWeekend: 1,
+                        ispub: 1, projectId: PROJECT_ID || '', projectName: PROJECT_NAME || '' },
+                tasks: [
+                    { id: T1, taskName: '需求与设计', taskType: 'summary', startDate: '2026-11-01',
+                      endDate: '2026-11-20', progress: 60, sortNo: 0 },
+                    { id: T2, taskName: '迭代开发', taskType: 'task', parentId: T1,
+                      startDate: '2026-11-05', endDate: '2026-11-25', progress: 35,
+                      preTaskIds: [T1], sortNo: 1 },
+                    { id: T3, taskName: '版本发布', taskType: 'milestone',
+                      startDate: '2026-12-01', endDate: '2026-12-01', progress: 0,
+                      preTaskIds: [T2], sortNo: 2 }
+                ]
+            }, 'POST');
+            set('save', s.code === 0 ? 'ok' : s.message);
+
+            var fr = document.getElementById('fr');
+            /* 带 taskId 打开：验证「我的任务 → 打开任务」能定位到那条任务 */
+            await load(fr, '/workplan-design.html?id=' + PLAN_ID + '&taskId=' + T2, 1600);
+            var doc = fr.contentDocument, iw = fr.contentWindow, $iw = iw.jQuery;
+            set('page-title', (doc.querySelector('.page-head__title') || {}).textContent || 'none');
+            set('no-projectplan-menu', doc.querySelectorAll('.app-side__item[href="project-plan.html"]').length);
+            set('view-btns', doc.querySelectorAll('#wpDViewBar [data-view]').length);
+            set('view-active', (doc.querySelector('#wpDViewBar .el-button.is-active') || {})
+                .getAttribute ? doc.querySelector('#wpDViewBar .el-button.is-active').getAttribute('data-view') : 'none');
+            set('focus-selected', doc.querySelectorAll('.wp-row[data-id="' + T2 + '"].is-selected').length);
+            set('focus-highlight', doc.querySelectorAll('[data-id="' + T2 + '"].is-focus').length);
+            var rows = doc.querySelectorAll('.wp-row');
+            var bars = doc.querySelectorAll('.wp-bar');
+            set('rows', rows.length);
+            set('bars', bars.length);
+            set('milestones', doc.querySelectorAll('.wp-bar--milestone').length);
+            set('summaries', doc.querySelectorAll('.wp-bar--summary').length);
+            set('links', doc.querySelectorAll('.wp-links path[marker-end]').length);
+            set('major', doc.querySelectorAll('.wp-axis__major .wp-u--major').length);
+            set('minor', doc.querySelectorAll('.wp-axis__minor .wp-u--minor').length);
+            set('weekend', doc.querySelectorAll('.wp-off').length);
+            set('today', doc.querySelectorAll('.wp-today').length);
+            set('fills', doc.querySelectorAll('.wp-bar__fill').length);
+            var b2 = doc.querySelector('.wp-bar[data-id="' + T2 + '"]');
+            var b3 = doc.querySelector('.wp-bar--milestone');
+            var r2 = rectOf(b2), r3 = rectOf(b3);
+            set('bar-rect', r2 ? (r2.left + ',' + r2.width + ',' + r2.top) : 'none');
+            set('milestone-rect', r3 ? (r3.left + ',' + r3.width) : 'none');
+            set('geoms-ok', !!(r2 && r3 && r2.width > 20 && r3.width >= 10 && r3.left > r2.left));
+            var ax = doc.querySelector('.wp-axis__scale');
+            set('axis-width', ax ? Math.round(ax.getBoundingClientRect().width) : 0);
+
+            /* 真实拖拽：整体平移 2 天（week 刻度 9px/天） */
+            function fire(el, type, x) {
+                var e = new iw.MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: 10 });
+                (el || iw.document).dispatchEvent(e);
+            }
+            if (b2) {
+                fire(b2, 'mousedown', 0);
+                fire(iw.document, 'mousemove', 18);
+                fire(iw.document, 'mouseup', 18);
+                var b2b = doc.querySelector('.wp-bar[data-id="' + T2 + '"]');
+                var r2b = rectOf(b2b);
+                set('after-drag', r2b ? (r2b.left + ',' + r2b.width) : 'none');
+                set('drag-shift', r2b && r2 ? (r2b.left - r2.left) : 'none');
+                set('dirty', (doc.getElementById('wpDState') || {}).textContent || '');
+            }
+
+            /* ---- 任务属性 → 选人组件：组织架构树 + 双数据源 ---- */
+            $iw('#wpDCanvas .wp-row[data-id="' + T2 + '"]').trigger('click');
+            $iw('#wpDBtnProp').trigger('click');
+            var prop = doc.querySelector('.el-dialog');
+            set('prop-fields', prop ? ['#wpTOwner', '#wpTParts', '#wpTBtnOwner', '#wpTBtnParts']
+                .every(function (q) { return !!prop.querySelector(q); }) : 'no-dialog');
+            var taOwner = doc.getElementById('wpTOwner');
+            set('owner-readonly', taOwner ? !!taOwner.readOnly : 'none');
+            $iw('#wpTBtnParts').trigger('click');
+            await wait(1200);
+            var picker = doc.querySelector('.wp-emp-pick');
+            set('emp-picker', doc.querySelectorAll('.wp-emp-pick').length);
+            set('emp-rows', doc.querySelectorAll('.wp-ep-tree .wp-ep-emp[data-id]').length);
+            set('emp-overlay-z', overlayWith(doc, '.wp-emp-pick')
+                ? overlayWith(doc, '.wp-emp-pick').style.zIndex : 'none');
+            set('emp-chosen-ok', doc.getElementById('wpEpCount')
+                ? doc.getElementById('wpEpCount').textContent : 'none');
+            set('ep-src-tabs', doc.querySelectorAll('.wp-ep-src').length);
+            set('ep-src-emp', doc.querySelectorAll('.wp-ep-src[data-src="emp"]').length);
+            set('ep-src-group', doc.querySelectorAll('.wp-ep-src[data-src="group"]').length);
+            set('ep-src-active', (doc.querySelector('.wp-ep-src.is-active') || {})
+                .getAttribute ? doc.querySelector('.wp-ep-src.is-active').getAttribute('data-src') : 'none');
+            set('ep-depts', doc.querySelectorAll('.wp-ep-dept').length);
+            var maxPad = 0, deptList = doc.querySelectorAll('.wp-ep-dept'), di;
+            for (di = 0; di < deptList.length; di++) {
+                maxPad = Math.max(maxPad, parseInt(deptList[di].style.paddingLeft, 10) || 0);
+            }
+            set('ep-tree-levels', maxPad > 8 ? '1' : '0');   // 有二级以上缩进 = 按树层次展示
+            set('ep-checkbox', doc.querySelectorAll('.wp-ep-tree input[type="checkbox"]').length);
+            set('ep-total', (doc.getElementById('wpEpTotal') || {}).textContent || 'none');
+            set('ep-tip', (doc.getElementById('wpEpSrcTip') || {}).textContent || 'none');
+
+            /* 搜索：按真实姓名过滤，命中分支自动展开 */
+            var firstEmp = doc.querySelector('.wp-ep-tree .wp-ep-emp[data-id]');
+            var kw = firstEmp ? firstEmp.getAttribute('data-name') : '';
+            set('ep-kw', kw || 'none');
+            if (kw) {
+                $iw('#wpEpKeyword').val(kw);
+                $iw('#wpEpSearch').trigger('click');
+                await wait(300);
+                var hits = doc.querySelectorAll('.wp-ep-tree .wp-ep-emp[data-id]');
+                set('ep-search-hits', hits.length);
+                set('ep-search-ok', hits.length > 0 && hits.length <= 4 &&
+                    Array.prototype.every.call(hits, function (el) {
+                        return (el.getAttribute('data-name') || '').indexOf(kw) > -1 ||
+                               (el.textContent || '').indexOf(kw) > -1;
+                    }) ? '1' : '0');
+                $iw('#wpEpKeyword').val('');
+                $iw('#wpEpSearch').trigger('click');
+                await wait(200);
+            } else {
+                set('ep-search-hits', 0); set('ep-search-ok', '0');
+            }
+
+            /* 切到「项目组成员」：同一棵树，不同人员集合 */
+            $iw('.wp-ep-src[data-src="group"]').trigger('click');
+            await wait(400);
+            set('ep-group-rows', doc.querySelectorAll('.wp-ep-tree .wp-ep-emp[data-id]').length);
+            set('ep-group-tip', (doc.getElementById('wpEpSrcTip') || {}).textContent || 'none');
+            set('ep-group-msg', (doc.querySelector('.wp-ep-msg') || {}).textContent || 'none');
+            var gEmp = doc.querySelector('.wp-ep-tree .wp-ep-emp[data-id]');
+            if (gEmp) {
+                $iw(gEmp).trigger('click');
+                await wait(200);
+                set('ep-pick-count', (doc.getElementById('wpEpCount') || {}).textContent || 'none');
+                set('ep-pick-tag', doc.querySelectorAll('.wp-emp-pick__tag').length);
+                set('ep-pick-selected', doc.querySelectorAll('.wp-ep-emp.is-selected').length);
+            } else {
+                set('ep-pick-count', 'no-emp'); set('ep-pick-tag', 0); set('ep-pick-selected', 0);
+            }
+            /* 不把选人结果提交到任务：取消选人弹窗 + 取消任务属性弹窗，保证启动不发真实通知 */
+            var pOv = overlayWith(doc, '.wp-emp-pick');
+            if (pOv && pOv.querySelector('.btn-cancel')) { $iw(pOv.querySelector('.btn-cancel')).trigger('click'); }
+            await wait(200);
+            var tOv = overlayWith(doc, '#wpTOwner');
+            if (tOv && tOv.querySelector('.btn-cancel')) { $iw(tOv.querySelector('.btn-cancel')).trigger('click'); }
+            await wait(200);
+            set('ep-dialogs-closed', doc.querySelectorAll('.wp-emp-pick').length);
+            set('prop-dialog-closed', overlayWith(doc, '#wpTOwner') ? '0' : '1');
+            var ownerAfter = doc.getElementById('wpTOwner');
+            set('prop-owner-unchanged', (!ownerAfter || ownerAfter.value === '') ? '1' : '0');
+
+            /* 保存清 dirty，再启动（后端只按库里无人员的任务建单，零通知） */
+            set('status-before', (doc.getElementById('wpDStatus') || {}).textContent || 'none');
+            $iw('#wpDBtnSave').trigger('click');
+            await wait(1000);
+            set('save-state', (doc.getElementById('wpDState') || {}).textContent || 'none');
+            $iw('#wpDBtnStart').trigger('click');
+            await wait(300);
+            var cbox = doc.querySelector('.el-message-box__wrapper .btn-ok');
+            set('start-confirm', !!cbox);
+            if (cbox) { $iw(cbox).trigger('click'); }
+            await wait(1200);
+            var stEl = doc.getElementById('wpDStatus');
+            set('status-after', stEl ? stEl.textContent : 'none');
+            set('status-on', stEl && stEl.className.indexOf('is-on') > -1 ? '1' : '0');
+            set('start-my-task-btn', doc.querySelectorAll('#wpDBtnMyTask').length);
+            set('design-menu-name', ((doc.querySelector('.app-side__item[href="workplan.html"]') || {})
+                .textContent || 'none').replace(/\s+/g, ''));
+            var dIcons = iconBar(doc);
+            set('design-icon-btns', dIcons.n);
+            var phDesign = doc.querySelectorAll('.wp-toolbar .is-perm-hidden').length;
+            PERM_HIDDEN += phDesign;
+            set('perm-hidden-design', phDesign);
+            set('design-icon-bad', dIcons.bad);
+            set('design-bar-h', dIcons.h);
+            /* 保存按钮是否贴在操作引导区最左侧 + 顶部说明卡是否已移除 */
+            var barEl = doc.querySelector('.wp-toolbar');
+            var saveEl = doc.querySelector('#wpDBtnSave');
+            var kids = barEl ? barEl.children : [];
+            set('design-save-first', kids.length ? (kids[0].id || 'noid') : 'no-bar');
+            if (barEl && saveEl) {
+                var sr = saveEl.getBoundingClientRect(), minL = Infinity, gi;
+                for (gi = 0; gi < kids.length; gi++) {
+                    var kr = kids[gi].getBoundingClientRect();
+                    if (kr.left < minL) { minL = kr.left; }
+                }
+                set('design-save-left-diff', Math.round(sr.left - minL));
+                set('design-save-gap', Math.round(sr.left - barEl.getBoundingClientRect().left));
+            } else {
+                set('design-save-left-diff', -1); set('design-save-gap', -1);
+            }
+            set('design-tip', doc.querySelectorAll('.wp-tip').length);
+            set('design-title', (doc.querySelector('.page-head__title') || {}).textContent || 'none');
+
+            /* ---- 三视图：日历图 / 网格列表（真几何 + 执行记录列 + 关联工单） ---- */
+            await wait(600);
+            $iw('#wpDBtnViewCalendar').trigger('click');
+            await wait(500);
+            var calCells = doc.querySelectorAll('.wp-cal__cell');
+            var calTasks = doc.querySelectorAll('.wp-cal__task');
+            var calRect = calCells.length ? rectOf(calCells[0]) : null;
+            set('cal-months', doc.querySelectorAll('.wp-cal').length);
+            set('cal-wdays', doc.querySelectorAll('.wp-cal__wd').length);
+            set('cal-cells', calCells.length);
+            set('cal-tasks', calTasks.length);
+            set('cal-cell-w', calRect ? calRect.width : 0);
+            set('cal-exec-cls', doc.querySelectorAll('.wp-cal__task[class*="wp-exec-"]').length);
+            set('cal-rows-gone', doc.querySelectorAll('.wp-row').length);
+            set('cal-legend-hidden', doc.querySelectorAll('#wpDLegend').length
+                ? (doc.getElementById('wpDLegend').offsetHeight === 0 ? '1' : '0') : '0');
+            /* 点日历里的一块任务 → 选中联动 */
+            if (calTasks.length) {
+                $iw(calTasks[0]).trigger('click');
+                await wait(250);
+                set('cal-pick', doc.querySelectorAll('.wp-cal__task.is-selected').length);
+            } else { set('cal-pick', 0); }
+            $iw('#wpDBtnViewGrid').trigger('click');
+            await wait(500);
+            var gridRows = doc.querySelectorAll('.wp-grid__row');
+            var gridRect = gridRows.length ? rectOf(gridRows[0]) : null;
+            set('grid-rows', gridRows.length);
+            set('grid-cols', doc.querySelectorAll('.wp-grid thead th').length);
+            set('grid-row-h', gridRect ? gridRect.top : 0);
+            set('grid-exec-tags', doc.querySelectorAll('.wp-grid .wp-exec-tag').length);
+            set('grid-head-text', (doc.querySelector('.wp-grid thead') || {}).textContent || 'none');
+            /* 启动后 detail 会 JOIN 回工单号：网格列表里应有 WO 编号 */
+            var gridText = (doc.querySelector('.wp-grid tbody') || {}).textContent || '';
+            set('grid-order-linked', /WO\d{6}/.test(gridText) ? '1' : '0');
+            set('grid-order-text', (gridText.match(/WO\d{6}/) || ['none'])[0]);
+            /* 网格里双击一行 → 任务属性弹窗（含执行记录字段） */
+            if (gridRows.length) {
+                $iw(gridRows[0]).trigger('dblclick');
+                await wait(700);
+                var gp = doc.querySelector('.el-dialog');
+                set('grid-prop-exec', gp ? ['#wpTExecStatus', '#wpTActualStart', '#wpTActualEnd',
+                    '#wpTExecRemark', '#wpTOrder', '#wpTBtnOrder'].every(function (q) {
+                        return !!gp.querySelector(q);
+                    }) : 'no-dialog');
+                set('grid-prop-order', (doc.getElementById('wpTOrder') || {}).value || 'none');
+                var gOv = overlayWith(doc, '#wpTOwner');
+                if (gOv && gOv.querySelector('.btn-cancel')) {
+                    $iw(gOv.querySelector('.btn-cancel')).trigger('click');
+                }
+                await wait(300);
+            } else { set('grid-prop-exec', 'no-rows'); set('grid-prop-order', 'none'); }
+            /* 视图选择持久化（localStorage） */
+            set('view-saved', iw.localStorage.getItem('menu_admin_workplan_view_v1') || 'none');
+            $iw('#wpDBtnViewGantt').trigger('click');
+            await wait(500);
+            set('back-gantt-rows', doc.querySelectorAll('.wp-row').length);
+
+            /* ---- 把已派工单归属改成当前账号：走幂等补派分支（existing order 只同步人员，
+                    不重复发消息 / 邮件），这样「我的任务」能真实渲染出工单行且零打扰 ---- */
+            var sv = await api('/workplan/save', {
+                plan: { id: PLAN_ID, planName: 'WP_EDGE_PROBE', scale: 'week',
+                        skipWeekend: 1, ispub: 1 },
+                tasks: [
+                    { id: T1, taskName: '需求与设计', taskType: 'summary', startDate: '2026-11-01',
+                      endDate: '2026-11-20', progress: 60, sortNo: 0 },
+                    { id: T2, taskName: '迭代开发', taskType: 'task', parentId: T1,
+                      startDate: '2026-11-07', endDate: '2026-11-25', progress: 35,
+                      preTaskIds: [T1], sortNo: 1, ownerId: ME, ownerName: '本人',
+                      execStatus: '进行中', actualStartDate: '2026-11-08',
+                      execRemark: '探针执行说明' },
+                    { id: T3, taskName: '版本发布', taskType: 'milestone',
+                      startDate: '2026-12-01', endDate: '2026-12-01', progress: 0,
+                      preTaskIds: [T2], sortNo: 2 }
+                ]
+            }, 'POST');
+            set('resave', sv.code === 0 ? 'ok' : sv.message);
+            var st2 = await api('/workplan/start', { planId: PLAN_ID }, 'POST');
+            var st2d = st2.data || {};
+            set('resync-skipped', st2d.skipped);
+            set('resync-created', st2d.created);
+            set('resync-notified', st2d.notified);
+            set('resync-mailed', st2d.mailed);
+
+            /* ---- 按钮权限：三页按钮被 pageopbtn 收录且当前角色已授权 ---- */
+            var mb = await api('/rolepower/mybuttons', {}, 'GET');
+            var mpages = ((mb && mb.data) || {}).pages || {};
+            var pKeys = ['workplan.html', 'workplan-design.html', 'workplan-task.html'];
+            var pTotal = 0, pAllowed = 0, pDenied = 0;
+            pKeys.forEach(function (k) {
+                var bs = (mpages[k] && mpages[k].buttons) || [];
+                pTotal += bs.length;
+                bs.forEach(function (b) { if (b.allowed) { pAllowed++; } else { pDenied++; } });
+            });
+            set('perm-pages', pKeys.filter(function (k) { return !!mpages[k]; }).length);
+            set('perm-btns', pTotal);
+            set('perm-allowed', pAllowed);
+            set('perm-denied', pDenied);
+
+            /* ---- 我的任务页：真实渲染（关联任务 / 执行记录 / 两个入口） ---- */
+            await load(fr, '/workplan-task.html', 1600);
+            var tdoc = fr.contentDocument, $t = fr.contentWindow.jQuery;
+            set('wt-table', tdoc.querySelectorAll('#wtTable').length);
+            set('wt-cols', tdoc.querySelectorAll('#wtTable thead th').length);
+            set('wt-filters', ['#wtProject', '#wtKeyword', '#wtRole', '#wtExec', '#wtStatus']
+                .every(function (q) { return !!tdoc.querySelector(q); }) ? '1' : '0');
+            set('wt-tip', tdoc.querySelectorAll('.pj-tipcard, .pj-tip').length);
+            set('wt-head-next', (tdoc.getElementById('pageHead') || {}).nextElementSibling &&
+                tdoc.getElementById('pageHead').nextElementSibling.classList.contains('search-card')
+                ? 'search-card' : 'none');
+            set('wt-project-options', tdoc.querySelectorAll('#wtProject option').length);
+            var phWt = tdoc.querySelectorAll('.wp-toolbar .is-perm-hidden').length;
+            PERM_HIDDEN += phWt;
+            set('perm-hidden-wt', phWt);
+            set('wt-grid-op-btns', tdoc.querySelectorAll('#wtTbody button').length);
+            set('wt-tool-open', tdoc.querySelectorAll('#wtBtnOpenTask').length);
+            set('wt-tool-exec', tdoc.querySelectorAll('#wtBtnExec').length);
+            set('wt-count', (tdoc.getElementById('wtCount') || {}).textContent || 'none');
+            set('wt-empty', (tdoc.getElementById('wtTbody') || {}).textContent || 'none');
+            var wIcons = iconBar(tdoc);
+            set('wt-icon-btns', wIcons.n);
+            set('wt-icon-bad', wIcons.bad);
+            set('wt-menu', (tdoc.body.textContent || '').indexOf('我的任务') > -1 ? '1' : '0');
+            set('wt-no-projectplan', (tdoc.body.textContent || '').indexOf('项目计划') < 0 ? '1' : '0');
+            /* 检索区「关联项目」：切换后请求带 projectId，重置能清空 */
+            var tApi = fr.contentWindow.Api, origOrders = tApi.workPlan.orders, lastProj = null;
+            tApi.workPlan.orders = function (p) {
+                if (p && 'projectId' in p) { lastProj = p.projectId; }
+                return origOrders(p);
+            };
+            $t('#wtProject').val(PROJECT_ID).trigger('change');
+            await wait(1000);
+            set('wt-project-param', lastProj === PROJECT_ID ? '1' : '0');
+            set('wt-project-rows', tdoc.querySelectorAll('#wtTbody tr[data-id]').length);
+            $t('#wtBtnReset').trigger('click');
+            await wait(700);
+            set('wt-project-reset', (tdoc.getElementById('wtProject') || {}).value === '' ? '1' : '0');
+            tApi.workPlan.orders = origOrders;
+            /* 选中行 → 引导区按钮 → 执行记录弹窗：真实几何校验「执行说明单独一行」 */
+            var row0 = tdoc.querySelector('#wtTbody tr[data-id]');
+            if (row0) {
+                $t(row0).trigger('click');
+                await wait(200);
+                set('wt-selected', tdoc.querySelectorAll('#wtTbody tr.is-selected').length);
+                set('wt-tool-enabled',
+                    (tdoc.getElementById('wtBtnExec') || {}).disabled === false ? '1' : '0');
+                $t(tdoc.getElementById('wtBtnExec')).trigger('click');
+                await wait(1000);
+                var exDlg = tdoc.querySelector('.el-dialog');
+                set('wt-exec-dlg', exDlg ? ['#wtExExec', '#wtExStatus', '#wtExActualStart',
+                    '#wtExActualEnd', '#wtExRemark'].every(function (q) {
+                        return !!exDlg.querySelector(q);
+                    }) : 'no-dialog');
+                set('wt-exec-tag-count', tdoc.querySelectorAll('#wtTbody .wp-exec-tag').length);
+                var remEl = exDlg && exDlg.querySelector('#wtExRemark');
+                var prgEl = exDlg && exDlg.querySelector('#wtExProgress');
+                set('wt-remark-newline', (remEl && prgEl)
+                    ? (remEl.getBoundingClientRect().top - prgEl.getBoundingClientRect().top) : 'none');
+                set('wt-remark-w', remEl ? Math.round(remEl.getBoundingClientRect().width) : 'none');
+                set('wt-remark-label-y', (remEl && remEl.previousElementSibling)
+                    ? remEl.previousElementSibling.tagName : 'none');
+                var exOv = overlayWith(tdoc, '#wtExExec');
+                if (exOv && exOv.querySelector('.btn-cancel')) {
+                    $t(exOv.querySelector('.btn-cancel')).trigger('click');
+                }
+                await wait(300);
+            } else {
+                set('wt-exec-dlg', 'no-rows'); set('wt-exec-tag-count', 0);
+            }
+
+            /* ---- 列表页：11 列 / 启动按钮 / 我的任务入口 / 新建弹窗 ---- */
+            await load(fr, '/workplan.html', 1800);
+            var ldoc = fr.contentDocument, $l = fr.contentWindow.jQuery;
+            set('list-cols', ldoc.querySelectorAll('.el-table thead th').length);
+            set('list-page-title', (ldoc.querySelector('.page-head__title') || {}).textContent || 'none');
+            set('list-crumb', (ldoc.getElementById('pageHead') || {}).getAttribute
+                ? ldoc.getElementById('pageHead').getAttribute('data-crumb') : 'none');
+            set('list-menu-name', ((ldoc.querySelector('.app-side__item[href="workplan.html"]') || {})
+                .textContent || 'none').replace(/\s+/g, ''));
+            set('list-start-btn', ldoc.querySelectorAll('#wpBtnStart').length);
+            set('list-my-task-btn', ldoc.querySelectorAll('#wpBtnMyTask').length);
+            var lIcons = iconBar(ldoc);
+            set('list-icon-btns', lIcons.n);
+            var phList = ldoc.querySelectorAll('.wp-toolbar .is-perm-hidden').length;
+            PERM_HIDDEN += phList;
+            set('perm-hidden-list', phList);
+            set('perm-hidden-total', PERM_HIDDEN);
+            set('list-icon-bad', lIcons.bad);
+            set('list-status-badge', ldoc.querySelectorAll('.wp-status.is-on').length);
+            $l('#wpBtnAdd').trigger('click');
+            await wait(1000);
+            var $proj = $l('#wpNewProject');
+            var pov = $proj.find('option').map(function () { return String($l(this).val()); }).get();
+            set('proj-option-count', pov.length);
+            set('proj-empty-first', pov[0] === '');
+            set('proj-has-real', pov.some(function (v) { return v.length === 36; }));
+            set('proj-text', $proj.find('option').eq(1).text().slice(0, 40));
+            var desc = ldoc.getElementById('wpNewDesc');
+            set('desc-rect-h', desc ? Math.round(desc.getBoundingClientRect().height) : 'none');
+            set('desc-rows', desc ? desc.rows : 'none');
+            set('desc-hint-gone', ldoc.querySelectorAll('.wp-hintline').length === 0 &&
+                (ldoc.body.textContent || '').indexOf('确定后进入 Visio 风格设计器') < 0);
+            set('new-desc-tall', !!(desc && desc.getBoundingClientRect().height >= 120));
+            set('js-errors', ERRS.length ? ERRS.join(' | ') : 'none');
+            set('errors', 'none');
+            set('done', '1');
+        } catch (err) {
+            set('errors', err && (err.message || err));
+            set('js-errors', ERRS.length ? ERRS.join(' | ') : 'none');
+            set('done', '0');
+        } finally {
+            cleanup();
+        }
+    }
+    run();
+})();
+</script>
+</body>
+</html>

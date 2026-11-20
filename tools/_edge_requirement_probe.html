@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>需求管理 · 真实 Edge 探针（表格撑满剩余高度 + 空行补位）</title>
+<style>html,body{margin:0;background:#fff;height:100%}iframe{width:100%;height:100vh;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="fr"></iframe>
+<script>
+/* 真实浏览器探针：注入登录态后加载 requirement.html，等需求列表渲染出来，
+   量「表格是否真的吃满卡片剩余高度 / 空行补了多少 / 页面有没有纵向滚动条」，
+   写进 <html data-*> 供 --dump-dom 校验，也可以直接截图看视觉。
+   用法：msedge --headless=new … "…/_edge_requirement_probe.html?tk=<token>&me=<empId>" */
+(function () {
+    'use strict';
+    var q = new URLSearchParams(location.search);
+    var TK = q.get('tk') || '';
+    var ME = parseInt(q.get('me') || '1', 10) || 1;
+    var D = document.documentElement;
+    var ERRS = [];
+    function set(k, v) { D.setAttribute('data-' + k, String(v)); }
+    localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+        token: TK, user: { empId: ME, nameCn: '系统管理员' },
+        expireAt: Date.now() + 8 * 3600 * 1000
+    }));
+    window.addEventListener('error', function (e) { ERRS.push('outer:' + e.message); });
+
+    function px(el) { return el ? Math.round(el.getBoundingClientRect().height) : 0; }
+
+    var fr = document.getElementById('fr');
+    fr.onload = function () {
+        var w = fr.contentWindow, doc = fr.contentDocument;
+        w.addEventListener('error', function (e) { ERRS.push('inner:' + e.message); });
+        var t0 = Date.now();
+        (function poll() {
+            var rows = doc.querySelectorAll('#reqTbody tr[data-id]');
+            var empty = doc.querySelector('#reqTbody tr.empty-row');
+            var blanks = doc.querySelectorAll('#reqTbody tr.blank-row');
+            // 首屏要等 JS 排完行高：数据行 + （空行 或 空态）都就位才算稳定
+            var ready = rows.length && (blanks.length || Date.now() - t0 > 2500);
+            if (empty) { ready = true; }
+            if (!ready && Date.now() - t0 < 15000) { setTimeout(poll, 300); return; }
+
+            var wrap = doc.getElementById('reqTableWrap');
+            var table = doc.getElementById('reqTable');
+            var tbody = doc.getElementById('reqTbody');
+            var head = doc.querySelector('#reqTable thead');
+            var card = doc.querySelector('.table-card');
+            var pager = doc.getElementById('reqPager');
+            var body = doc.getElementById('reqTableWrap').parentNode;   // .el-card__body
+
+            set('rows', rows.length);
+            set('blanks', blanks.length);
+            set('rowH', rows.length ? px(rows[0]) : 0);
+            set('blankH', blanks.length ? px(blanks[0]) : 0);
+            set('wrapH', px(wrap));
+            set('headH', px(head));
+            set('tableH', px(table));
+            set('tbodyH', px(tbody));
+            set('cardH', px(card));
+            set('bodyH', px(body));
+            set('pagerH', px(pager));
+            /* 表格底边距分页顶边还有多少空隙（>2px 说明没撑满） */
+            var gapT = table && pager ? Math.round(pager.getBoundingClientRect().top - table.getBoundingClientRect().bottom) : -1;
+            set('gap', gapT);
+            /* 页面是否出现纵向滚动条（期望 no） */
+            var de = doc.documentElement;
+            set('pageScroll', de.scrollHeight > de.clientHeight + 1 ? 'yes' : 'no');
+            set('scrollDiff', de.scrollHeight - de.clientHeight);
+            /* 每页条数下拉当前值（应为自动算出的条数） */
+            var sel = doc.querySelector('#reqPager .page-size');
+            set('pageSize', sel ? sel.value : '');
+            /* 卡片高度应恰好等于内容区（不溢出也不留白） */
+            set('cardFill', (card && body) ? Math.round(px(body) - (px(wrap) + px(pager))) : -1);
+
+            var errBox = doc.querySelector('.el-message');
+            set('msg', errBox ? (errBox.textContent || '') : '');
+            set('errs', ERRS.join(' | '));
+            set('done', '1');
+        })();
+    };
+    fr.src = '/requirement.html?tk=' + encodeURIComponent(TK) + '&me=' + ME;
+})();
+</script>
+</body>
+</html>

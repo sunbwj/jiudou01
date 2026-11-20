@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<title>缺陷管理 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/workplan.css?v=20261112e">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<link rel="stylesheet" href="css/bug.css?v=20261118c">
+</head>
+<body class="wp-page">
+<div class="app">
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo"><img class="logo-mark" src="assets/logo.svg" alt="九豆"><span>九豆综合管理平台</span></div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user"><span class="avatar">管</span><span class="name">系统管理员</span></div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+    <div class="app-body">
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">项目管理</div>
+                <a class="app-side__item" href="project.html">项目信息</a>
+                <a class="app-side__item" href="requirement.html">需求管理</a>
+                <a class="app-side__item is-active" href="bug.html">缺陷管理</a>
+                <a class="app-side__item" href="workplan.html">计划管理</a>
+                <a class="app-side__item" href="workplan-task.html">我的任务</a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="项目管理/缺陷管理">
+                <h2 class="page-head__title">缺陷管理</h2>
+            </div>
+
+            <section class="el-card search-card">
+                <div class="el-card__body">
+                    <form class="el-form el-form--inline search-form" id="bugSearchForm" autocomplete="off" onsubmit="return false;">
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="bugProject">所在项目</label>
+                            <div class="el-form-item__content"><div class="el-input search-input--select">
+                                <select class="el-input__inner" id="bugProject"><option value="">全部项目</option></select>
+                            </div></div>
+                        </div>
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="bugStatus">状态</label>
+                            <div class="el-form-item__content">
+                                <div class="bug-multi" id="bugStatusMulti" data-placeholder="全部状态">
+                                    <select id="bugStatus" style="display:none">
+                                        <option value="">全部状态</option>
+                                        <option value="待评估">待评估</option>
+                                        <option value="已确认">已确认</option>
+                                        <option value="非缺陷">非缺陷</option>
+                                        <option value="已转工单">已转工单</option>
+                                        <option value="已修复">已修复</option>
+                                        <option value="已关闭">已关闭</option>
+                                    </select>
+                                    <button type="button" class="el-input__inner bug-multi__box" aria-haspopup="true">
+                                        <span class="bug-multi__text">全部状态</span>
+                                        <span class="bug-multi__caret">▾</span>
+                                    </button>
+                                    <div class="bug-multi__drop" hidden>
+                                        <div class="bug-multi__list">
+                                            <label class="bug-multi__opt"><input type="checkbox" value="待评估"> 待评估</label>
+                                            <label class="bug-multi__opt"><input type="checkbox" value="已确认"> 已确认</label>
+                                            <label class="bug-multi__opt"><input type="checkbox" value="非缺陷"> 非缺陷</label>
+                                            <label class="bug-multi__opt"><input type="checkbox" value="已转工单"> 已转工单</label>
+                                            <label class="bug-multi__opt"><input type="checkbox" value="已修复"> 已修复</label>
+                                            <label class="bug-multi__opt"><input type="checkbox" value="已关闭"> 已关闭</label>
+                                        </div>
+                                        <div class="bug-multi__foot">
+                                            <button type="button" class="bug-multi__clear">清空</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="bugLevel">严重级别</label>
+                            <div class="el-form-item__content"><div class="el-input search-input--select">
+                                <select class="el-input__inner" id="bugLevel">
+                                    <option value="">全部级别</option>
+                                    <option value="P0">P0 致命</option>
+                                    <option value="P1">P1 严重</option>
+                                    <option value="P2">P2 一般</option>
+                                    <option value="P3">P3 轻微</option>
+                                </select>
+                            </div></div>
+                        </div>
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="bugKeyword">关键字</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <input class="el-input__inner" type="text" id="bugKeyword" placeholder="编号 / 标题 / 应用 / 描述">
+                            </div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <button type="button" class="el-button el-button--primary" id="bugBtnSearch">查询</button>
+                            <button type="button" class="el-button" id="bugBtnReset">重置</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <section class="el-card table-card">
+                <div class="el-card__body">
+                    <div class="toolbar toolbar--icons" role="toolbar" aria-label="缺陷管理操作">
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="bugBtnAdd"
+                                title="登记缺陷 / 问题" aria-label="登记缺陷 / 问题">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="bugBtnDetail" disabled
+                                title="查看详情与评估时间线" aria-label="查看详情与评估时间线">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7zm0 2a5 5 0 110 10 5 5 0 010-10zm0 2.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="bugBtnEvaluate" disabled
+                                title="评估确认（是缺陷 / 非缺陷 / 需补充信息）" aria-label="评估确认">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16v18H4V3zm2 2v14h12V5H6zm2 3h8v2H8V8zm0 4h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="bugBtnConfirm" disabled
+                                title="确认缺陷并生成修复工单（研发 / 测试 / 验收）" aria-label="生成修复工单">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H4v10h16V10zM4 8h16V6h-3v2h-2V6H9v2H7V6H4v2zm5 5h2v2H9v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="bugBtnEdit" disabled
+                                title="编辑缺陷信息（未转工单前）" aria-label="编辑缺陷信息">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.2V21h3.8L18 9.8 14.2 6 3 17.2zM20.7 7.1a1 1 0 000-1.4l-2.4-2.4a1 1 0 00-1.4 0l-1.8 1.8L18.9 9l1.8-1.9z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="bugBtnClose" disabled
+                                title="关闭缺陷并记录原因" aria-label="关闭缺陷">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm5 13.6L15.6 17 12 13.4 8.4 17 7 15.6 10.6 12 7 8.4 8.4 7 12 10.6 15.6 7 17 8.4 13.4 12 17 15.6z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="bugBtnRefresh"
+                                title="刷新缺陷列表" aria-label="刷新缺陷列表">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>
+                        </button>
+                        <span class="toolbar-hint">共 <b id="bugCount">0</b> 条缺陷</span>
+                    </div>
+                    <div class="table-wrapper" id="bugTableWrap">
+                        <div class="el-table">
+                            <div class="el-table__inner-wrapper">
+                                <table id="bugTable">
+                                    <thead><tr>
+                                        <th class="is-center" style="width:52px">选择</th>
+                                        <th class="is-center" style="width:56px">序号</th>
+                                        <th style="width:110px">缺陷编号</th>
+                                        <th>问题标题</th>
+                                        <th style="width:150px">所在项目</th>
+                                        <th class="is-center" style="width:70px">级别</th>
+                                        <th class="is-center" style="width:86px">状态</th>
+                                        <th style="width:90px">接收人</th>
+                                        <th style="width:90px">创建人</th>
+                                        <th style="width:132px">发生时间</th>
+                                        <th style="width:150px">关联计划</th>
+                                        <th class="is-center" style="width:70px">评估</th>
+                                        <th style="width:140px">登记时间</th>
+                                    </tr></thead>
+                                    <tbody id="bugTbody" class="el-table__body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="bugPager" class="pager-wrap"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+<script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/wp-emp-picker.js?v=20261109a"></script>
+<script src="js/rich-text.js?v=20261116a"></script>
+<script src="js/word-import.js?v=20261106c"></script>
+<script src="js/bug.js?v=20261118e"></script>
+</body>
+</html>

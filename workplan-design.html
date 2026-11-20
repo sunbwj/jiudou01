@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>工作计划 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/workplan.css?v=20261112e">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body class="wp-page">
+<script>
+(function () {
+    var m = /[?&]embed=1(?:&|$)/.exec(window.location.search || '');
+    if (m) { document.body.className += ' wp-preview'; }
+})();
+</script>
+
+<div class="app">
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user"><span class="avatar">管</span><span class="name">系统管理员</span></div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">项目管理</div>
+                <a class="app-side__item" href="project.html">项目信息</a>
+                <a class="app-side__item is-active" href="workplan.html">计划管理</a>
+                <a class="app-side__item" href="workplan-task.html">我的任务</a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="项目管理/计划管理/制定">
+                <h2 class="page-head__title">工作计划</h2>
+            </div>
+
+            <section class="el-card">
+                <div class="el-card__body">
+                    <!-- 标准 .toolbar：纳入 pageopbtn 扫描 + btnperm.js 按角色授权加载；
+                         .wp-toolbar / --icons 保留图标栏视觉 -->
+                    <div class="toolbar toolbar--icons wp-toolbar wp-toolbar--icons" role="toolbar" aria-label="工作计划操作">
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="wpDBtnSave"
+                                title="保存工作计划" aria-label="保存">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 3h14l4 4v14H3V3zm2 2v14h14V8.2L15.8 5H5zm2 1h8v5H7V6zm1 9h6v3H8v-3z"/></svg>
+                        </button>
+						 <button type="button" class="el-button el-button--danger el-button--icon" id="wpDBtnDelete" disabled
+						         title="删除任务" aria-label="删除任务">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4h10l1 2h3v2H3V6h3l1-2zm-1 6h12l-1 11H7L6 10z"/></svg>
+                        </button>
+						<button type="button" class="el-button el-button--icon" id="wpDBtnPrint"
+                                title="打印 / 导出" aria-label="打印或导出">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M7 3h10v4H7V3zM5 8h14a2 2 0 012 2v6h-4v4H7v-4H3v-6a2 2 0 012-2zm4 10h6v2H9v-2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnBack"
+                                title="返回列表" aria-label="返回列表">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5L4 12l7 7v-5h9v-4h-9V5z"/></svg>
+                        </button>
+                        <span class="wp-sep"></span>
+                        <button type="button" class="el-button el-button--success el-button--icon" id="wpDBtnTask"
+                                title="新增任务" aria-label="新增任务">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnMilestone"
+                                title="新增里程碑（工期 0 天）" aria-label="新增里程碑">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 3h2v18H6V3zm3 1h9l-2.5 4L18 12h-9V4z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnSummary"
+                                title="新增摘要任务（分组汇总）" aria-label="新增摘要任务">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h3v2H5v12h1v2H3V4zm18 0v16h-3v-2h1V6h-1V4h3zM8 8h8v2H8V8zm0 4h8v2H8v-2zm0 4h8v2H8v-2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnImport"
+                                title="从 Excel 导入任务（责任人 / 参与人员写「工号 姓名」）" aria-label="导入任务">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M11 1h2v4h3l-4 4-4-4h3V1zM3 10h18v2.6H3zM3 10h2v11H3zM19 10h2v11h-2zM3 19h18v2H3zM11 12.6h2v6.4h-2z"/></svg>
+                        </button>
+                        <span class="wp-sep"></span>
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="wpDBtnProp" disabled
+                                title="任务属性（执行记录 / 责任人与参与人员）" aria-label="任务属性">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 8.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM10.6 2h2.8l.4 2.4 1.6.7 2.1-1.2 2 2-1.2 2.1.7 1.6 2.4.4v2.8l-2.4.4-.7 1.6 1.2 2.1-2 2-2.1-1.2-1.6.7-.4 2.4h-2.8l-.4-2.4-1.6-.7-2.1 1.2-2-2 1.2-2.1-.7-1.6L2 13.4v-2.8l2.4-.4.7-1.6L3.9 6.5l2-2 2.1 1.2 1.6-.7L10.6 2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnLink" disabled
+                                title="前置依赖（设置前置任务）" aria-label="前置依赖">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M10.6 13.4a3 3 0 004.2 0l2.8-2.8a3 3 0 00-4.2-4.2l-1 1 1.4 1.4 1-1a1 1 0 011.4 1.4l-2.8 2.8a1 1 0 01-1.4 0l-1.4 1.4zm2.8-2.8a3 3 0 00-4.2 0l-2.8 2.8a3 3 0 004.2 4.2l1-1-1.4-1.4-1 1a1 1 0 01-1.4-1.4l2.8-2.8a1 1 0 011.4 0l1.4-1.4z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnIndent" disabled
+                                title="缩进（降一级，成为上一条的子任务）" aria-label="缩进">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h12v2H3V5zm0 6h12v2H3v-2zm0 6h12v2H3v-2zM17 8l4 4-4 4v-3h-3v-2h3V8z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnOutdent" disabled
+                                title="升级（升一级，提升缩进层级）" aria-label="升级">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 5h12v2H9V5zm0 6h12v2H9v-2zm0 6h12v2H9v-2zM7 8L3 12l4 4v-3h3v-2H7V8z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnUp" disabled
+                                title="上移任务" aria-label="上移任务">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4l6 6h-4v10h-4V10H6l6-6z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnDown" disabled
+                                title="下移任务" aria-label="下移任务">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 20l-6-6h4V4h4v10h4l-6 6z"/></svg>
+                        </button>
+                       
+                       
+                        <span class="wp-sep"></span>
+                        <button type="button" class="el-button el-button--warning el-button--icon" id="wpDBtnStart"
+                                title="启动计划（派发工单并通知责任人与参与人员）" aria-label="启动计划">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7L8 5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnStop" disabled
+                                title="停止计划（仅创建人）" aria-label="停止计划">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M7 7h10v10H7z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnLog"
+                                title="变更日志（时间线）" aria-label="变更日志">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a9 9 0 100 18 9 9 0 000-18zm1 4v5.6l4.2 2.5-.8 1.4L11 13.6V7h2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="wpDBtnMyTask"
+                                title="我的任务" aria-label="我的任务">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h13v2H3V5zm0 6h13v2H3v-2zm0 6h9v2H3v-2zm16.2-3.2l1.4 1.4L16 20l-3-3 1.4-1.4L16 17.2l3.2-3.4z"/></svg>
+                        </button>
+                        
+                        <span class="wp-hint">共 <b id="wpDTaskCount">0</b> 条任务</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="el-card wp-board">
+                <div class="wp-head">
+                    <span class="wp-head__code" id="wpDCode">WP------</span>
+                    <span class="wp-head__title">计划名称</span>
+                    <input class="el-input__inner" type="text" id="wpDName" style="width:230px" maxlength="150">
+                    <label for="wpDStart">起止</label>
+                    <input class="el-input__inner" type="date" id="wpDStart" style="width:140px">
+                    <span>至</span>
+                    <input class="el-input__inner" type="date" id="wpDEnd" style="width:140px">
+                    <label for="wpDScale">刻度</label>
+                    <select class="el-input__inner" id="wpDScale" style="width:110px">
+                        <option value="day">日</option><option value="week">周</option><option value="month">月</option>
+                    </select>
+                    <label style="text-align:left"><input type="checkbox" id="wpDWeekend"> 周末非工作日</label>
+                    <label style="text-align:left"><input type="checkbox" id="wpDPub"> 公用</label>
+                    <span class="wp-grow"></span>
+                    <span class="wp-status is-off" id="wpDStatus">未启动</span>
+                    <span class="wp-head__code" id="wpDState">未修改</span>
+                </div>
+                <div class="wp-viewbar" id="wpDViewBar">
+                    <span class="wp-viewbar__label">展示风格</span>
+                    <button type="button" class="el-button el-button--small" id="wpDBtnViewGantt" data-view="gantt">▤ 甘特图</button>
+                    <button type="button" class="el-button el-button--small" id="wpDBtnViewCalendar" data-view="calendar">▦ 日历图</button>
+                    <button type="button" class="el-button el-button--small is-active" id="wpDBtnViewGrid" data-view="grid">☷ 网格列表</button>
+                    <span class="wp-viewbar__hint" id="wpDViewHint">拖动任务条改期，双击行编辑任务属性</span>
+                    <span class="wp-grow"></span>
+                    <span class="wp-hint" id="wpDViewInfo"></span>
+                </div>
+                <div class="wp-scroll" id="wpDScroll">
+                    <div class="wp-inner" id="wpDCanvas"></div>
+                </div>
+                <div class="wp-legend" id="wpDLegend">
+                    <span><i></i>任务（深色部分 = 完成百分比）</span>
+                    <span><i class="is-done"></i>已完成</span>
+                    <span><i class="is-milestone"></i>里程碑</span>
+                    <span><i class="is-summary"></i>摘要任务</span>
+                    <span>灰底 = 非工作日　红线 = 今天　灰箭头 = 前置依赖</span>
+                </div>
+            </section>
+        </main>
+</div>
+
+<!-- ============ 任务属性（Visio「任务选项」+ 执行记录） ============ -->
+<script type="text/template" id="wpTaskTpl">
+<div class="wp-form" id="wpTaskForm">
+    <label for="wpTName">任务名称</label>
+    <input class="el-input__inner wp-span2" type="text" id="wpTName" maxlength="200">
+    <label for="wpTType">任务类型</label>
+    <select class="el-input__inner wp-span2" id="wpTType">
+        <option value="task">任务</option><option value="milestone">里程碑（工期 0）</option>
+        <option value="summary">摘要任务</option>
+    </select>
+    <label for="wpTStart">开始日期</label>
+    <input class="el-input__inner" type="date" id="wpTStart">
+    <label for="wpTEnd">结束日期</label>
+    <input class="el-input__inner" type="date" id="wpTEnd">
+    <label for="wpTDuration">工期</label>
+    <input class="el-input__inner" type="text" id="wpTDuration" readonly>
+    <label for="wpTProgress">完成百分比</label>
+    <div style="display:flex;align-items:center;gap:8px">
+        <input type="range" id="wpTProgress" min="0" max="100" step="5" style="flex:1">
+        <span id="wpTProgressText" style="width:36px">0%</span>
+    </div>
+    <label for="wpTOwner">责任人</label>
+    <div class="wp-people wp-span2">
+        <input class="el-input__inner wp-people__names" type="text" id="wpTOwner" readonly
+               placeholder="点右侧按钮，从员工信息表或项目组成员选取">
+        <button type="button" class="el-button el-button--small" id="wpTBtnOwner">选取人员</button>
+        <button type="button" class="el-button el-button--small" id="wpTBtnOwnerClear">清空</button>
+    </div>
+    <label for="wpTParts">参与人员</label>
+    <div class="wp-people wp-span2">
+        <input class="el-input__inner wp-people__names" type="text" id="wpTParts" readonly
+               placeholder="可多选：员工信息表 / 项目组成员">
+        <button type="button" class="el-button el-button--small" id="wpTBtnParts">选取人员</button>
+        <button type="button" class="el-button el-button--small" id="wpTBtnPartsClear">清空</button>
+    </div>
+    <label for="wpTParent">上级摘要</label>
+    <select class="el-input__inner" id="wpTParent"><option value="">（顶级）</option></select>
+    <div class="wp-pre-row">
+        <label for="wpTPre">前置任务</label>
+        <div class="wp-pre-multi" id="wpTPreMulti">
+            <input type="hidden" id="wpTPre">
+            <button type="button" class="wp-pre-multi__box" aria-haspopup="true">
+                <span class="wp-pre-multi__text">请选择前置任务</span>
+                <span class="wp-pre-multi__caret">▾</span>
+            </button>
+            <div class="wp-pre-multi__drop" hidden>
+                <div class="wp-pre-multi__list" id="wpTPreList"></div>
+                <div class="wp-pre-multi__foot">
+                    <button type="button" class="wp-pre-multi__clear" id="wpTBtnPreClear">清空</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="wp-form__section">执行记录（可从「我的任务」工单直接回填）</div>
+    <label for="wpTExecStatus">完成状态</label>
+    <select class="el-input__inner" id="wpTExecStatus">
+        <option value="未开始">未开始</option><option value="进行中">进行中</option>
+        <option value="已完成">已完成</option><option value="已延期">已延期</option>
+        <option value="已取消">已取消</option>
+    </select>
+    <label for="wpTOrder">关联工单</label>
+    <div class="wp-people">
+        <input class="el-input__inner wp-people__names" type="text" id="wpTOrder" readonly
+               placeholder="启动计划后自动关联">
+        <button type="button" class="el-button el-button--small" id="wpTBtnOrder">查看工单</button>
+    </div>
+    <label for="wpTActualStart">实际开始</label>
+    <input class="el-input__inner" type="date" id="wpTActualStart">
+    <label for="wpTActualEnd">实际结束</label>
+    <input class="el-input__inner" type="date" id="wpTActualEnd">
+    <label for="wpTExecRemark">执行说明</label>
+    <textarea class="el-input__inner wp-span2 wp-exec-remark" id="wpTExecRemark" rows="3"
+              maxlength="1000" placeholder="执行过程 / 完成情况 / 偏差说明"></textarea>
+
+    <div class="wp-hintline"><!--提示：日期越界时保存会自动扩展计划时间刻度范围；里程碑结束日期自动等于开始日期。选人列表按组织架构树层次展示，可切换「员工信息表 / 项目组成员」。保存并「启动计划」后，责任人与参与人员会收到即时消息和邮件；计划已启动时，新增任务保存即自动派单并通知，在「我的任务」里就能看到与任务关联的工单。--></div>
+</div>
+</script>
+
+<!-- ============ 前置依赖选择 ============ -->
+<script type="text/template" id="wpLinkTpl">
+<div id="wpLinkForm" style="font-size:12px;color:#606266">
+    <div style="margin-bottom:8px">勾选本任务的<b>前置任务</b>（保存后画布上会画出依赖箭头）：</div>
+    <div id="wpLinkList" style="max-height:280px;overflow:auto;border:1px solid #ebeef5;border-radius:4px;padding:6px 10px"></div>
+    <div class="wp-hintline" style="margin-top:8px;color:#909399">不允许选择自己；形成循环依赖时保存会被后端拒绝。</div>
+</div>
+</script>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+<script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/wp-emp-picker.js?v=20261110d"></script>
+<script src="js/word-import.js?v=20261106c"></script>
+<!-- 附件在线预览：与项目文件管理同一套 js/file-preview.js -->
+<script src="js/file-preview.js?v=20261110e"></script>
+<script src="js/workplan-design.js?v=20261112d"></script>
+</body>
+</html>

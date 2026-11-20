@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="浅色科技感底纹">
+  <defs>
+    <!-- 极淡的对角光带（浅色底上的柔和过渡，四角为透明，平铺无缝） -->
+    <linearGradient id="ltBeam" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#409eff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#409eff" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#409eff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="ltBeam2" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12b3a6" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#12b3a6" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#12b3a6" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 底色留白（由 CSS 的 background-color 提供，跟随主题），这里只画纹理 -->
+
+  <!-- 细网格：每 50px 一条，0 / 400 对齐，平铺无缝 -->
+  <g stroke="#c8d5e6" stroke-opacity="0.55" stroke-width="1">
+    <path d="M50 0V400M100 0V400M150 0V400M200 0V400M250 0V400M300 0V400M350 0V400"/>
+    <path d="M0 50H400M0 100H400M0 150H400M0 200H400M0 250H400M0 300H400M0 350H400"/>
+  </g>
+  <!-- 主网格：每 200px 一条稍深的线（边框对齐，接缝处仍是一条） -->
+  <g stroke="#b3c6da" stroke-opacity="0.55" stroke-width="1">
+    <path d="M0 0V400M200 0V400M0 0H400M0 200H400"/>
+  </g>
+
+  <!-- 对角柔光带 -->
+  <g fill="none" stroke-width="18" stroke-linecap="butt">
+    <path d="M20 400 L400 20" stroke="url(#ltBeam)"/>
+    <path d="M0 300 L300 0" stroke="url(#ltBeam2)"/>
+  </g>
+
+  <!-- 电路细线与节点（浅灰蓝，安静不抢内容） -->
+  <g fill="none" stroke="#a9bed4" stroke-opacity="0.75" stroke-width="1.2">
+    <path d="M60 60h48v26h44"/>
+    <path d="M60 60v34h-24"/>
+    <path d="M296 120h44v54h-26"/>
+    <path d="M300 300h-56v32h-40"/>
+    <path d="M112 300v44h60"/>
+    <path d="M250 260v-40h40"/>
+  </g>
+  <g fill="#8fb6d8" fill-opacity="0.85">
+    <circle cx="152" cy="86" r="2.6"/>
+    <circle cx="60" cy="60" r="3"/>
+    <circle cx="340" cy="120" r="2.6"/>
+    <circle cx="314" cy="174" r="2.2"/>
+    <circle cx="204" cy="332" r="2.6"/>
+    <circle cx="172" cy="300" r="2.2"/>
+    <circle cx="290" cy="220" r="2.6"/>
+  </g>
+  <g fill="#7bc9c1" fill-opacity="0.6">
+    <circle cx="200" cy="200" r="2"/>
+    <circle cx="0" cy="200" r="2"/>
+    <circle cx="200" cy="0" r="2"/>
+    <circle cx="400" cy="200" r="2"/>
+  </g>
+
+  <!-- 六边形装饰（浅，避开边缘） -->
+  <g fill="none" stroke="#a9bed4" stroke-opacity="0.6" stroke-width="1.2">
+    <path d="M330 250l16-9 16 9v18l-16 9-16-9z"/>
+    <path d="M76 190l13-7.5 13 7.5v15l-13 7.5-13-7.5z" stroke-opacity="0.42"/>
+  </g>
+</svg>

@@ -1,0 +1,593 @@
+/* ==========================================================================
+   workplan.css —— 工作计划（列表 + Visio 风格甘特图设计器）
+   --------------------------------------------------------------------------
+   · 只被 workplan.html / workplan-design.html / workplan-task.html 引用，
+     **不进全站 app.css**（改这里不需要升 34 个页面里的 app.css?v=）；
+   · 操作区是标准 `.toolbar.toolbar--icons`（会被 page_scan.py 收录进 pageopbtn，
+     btnperm.js 再按角色授权加载；三页按钮清单与授权见 db/workplan-btn-perm.sql）；
+     同时保留 `.wp-toolbar` 系列自定义 class 只负责三页专属视觉；
+     按钮全部为纯图标（文案收进 title / aria-label）。
+   ========================================================================== */
+
+/* ---------- 操作引导区（与 .toolbar 视觉一致） ---------- */
+.wp-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 0;
+              padding: 2px 0 8px; }
+.wp-toolbar .el-button { margin-right: 8px; }
+.wp-toolbar .wp-hint { margin-left: auto; font-size: 12px; color: #909399; }
+.wp-toolbar .wp-hint b { color: #409eff; }
+.wp-toolbar .wp-sep { width: 1px; height: 22px; background: #dcdfe6; margin: 0 10px 0 2px; }
+
+/* 纯图标按钮（.wp-toolbar--icons）：按钮文字全部收进 title / aria-label（悬停显示原生提示），
+   视觉与项目页 .toolbar--icons、项目计划页一致；图标按钮本身由 app.css 的 .el-button--icon 定尺寸 */
+.wp-toolbar--icons .el-button--icon { margin-right: 8px; }
+.wp-toolbar--icons .el-button--icon .svg-ico {
+    width: 17px; height: 17px; margin: 0; vertical-align: 0;
+}
+.wp-toolbar--icons .el-button--icon:disabled { cursor: not-allowed; }
+.wp-toolbar--icons .wp-sep { height: 24px; }
+.wp-toolbar--icons .wp-hint { padding-left: 4px; }
+/* 保存按钮固定在操作引导区最左侧（第一个元素），与后面的新建类按钮用分隔线隔开 */
+.wp-toolbar--icons > #wpDBtnSave { margin-left: 0; margin-right: 8px; }
+@media screen and (max-width: 768px) {
+    .wp-toolbar--icons .el-button--icon {
+        -webkit-box-flex: 0; -ms-flex: 0 0 40px; flex: 0 0 40px;
+        width: 40px; padding: 0; margin: 0 6px 8px 0;
+    }
+}
+
+/* ---------- 列表页 ---------- */
+.wp-list .wp-progress { display: inline-block; width: 90px; height: 8px; border-radius: 5px;
+                        background: #ebeef5; overflow: hidden; vertical-align: middle; margin-right: 6px; }
+.wp-list .wp-progress > i { display: block; height: 100%; background: #409eff; }
+.wp-list .wp-progress.is-done > i { background: #67c23a; }
+
+/* ---------- 设计器：整体骨架 ---------- */
+body.wp-page .app-main { display: flex; flex-direction: column; }
+body.wp-page .wp-board { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.wp-board { border: 1px solid #ebeef5; border-radius: 4px; background: #fff; }
+.wp-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+           padding: 10px 14px; border-bottom: 1px solid #ebeef5; }
+.wp-head__title { font-size: 15px; font-weight: 600; color: #303133; }
+.wp-head__code { font-size: 12px; color: #909399; background: #f4f4f5;
+                 padding: 2px 6px; border-radius: 3px; }
+.wp-head .el-form-item { margin-bottom: 0; }
+.wp-head .el-input__inner { height: 30px; line-height: 30px; }
+.wp-head label { font-size: 12px; color: #606266; }
+.wp-head .wp-grow { flex: 1 1 auto; }
+.wp-tip { padding: 6px 14px; font-size: 12px; color: #909399; background: #fafcff;
+          border-bottom: 1px solid #ebeef5; }
+.wp-tip b { color: #409eff; }
+
+/* ---------- 画布 ---------- */
+.wp-scroll { flex: 1 1 auto; min-height: 320px; overflow: auto; position: relative; }
+.wp-inner { position: relative; min-width: 100%; }
+.wp-axis { display: flex; height: 48px; border-bottom: 1px solid #dcdfe6;
+           background: #fafbfc; position: relative; z-index: 3; }
+.wp-axis__label { flex: 0 0 280px; width: 280px; border-right: 1px solid #dcdfe6;
+                  display: flex; align-items: center; padding: 0 8px;
+                  font-size: 12px; font-weight: 600; color: #606266; box-sizing: border-box; }
+.wp-axis__scale { position: relative; flex: 0 0 auto; }
+.wp-axis__major, .wp-axis__minor { position: relative; height: 24px; }
+.wp-axis__major { border-bottom: 1px solid #ebeef5; }
+.wp-u { position: absolute; top: 0; height: 24px; box-sizing: border-box;
+        border-right: 1px solid #ebeef5; font-size: 11px; color: #909399;
+        text-align: center; line-height: 24px; overflow: hidden; white-space: nowrap; }
+.wp-u--major { color: #606266; font-weight: 600; background: #f5f7fa; }
+.wp-u--minor.is-weekend { background: #f2f3f5; color: #c0c4cc; }
+
+.wp-rows { position: relative; }
+.wp-row { display: flex; height: 34px; border-bottom: 1px solid #f0f2f5; }
+.wp-row:last-child { border-bottom: 0; }
+.wp-row.is-selected { background: #ecf5ff; }
+.wp-row__label { flex: 0 0 280px; width: 280px; box-sizing: border-box;
+                 border-right: 1px solid #dcdfe6; display: flex; align-items: center;
+                 gap: 4px; padding: 0 6px; font-size: 12px; color: #303133; }
+.wp-row__no { flex: 0 0 24px; color: #c0c4cc; text-align: right; font-size: 11px; }
+.wp-row__kind { flex: 0 0 16px; width: 16px; height: 16px; border-radius: 3px;
+                display: inline-block; text-align: center; line-height: 16px;
+                font-size: 10px; color: #fff; background: #409eff; }
+.wp-row__kind.is-milestone { background: #e6a23c; transform: rotate(45deg); }
+.wp-row__kind.is-summary { background: #606266; }
+.wp-row__name { flex: 1 1 auto; border: 0; background: transparent; outline: 0;
+                font-size: 12px; color: #303133; min-width: 0; padding: 2px 3px; }
+.wp-row__name:focus { background: #fff; border: 1px solid #409eff; border-radius: 3px; }
+.wp-row__owner { flex: 0 0 56px; color: #909399; font-size: 11px; text-align: right;
+                 overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.wp-row__track { position: relative; flex: 0 0 auto; height: 34px;
+                 background-image: linear-gradient(to right, #f0f2f5 1px, transparent 1px);
+                 background-size: var(--wp-unit-w, 32px) 100%; }
+.wp-off { position: absolute; top: 0; bottom: 0; background: rgba(0, 0, 0, .035); }
+.wp-today { position: absolute; top: 0; bottom: 0; width: 2px; background: #f56c6c;
+            z-index: 2; pointer-events: none; }
+.wp-today::after { content: '今'; position: absolute; top: -20px; left: -7px;
+                   font-size: 10px; color: #f56c6c; }
+
+/* 任务条 */
+.wp-bar { position: absolute; top: 9px; height: 16px; border-radius: 3px;
+          background: #409eff; color: #fff; font-size: 10px; line-height: 16px;
+          box-sizing: border-box; overflow: hidden; white-space: nowrap;
+          cursor: move; user-select: none; z-index: 1; }
+.wp-bar__fill { position: absolute; left: 0; top: 0; bottom: 0;
+                background: rgba(0, 0, 0, .22); pointer-events: none; }
+.wp-bar__text { position: relative; padding: 0 5px; pointer-events: none;
+                text-overflow: ellipsis; overflow: hidden; }
+.wp-bar.is-selected { outline: 2px solid #303133; outline-offset: 1px; }
+.wp-bar.is-done { background: #67c23a; }
+.wp-bar.is-late { background: #f56c6c; }
+.wp-bar--summary { top: 11px; height: 10px; border-radius: 0; background: #606266; }
+.wp-bar--summary::before, .wp-bar--summary::after {
+    content: ''; position: absolute; top: 10px; border-left: 5px solid transparent;
+    border-right: 5px solid transparent; border-top: 6px solid #606266; }
+.wp-bar--summary::before { left: 0; } .wp-bar--summary::after { right: 0; }
+.wp-bar--milestone { top: 8px; width: 16px !important; height: 16px; border-radius: 2px;
+                     background: #e6a23c; transform: rotate(45deg); cursor: move; }
+.wp-bar--milestone .wp-bar__fill, .wp-bar--milestone .wp-bar__text { display: none; }
+.wp-bar--milestone.is-done { background: #67c23a; }
+.wp-bar__handle { position: absolute; top: 0; bottom: 0; width: 6px; cursor: ew-resize; z-index: 2; }
+.wp-bar__handle--l { left: 0; } .wp-bar__handle--r { right: 0; }
+
+/* 依赖箭头层（跨行 SVG，点击穿透） */
+.wp-links { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; overflow: visible; }
+.wp-links path { fill: none; stroke: #909399; stroke-width: 1.2; }
+.wp-links path.is-critical { stroke: #e6a23c; stroke-width: 1.8; }
+
+.wp-empty { padding: 36px 16px; text-align: center; color: #909399; font-size: 13px; }
+.wp-legend { display: flex; flex-wrap: wrap; gap: 12px; padding: 6px 14px;
+             font-size: 11px; color: #909399; border-top: 1px solid #ebeef5; }
+.wp-legend i { display: inline-block; width: 14px; height: 8px; border-radius: 2px;
+               margin-right: 4px; vertical-align: middle; background: #409eff; }
+.wp-legend i.is-milestone { width: 9px; height: 9px; background: #e6a23c; transform: rotate(45deg); }
+.wp-legend i.is-summary { background: #606266; }
+.wp-legend i.is-done { background: #67c23a; }
+
+/* 属性弹窗 */
+.wp-form { display: grid; grid-template-columns: 90px 1fr 90px 1fr; gap: 10px 8px;
+           align-items: center; font-size: 12px; color: #606266; }
+.wp-form label { text-align: right; }
+.wp-form .el-input__inner, .wp-form select, .wp-form input, .wp-form textarea {
+    width: 100%; box-sizing: border-box; }
+.wp-form .wp-span2 { grid-column: span 3; }
+.wp-form .wp-hintline { grid-column: 1 / -1; color: #909399; font-size: 11px; }
+/* 占位元素：把后面的「执行说明」顶到新的一行，避免标签挤在完成百分比右侧 */
+.wp-form .wp-fill { grid-column: span 2; height: 1px; }
+/* 我的任务：表格行选中（打开任务 / 执行记录按钮在操作引导区） */
+.wp-list .el-table tbody tr { cursor: pointer; }
+.wp-list .el-table tbody tr.is-selected > td {
+    background: #ecf5ff; background: var(--theme-primary-light, #ecf5ff); }
+/* 新建计划：说明区给足高度，方便直接写目标 / 范围 / 约束 */
+.wp-form .wp-new-desc { min-height: 150px; padding: 8px 10px; line-height: 1.6;
+                        resize: vertical; font-family: inherit; }
+
+/* 任务属性：责任人 / 参与人员（从员工信息选取） */
+.wp-people { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.wp-people .el-input__inner { flex: 1 1 auto; min-width: 0; }
+.wp-people .el-button { flex: 0 0 auto; white-space: nowrap; }
+.wp-people__names { color: #606266; }
+.wp-people__names:empty::before { content: '未指定'; color: #c0c4cc; }
+.wp-emp-pick__chosen { display: flex; flex-wrap: wrap; gap: 6px; min-height: 26px;
+                       margin-bottom: 8px; padding: 6px 8px; border: 1px solid #ebeef5;
+                       border-radius: 4px; background: #fafbfc; }
+.wp-emp-pick__chosen:empty::before { content: '尚未选择员工'; color: #c0c4cc; font-size: 12px; }
+.wp-emp-pick__tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
+                    border-radius: 3px; background: #ecf5ff; color: #409eff; font-size: 12px; }
+.wp-emp-pick__tag b { cursor: pointer; font-weight: 600; }
+.wp-emp-pick__row.is-disabled { opacity: .55; cursor: not-allowed; }
+.wp-emp-pick__foot { display: flex; align-items: center; justify-content: space-between;
+                     padding-top: 10px; font-size: 12px; color: #909399; }
+
+/* ---------- 选人弹窗：人员来源切换 + 组织架构树层次 ---------- */
+.wp-ep-srcbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+                margin-bottom: 10px; font-size: 12px; }
+.wp-ep-srcbar__label { color: #606266; font-weight: 600; margin-right: 2px; }
+.wp-ep-src { padding: 5px 12px; border: 1px solid #dcdfe6; border-radius: 4px;
+             background: #fff; color: #606266; font-size: 12px; cursor: pointer; }
+.wp-ep-src:hover { border-color: #409eff; color: #409eff; }
+.wp-ep-src.is-active { border-color: #409eff; background: #ecf5ff; color: #409eff; font-weight: 600; }
+.wp-ep-srcbar__tip { margin-left: 6px; color: #909399; }
+.wp-ep-tree { max-height: 46vh; overflow: auto; border: 1px solid #ebeef5;
+              border-radius: 4px; background: #fff; }
+.wp-ep-dept { display: flex; align-items: center; gap: 6px; min-height: 32px;
+              padding-right: 10px; background: #f5f7fa; border-bottom: 1px solid #ebeef5;
+              cursor: pointer; user-select: none; font-size: 12px; }
+.wp-ep-dept:hover { background: #eef2f8; }
+.wp-ep-toggle { width: 14px; color: #909399; text-align: center; }
+.wp-ep-dept__name { font-weight: 600; color: #303133; }
+.wp-ep-dept__code { color: #909399; font-family: Consolas, Monaco, "Courier New", monospace; }
+.wp-ep-dept__count { margin-left: auto; color: #909399; font-size: 11px; }
+.wp-ep-emp { display: flex; align-items: center; gap: 8px; min-height: 34px;
+             padding-right: 10px; border-bottom: 1px solid #f5f7fa;
+             cursor: pointer; font-size: 12px; color: #606266; }
+.wp-ep-emp:hover { background: #f5f7fa; }
+.wp-ep-emp.is-selected { background: #ecf5ff; background: var(--theme-primary-light, #ecf5ff); }
+.wp-ep-emp.is-disabled { opacity: .55; cursor: not-allowed; }
+.wp-ep-emp.is-disabled:hover { background: transparent; }
+.wp-ep-emp input[type="checkbox"], .wp-ep-emp input[type="radio"] {
+    width: 14px; height: 14px; margin: 0; flex: 0 0 14px; }
+.wp-ep-emp__name { flex: 0 0 96px; font-weight: 600; color: #303133;
+                   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-ep-emp__code { flex: 0 0 78px; color: #909399;
+                   font-family: Consolas, Monaco, "Courier New", monospace; }
+.wp-ep-emp__dept { flex: 0 0 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-ep-emp__job { flex: 1 1 auto; min-width: 0; color: #909399;
+                  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-ep-emp .el-tag { flex: 0 0 auto; }
+.wp-ep-msg { padding: 26px 16px; text-align: center; color: #909399; line-height: 1.9; font-size: 12px; }
+
+/* ---------- 启动状态 / 我的任务 ---------- */
+.wp-status { display: inline-block; padding: 1px 8px; border-radius: 10px;
+             font-size: 11px; line-height: 18px; white-space: nowrap; }
+.wp-status.is-off { background: #f4f4f5; color: #909399; border: 1px solid #e9e9eb; }
+.wp-status.is-on { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
+.wp-role { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 11px; }
+.wp-role.is-owner { background: #ecf5ff; color: #409eff; }
+.wp-role.is-part { background: #fdf6ec; color: #e6a23c; }
+.wp-task-link { color: #409eff; text-decoration: none; }
+.wp-task-link:hover { text-decoration: underline; }
+.wp-start-tip { grid-column: 1 / -1; padding: 8px 10px; border-radius: 4px;
+                background: #fdf6ec; color: #e6a23c; font-size: 12px; line-height: 1.7; }
+
+/* ---------- 三视图：切换条 / 日历图 / 网格列表 ---------- */
+.wp-viewbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+              padding: 7px 14px; border-bottom: 1px solid #ebeef5; background: #fafcff; }
+.wp-viewbar__label { font-size: 12px; color: #606266; font-weight: 600; margin-right: 4px; }
+.wp-viewbar .el-button { margin-right: 2px; }
+.wp-viewbar .el-button.is-active { background: #409eff; border-color: #409eff; color: #fff; }
+.wp-viewbar__hint { font-size: 11px; color: #909399; margin-left: 10px; }
+.wp-viewbar .wp-grow { flex: 1 1 auto; }
+.wp-viewbar .wp-hint { font-size: 11px; color: #909399; }
+
+/* 完成状态配色：三种视图 + 标签共用 */
+.wp-exec-tag { display: inline-block; padding: 1px 7px; border-radius: 10px;
+               font-size: 11px; white-space: nowrap; }
+.wp-exec-tag.wp-exec-is-none { background: #f4f4f5; color: #909399; }
+.wp-exec-tag.wp-exec-is-doing { background: #ecf5ff; color: #409eff; }
+.wp-exec-tag.wp-exec-is-done { background: #f0f9eb; color: #67c23a; }
+.wp-exec-tag.wp-exec-is-late { background: #fef0f0; color: #f56c6c; }
+.wp-exec-tag.wp-exec-is-cancel { background: #f4f4f5; color: #c0c4cc; }
+.wp-bar:not(.wp-bar--summary):not(.wp-bar--milestone).wp-exec-is-done { background: #67c23a; }
+.wp-bar:not(.wp-bar--summary):not(.wp-bar--milestone).wp-exec-is-late { background: #f56c6c; }
+.wp-bar:not(.wp-bar--summary):not(.wp-bar--milestone).wp-exec-is-doing { background: #409eff; }
+.wp-bar.wp-exec-is-cancel { opacity: .5; }
+.wp-row.is-focus, .wp-bar.is-focus { outline: 2px solid #409eff; outline-offset: -2px; }
+
+.wp-cal { padding: 10px 14px 18px; }
+.wp-cal__title { margin: 10px 0 8px; font-size: 14px; color: #303133; }
+.wp-cal__grid { display: grid; grid-template-columns: repeat(7, minmax(118px, 1fr));
+                gap: 1px; background: #ebeef5; border: 1px solid #ebeef5; }
+.wp-cal__wd { background: #f5f7fa; text-align: center; font-size: 11px;
+              color: #606266; padding: 6px 0; font-weight: 600; }
+.wp-cal__cell { background: #fff; min-height: 88px; padding: 4px 5px; font-size: 11px; }
+.wp-cal__cell.is-blank, .wp-cal__cell.is-weekend { background: #fafbfc; }
+.wp-cal__cell.is-today { box-shadow: inset 0 0 0 2px #f56c6c; }
+.wp-cal__day { display: block; color: #909399; margin-bottom: 3px; }
+.wp-cal__cell.is-today .wp-cal__day { color: #f56c6c; font-weight: 700; }
+.wp-cal__task { border-radius: 3px; padding: 2px 5px; margin-bottom: 2px; cursor: pointer;
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                background: #ecf5ff; color: #409eff; border-left: 3px solid #409eff; }
+.wp-cal__task.wp-exec-is-none { background: #f4f4f5; color: #909399; border-left-color: #c0c4cc; }
+.wp-cal__task.wp-exec-is-done { background: #f0f9eb; color: #67c23a; border-left-color: #67c23a; }
+.wp-cal__task.wp-exec-is-late { background: #fef0f0; color: #f56c6c; border-left-color: #f56c6c; }
+.wp-cal__task.wp-exec-is-cancel { background: #f4f4f5; color: #c0c4cc; border-left-color: #dcdfe6; }
+.wp-cal__task.is-selected, .wp-cal__task.is-focus { outline: 2px solid #409eff; }
+.wp-cal__more { color: #909399; font-size: 10px; }
+
+.wp-grid { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
+.wp-grid th { background: #f5f7fa; color: #606266; font-weight: 600; padding: 8px 6px;
+              border-bottom: 1px solid #ebeef5; text-align: left; white-space: nowrap; }
+.wp-grid td { padding: 7px 6px; border-bottom: 1px solid #f0f2f5; color: #606266;
+              max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-grid .is-center { text-align: center; }
+.wp-grid__row { cursor: pointer; }
+.wp-grid__row:hover { background: #f5f7fa; }
+.wp-grid__row.is-selected, .wp-grid__row.is-focus { background: #ecf5ff; }
+.wp-grid__order { display: block; color: #909399; font-size: 10px; }
+.wp-grid__muted { color: #c0c4cc; }
+
+/* 任务属性 / 执行记录弹窗 */
+.wp-form__section { grid-column: 1 / -1; font-size: 12px; font-weight: 600;
+                    color: #409eff; border-top: 1px solid #ebeef5;
+                    padding-top: 9px; margin-top: 2px; }
+.wp-form .wp-exec-remark { min-height: 70px; padding: 6px 8px;
+                           line-height: 1.6; resize: vertical; }
+
+@media (max-width: 900px) {
+    .wp-axis__label, .wp-row__label { flex-basis: 200px; width: 200px; }
+    .wp-form { grid-template-columns: 80px 1fr; }
+    .wp-form .wp-span2 { grid-column: span 1; }
+}
+
+/* 打印 / 导出 PDF（Visio 的「共享日程」能力） */
+@media print {
+    .app-header, .app-side, .app-side__mask, .page-head, .wp-toolbar, .wp-head .el-button,
+    .wp-tip, .pager-wrap, .wp-legend, .search-card, .wp-viewbar { display: none !important; }
+    body.wp-page .app-main, .wp-board, .wp-scroll { overflow: visible !important;
+        height: auto !important; max-height: none !important; }
+    .wp-scroll { zoom: .72; }
+    .wp-bar, .wp-links, .wp-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* ---------- 变更日志时间线（设计器弹窗） ---------- */
+.wp-log { max-height: 420px; overflow-y: auto; padding: 4px 2px; }
+.wp-log__item { position: relative; padding: 0 0 14px 22px; border-left: 2px solid #ebeef5; margin-left: 6px; }
+.wp-log__item:last-child { border-left-color: transparent; padding-bottom: 0; }
+.wp-log__dot {
+    position: absolute; left: -6px; top: 2px; width: 10px; height: 10px; border-radius: 50%;
+    background: #909399; border: 2px solid #fff; box-shadow: 0 0 0 1px #dcdfe6;
+}
+.wp-log__item.is-add .wp-log__dot { background: #67c23a; }
+.wp-log__item.is-delete .wp-log__dot { background: #f56c6c; }
+.wp-log__item.is-update .wp-log__dot { background: #409eff; }
+.wp-log__item.is-exec .wp-log__dot { background: #e6a23c; }
+.wp-log__item.is-stop .wp-log__dot { background: #909399; }
+.wp-log__hd { font-size: 13px; color: #303133; }
+.wp-log__meta { font-size: 11px; color: #c0c4cc; margin-top: 2px; }
+.wp-log__detail {
+    margin-top: 4px; padding: 6px 8px; background: #fafbfc; border-radius: 4px;
+    font-size: 12px; color: #606266; white-space: pre-wrap; word-break: break-word;
+}
+.wp-log__empty { padding: 26px 0; text-align: center; color: #c0c4cc; font-size: 12px; }
+
+/* ---------- 执行记录数量徽标（网格 / 日历） ---------- */
+.wp-exec-link {
+    display: inline-block; padding: 0 6px; border-radius: 9px; font-size: 11px; line-height: 17px;
+    background: #ecf5ff; color: #409eff; cursor: pointer; text-decoration: none;
+}
+.wp-exec-link:hover { background: #d9ecff; }
+.wp-exec-muted { color: #c0c4cc; font-size: 11px; }
+.wp-cal__exec {
+    display: inline-block; margin-left: 3px; padding: 0 4px; border-radius: 8px;
+    background: rgba(255, 255, 255, .75); color: #409eff; font-size: 10px; cursor: pointer;
+}
+.wp-cal__exec:hover { background: #409eff; color: #fff; }
+
+/* ---------- 我的任务：执行记录历史 / 附件 ---------- */
+.wp-exec-files { font-size: 11px; color: #909399; word-break: break-all; }
+.wp-exec-item { padding: 6px 8px; margin-bottom: 6px; background: #fafbfc; border: 1px solid #ebeef5; border-radius: 5px; }
+.wp-exec-item__hd { font-size: 12px; color: #303133; }
+.wp-exec-item__meta { margin-left: 8px; font-size: 11px; color: #909399; }
+.wp-exec-item__body { margin-top: 3px; font-size: 12px; color: #606266; white-space: pre-wrap; word-break: break-word; }
+
+/* 甘特图行：执行记录徽标（点击查看记录与附件预览） */
+.wp-row__exec { margin-left: 6px; flex: 0 0 auto; }
+
+/* 执行记录对话框：整体限制在屏幕工作区内，历史记录区固定高度、超出垂直滚动 */
+.wp-exec-dialog {
+    display: flex; flex-direction: column;
+    margin-top: 4vh; max-height: calc(100vh - 6vh - 20px);
+}
+.wp-exec-dialog .el-dialog__header { flex: 0 0 auto; }
+.wp-exec-dialog .el-dialog__body {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto;
+    max-height: calc(100vh - 6vh - 170px);
+}
+.wp-exec-dialog .el-dialog__footer { flex: 0 0 auto; }
+#wtExHistory {
+    height: 190px; overflow-y: auto; padding: 8px 10px;
+    border: 1px solid #ebeef5; border-radius: 6px; background: #fafbfc;
+}
+#wtExHistory .wp-exec-item:last-child { margin-bottom: 0; }
+.wp-status.is-stop { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
+
+/* ---------- 计划工单页 ---------- */
+.wo-summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 12px; }
+.wo-summary__item {
+    padding: 6px 10px; border: 1px solid #ebeef5; border-radius: 6px;
+    background: #fafbfc; font-size: 12px; color: #606266; cursor: pointer;
+}
+.wo-summary__item:hover { border-color: #c6e2ff; }
+.wo-summary__item.is-active { border-color: #409eff; background: #ecf5ff; color: #409eff; }
+.wo-summary__name { font-weight: 600; margin-right: 8px; }
+.wp-orders__group td {
+    background: #f5f7fa; color: #606266; font-size: 12px; font-weight: 600; text-align: left;
+}
+.wo-actions .el-button--text { padding: 0 4px; }
+
+/* 复选下拉（工单状态 / 执行状态） */
+.wp-multi { position: relative; display: inline-block; width: 100%; }
+.wp-multi__btn {
+    width: 100%; text-align: left; cursor: pointer; background: #fff;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.wp-multi__panel {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20;
+    background: #fff; border: 1px solid #e4e7ed; border-radius: 4px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .12); padding: 4px 0; max-height: 200px; overflow-y: auto;
+}
+.wp-multi__panel[hidden] { display: none; }
+.wp-multi__opt {
+    display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+    font-size: 12px; color: #606266; cursor: pointer; white-space: nowrap;
+}
+.wp-multi__opt:hover { background: #f5f9ff; }
+.wp-multi__opt input { margin: 0; }
+
+/* 复选下拉不能被搜索卡片裁掉 */
+.wo-search-card { overflow: visible; }
+.wo-search-card .wp-multi__panel { z-index: 30; }
+
+/* ---------- 计划工单：结果区填充 / 打印全部 ---------- */
+.wo-print-only { display: none; }
+.wo-print-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.wo-print-table th, .wo-print-table td { border: 1px solid #999; padding: 4px 6px; text-align: left; }
+.wo-print-table th { background: #eee; }
+.wo-print-meta { margin: 6px 0 10px; font-size: 12px; color: #333; }
+@media print {
+    body.wo-printing .app-header,
+    body.wo-printing .app-side,
+    body.wo-printing .app-side__mask,
+    body.wo-printing .search-card,
+    body.wo-printing .page-head,
+    body.wo-printing .wp-toolbar,
+    body.wo-printing .wo-summary,
+    body.wo-printing #woPager,
+    body.wo-printing .table-card { display: none !important; }
+    body.wo-printing .app-main { margin: 0; padding: 0; display: block; height: auto; min-height: 0; }
+    body.wo-printing #woPrintArea { display: block !important; }
+    body.wo-printing .wo-print-table thead { display: table-header-group; }
+    @page { margin: 12mm; }
+}
+
+/* 计划工单：结果卡片内部也撑满，表格才能吃掉剩余高度 */
+body.wo-page .table-card > .el-card__body {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+    -ms-flex-direction: column; flex-direction: column;
+    min-height: 0;
+}
+body.wo-page .table-wrapper { -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; height: 0; min-height: 0; overflow: auto; }
+
+/* ---------- 设计页嵌入预览（项目详情弹窗）：只保留视图区 ---------- */
+body.wp-preview { overflow: hidden; }
+body.wp-preview .app-header,
+body.wp-preview .app-side,
+body.wp-preview .app-side__mask,
+body.wp-preview .page-head,
+body.wp-preview .wp-toolbar,
+body.wp-preview .wp-head { display: none !important; }
+body.wp-preview .app-body { padding-top: 0; }
+body.wp-preview .app-main {
+    margin: 0; padding: 0; height: 100vh; min-height: 0;
+    display: flex; flex-direction: column;
+}
+body.wp-preview .wp-board {
+    flex: 1 1 auto; min-height: 0; margin: 0; border: 0; border-radius: 0;
+    display: flex; flex-direction: column;
+}
+body.wp-preview .wp-viewbar { flex: 0 0 auto; }
+body.wp-preview .wp-scroll { flex: 1 1 auto; min-height: 0; }
+body.wp-preview .app-main > .el-card:not(.wp-board) { display: none !important; }
+
+
+/* 我的任务：角色 / 完成状态 / 工单状态复选下拉 */
+.wt-multi { position: relative; width: 100%; min-width: 130px; }
+.wt-multi__box { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; padding: 0 9px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; color: #606266; font-size: 13px; text-align: left; cursor: pointer; }
+.wt-multi__box:hover, .wt-multi__box:focus { border-color: #409eff; outline: none; }
+.wt-multi__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wt-multi__caret { flex: 0 0 auto; margin-left: 6px; color: #c0c4cc; }
+.wt-multi.has-value .wt-multi__text { color: #303133; }
+.wt-multi__drop { position: absolute; left: 0; right: 0; top: 36px; z-index: 50; padding: 6px 4px; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.wt-multi__opt { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 13px; color: #606266; cursor: pointer; }
+.wt-multi__opt:hover { background: #f5f7fa; color: #409eff; }
+.wt-multi__opt input { margin: 0; }
+.wt-multi__foot { padding: 4px 8px 2px; border-top: 1px solid #f0f2f5; text-align: right; }
+.wt-multi__clear { padding: 0; border: 0; background: none; color: #909399; font-size: 12px; cursor: pointer; }
+.wt-multi__clear:hover { color: #f56c6c; }
+
+/* 复选下拉不能被搜索卡片的 overflow:hidden 裁掉 */
+.search-card { overflow: visible; }
+
+
+/* 任务属性：前置任务整行（标签 + 下拉） */
+.wp-form .wp-pre-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
+.wp-form .wp-pre-row > label { flex: 0 0 90px; width: 90px; text-align: right; }
+.wp-form .wp-pre-row .wp-pre-multi { flex: 1 1 auto; min-width: 0; }
+
+/* 任务属性：前置任务复选下拉 */
+.wp-pre-multi { position: relative; width: 100%; }
+.wp-pre-multi__box { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; padding: 0 9px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; color: #606266; font-size: 13px; text-align: left; cursor: pointer; }
+.wp-pre-multi__box:hover, .wp-pre-multi__box:focus { border-color: #409eff; outline: none; }
+.wp-pre-multi__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-pre-multi__caret { flex: 0 0 auto; margin-left: 6px; color: #c0c4cc; }
+.wp-pre-multi.has-value .wp-pre-multi__text { color: #303133; }
+.wp-pre-multi__drop { position: absolute; left: 0; right: 0; top: 36px; z-index: 80; max-height: 230px; overflow: auto; padding: 5px 4px; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.wp-pre-multi__opt { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 13px; color: #606266; cursor: pointer; }
+.wp-pre-multi__opt:hover { background: #f5f7fa; color: #409eff; }
+.wp-pre-multi__opt input { width: auto; flex: 0 0 auto; margin: 0; }
+.wp-pre-multi__foot { padding: 4px 8px 2px; border-top: 1px solid #f0f2f5; text-align: right; }
+.wp-pre-multi__clear { padding: 0; border: 0; background: none; color: #909399; font-size: 12px; cursor: pointer; }
+.wp-pre-multi__clear:hover { color: #f56c6c; }
+.wp-pre-multi__empty { padding: 10px; text-align: center; color: #c0c4cc; font-size: 12px; }
+
+
+/* 计划工单：查询检索区压缩为一行 */
+.wo-search-card .search-form { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; }
+.wo-search-card .search-form .el-form-item { display: flex; align-items: center; margin: 0; flex: 0 1 auto; min-width: 0; }
+.wo-search-card .search-form .search-item--kw { flex: 0 1 auto; min-width: 0; max-width: none; }
+.wo-search-card .search-form .el-form-item__label { width: auto; flex: 0 0 auto; padding: 0 5px 0 0; font-size: 12px; white-space: nowrap; }
+.wo-search-card .search-form .el-form-item__content { flex: 1 1 auto; min-width: 0; margin-left: 0; }
+.wo-search-card .search-form .el-input, .wo-search-card .search-form .search-input--select { width: 100%; max-width: none; }
+.wo-search-card #woProject, .wo-search-card #woPlan { width: 104px; }
+.wo-search-card .wp-multi { width: 132px; }
+.wo-search-card #woOwner { width: 76px; }
+.wo-search-card #woKeyword { width: 104px; }
+.wo-search-card .search-btns { flex: 0 0 auto; }
+.wo-search-card .search-btns .el-button { height: 32px; padding: 0 12px; line-height: 30px; }
+.wo-search-card .wp-multi__btn { font-size: 12px; padding: 0 8px; }
+
+
+/* 计划工单复选下拉：清空 */
+.wp-multi__foot { padding: 5px 10px 2px; border-top: 1px solid #f0f2f5; text-align: right; }
+.wp-multi__clear { padding: 0; border: 0; background: none; color: #909399; font-size: 12px; cursor: pointer; }
+.wp-multi__clear:hover { color: #f56c6c; }
+
+
+/* ==========================================================================
+   Excel 导入任务（workplan-design.html · 工具栏「导入任务」）
+   --------------------------------------------------------------------------
+   结构与 js/workplan-design.js 的 openImport() 一一对应：
+     .wp-imp__step 三步引导 → .wp-imp__preview 预览表 → .wp-imp__opts 追加/覆盖 → .wp-imp__tips 提示
+   主色仍走 var(--theme-primary) 双写，与全站皮肤保持一致。
+   ========================================================================== */
+.wp-imp { font-size: 13px; color: #606266; }
+.wp-imp__step { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px dashed #ebeef5; }
+.wp-imp__step:last-of-type { border-bottom: 0; }
+.wp-imp__no {
+  flex: 0 0 20px; width: 20px; height: 20px; line-height: 20px; margin-top: 1px; text-align: center;
+  border-radius: 50%; background: #409eff; background: var(--theme-primary, #409eff);
+  color: #fff; font-size: 12px;
+}
+.wp-imp__body { flex: 1; min-width: 0; line-height: 1.75; }
+.wp-imp__body b { color: #303133; font-weight: 500; }
+.wp-imp__link { margin-top: 1px; }
+.wp-imp__link a { color: #409eff; color: var(--theme-primary, #409eff); text-decoration: underline; }
+.wp-imp__pick { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.wp-imp__file { color: #909399; font-size: 12px; word-break: break-all; }
+.wp-imp__stats { margin-top: 6px; }
+.wp-imp__stats.is-error { color: #f56c6c; }
+.wp-imp__stats .is-pass { color: #67c23a; font-weight: 500; }
+.wp-imp__stats .is-fail { color: #f56c6c; font-weight: 500; }
+.wp-imp__mock {
+  display: inline-block; padding: 0 6px; border-radius: 3px;
+  background: #fdf6ec; color: #e6a23c; font-size: 12px;
+}
+.wp-imp__preview { margin-top: 10px; border: 1px solid #ebeef5; border-radius: 4px; background: #fff; }
+.wp-imp__scroll { max-height: 300px; overflow: auto; }
+.wp-imp__empty { padding: 22px 12px; text-align: center; color: #909399; }
+/* 列宽策略：桌面一屏放得下（min-width 920 与 980 弹窗配平），窄屏改为表格内横向滚动，
+   任务名称过长一律单行省略（hover 有 title 看全名），不会把整行挤成三行。 */
+.wp-imp__table { width: 100%; min-width: 920px; border-collapse: collapse; font-size: 12px; }
+.wp-imp__table .is-c-no { width: 44px; }
+.wp-imp__table .is-c-type { width: 62px; }
+.wp-imp__table .is-c-date { width: 86px; }
+.wp-imp__table .is-c-owner { width: 84px; }
+.wp-imp__table .is-c-parts { width: 128px; }
+.wp-imp__table .is-c-check { width: 178px; }
+.wp-imp__table th {
+  position: sticky; top: 0; z-index: 1; background: #f5f7fa; color: #606266; font-weight: 500;
+  text-align: left; padding: 7px 8px; white-space: nowrap; border-bottom: 1px solid #ebeef5;
+}
+.wp-imp__table td { padding: 6px 8px; border-bottom: 1px solid #f2f6fc; vertical-align: top; }
+.wp-imp__table tbody tr:last-child td { border-bottom: 0; }
+.wp-imp__table tr.is-bad td { background: #fef0f0; }
+.wp-imp__table td.is-pass { color: #67c23a; white-space: nowrap; }
+.wp-imp__table td.is-fail { color: #f56c6c; }
+.wp-imp__table .is-no { text-align: center; white-space: nowrap; }
+.wp-imp__table .is-mid { white-space: nowrap; }
+.wp-imp__table td.is-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-imp__table td.is-name { overflow: hidden; }
+.wp-imp__name {
+  display: block; max-width: 240px; color: #303133;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wp-imp__opts { display: flex; gap: 24px; align-items: center; margin-top: 10px; }
+.wp-imp__tips { margin-top: 8px; }
+.wp-imp__tip { color: #909399; font-size: 12px; line-height: 1.7; }
+.wp-imp__tip.is-warn { color: #e6a23c; }
+.wp-imp-dialog .el-dialog__body { padding-top: 2px; }
+/* 桌面按 980 排；窗口不够宽时收回来，靠表格内部横向滚动兜底 */
+.wp-imp-dialog { max-width: calc(100vw - 40px); }
+@media (max-width: 768px) {
+  .wp-imp__opts { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .wp-imp__scroll { max-height: 220px; }
+}

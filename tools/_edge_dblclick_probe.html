@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>dblclick preview probe（真实浏览器：单击不重建节点 + 双击出预览）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1460px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：验证「目录」视图里双击文件叶子节点能打开在线预览。
+   关键点：单击选中后节点不能被重建（节点被换掉时 dblclick 可能派发给容器 → 委托匹配不到）。
+   后端不参与：注入 api.js 之前打死 jQuery.ajax → api.js 自动回退 Mock。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+    var fr = document.getElementById('fr');
+
+    fetch('../project.html').then(function (r) { return r.text(); }).then(function (html) {
+        html = html.replace('<head>', '<head>\n<base href="/">');
+        var patch = '<script>\n' +
+            'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe",account:"13813970452",' +
+            'empId:3,ename:"探针",expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n' +
+            'window.__ajaxBlocked=0;\n' +
+            'jQuery.ajax=function(){window.__ajaxBlocked++;var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        if (!re.test(html)) { attr('data-done', 'no-api-tag'); return; }
+        html = html.replace(re, patch + '<script src="js/api.js?v=20261107c"><\/script>');
+
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        setTimeout(function () { start(w, doc); }, 1200);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    function start(w, doc) {
+        var tries = 0;
+        (function waitRows() {
+            var rows = doc.querySelectorAll('#pjTbody tr[data-id]');
+            if (!rows.length && tries < 60) { tries++; return setTimeout(waitRows, 250); }
+            attr('data-rows', String(rows.length));
+            if (!rows.length) { attr('data-done', 'no-rows'); return; }
+            var row = rows[0];
+            for (var i = 0; i < rows.length; i++) {
+                if (/九豆/.test(rows[i].textContent)) { row = rows[i]; break; }
+            }
+            row.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+            row.dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true }));
+            setTimeout(function () {
+                var tab = doc.querySelector('#pfTabTree');
+                if (tab) { tab.click(); }
+                setTimeout(function () { runDblclick(w, doc); }, 2400);
+            }, 900);
+        })();
+    }
+
+    function runDblclick(w, doc) {
+        var d = fr.contentDocument;
+        var files = [].slice.call(d.querySelectorAll('#pfTreeView .pj-tnode--file'));
+        attr('data-file-count', String(files.length));
+        var target = files.filter(function (n) { return /架构设计\.png/.test(n.textContent); })[0] || null;
+        attr('data-has-target', target ? 'yes' : 'no');
+        if (!target) { attr('data-done', 'no-target'); return; }
+
+        var cr = target.getBoundingClientRect();
+        var x = Math.round(cr.left + cr.width / 2), y = Math.round(cr.top + cr.height / 2);
+        attr('data-point', x + ',' + y);
+
+        // ① 打一个标记，单击后如果被重建标记就会消失
+        target.setAttribute('data-probe-mark', '1');
+        var hitBefore = d.elementFromPoint(x, y);
+        attr('data-hit-before', hitBefore === target || target.contains(hitBefore) ? 'self' : String(hitBefore && hitBefore.className));
+
+        // ② 真实鼠标第一次点击（冒泡到 #pfTreeView 上的委托 handler）
+        target.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+        var hitAfter = d.elementFromPoint(x, y);
+        var nodeAfter = hitAfter && hitAfter.closest ? hitAfter.closest('.pj-tnode') : null;
+        attr('data-node-rebuilt', nodeAfter === target ? 'no' : 'yes');
+        attr('data-mark-kept', target.getAttribute('data-probe-mark') === '1' ? 'yes' : 'no');
+        attr('data-selected', target.classList.contains('is-selected') ? 'yes' : 'no');
+        attr('data-identity', nodeAfter === target ? 'same' : 'different');
+
+        // ③ 第二次点击 + dblclick（浏览器在第二次点击后派发 dblclick）
+        var nodeForSecond = nodeAfter || target;
+        nodeForSecond.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+        nodeForSecond.dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+
+        setTimeout(function () {
+            var dlgs = d.querySelectorAll('.el-dialog');
+            var last = dlgs[dlgs.length - 1] || null;
+            attr('data-dialog-count', String(dlgs.length));
+            var title = last ? (last.querySelector('.el-dialog__title') || {}).textContent || '' : '';
+            attr('data-dialog-title', title.trim().slice(0, 40));
+            var img = last ? last.querySelector('.fp-img') : null;
+            attr('data-img-src', img ? String(img.getAttribute('src') || '') : 'none');
+            attr('data-img-ok', img && /architecture\.png$/.test(String(img.getAttribute('src') || '')) ? 'yes' : 'no');
+            /* 探针站没有 data/projectfiles/demo 目录，图片会 404 → 组件降级成「加载失败 + 下载」，
+               这里只证明预览组件确实跑起来了（有 .fp-stage，且要么 .fp-img 要么 .fp-error） */
+            var stage = last ? last.querySelector('.fp-stage') : null;
+            var fpErr = last ? last.querySelector('.fp-error') : null;
+            attr('data-stage', stage ? 'yes' : 'no');
+            attr('data-stage-fallback', fpErr ? 'error-stage' : (img ? 'img-stage' : 'unknown'));
+            attr('data-errors', errs.join(' || '));
+            attr('data-done', 'yes');
+            log('files=' + files.length + ' title=' + title.trim() + ' img=' + (img ? img.getAttribute('src') : 'none'));
+        }, 900);
+    }
+
+    window.onerror = function (m) { errs.push(String(m)); };
+})();
+</script>
+</body>
+</html>

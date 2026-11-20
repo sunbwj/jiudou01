@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>dir tree probe</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1400px;height:900px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr" src=""></iframe>
+<script>
+(function () {
+    var q = new URLSearchParams(location.search);
+    var tk = q.get('tk') || '';
+    var pid = q.get('pid') || '';
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+
+    try {
+        localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+            token: tk, account: q.get('acc') || '13813970452', empId: 1,
+            ename: q.get('ename') || '', expireAt: Date.now() + 6 * 3600 * 1000,
+            time: new Date().toISOString(), ttlHours: 8
+        }));
+    } catch (e) { errs.push('localStorage: ' + e.message); }
+
+    var fr = document.getElementById('fr');
+    fr.src = '../project.html?probe=1';
+    var t0 = Date.now();
+
+    fr.onload = function () {
+        var w = fr.contentWindow, d = fr.contentDocument;
+        w.onerror = function (m, u, l, c, e) {
+            errs.push('iframe error: ' + m + ' @' + l +
+                (e && e.stack ? ' STACK:' + String(e.stack).replace(/\n/g, ' << ').slice(0, 500) : ''));
+        };
+        w.addEventListener('error', function (e) {
+            if (e && e.error && e.error.stack) {
+                errs.push('ev-stack: ' + String(e.error.stack).replace(/\n/g, ' << ').slice(0, 500));
+            }
+        });
+        var tries = 0;
+        (function waitRows() {
+            var rows = d.querySelectorAll('#pjTbody tr[data-id]');
+            if (!rows.length && tries < 60) { tries++; return setTimeout(waitRows, 250); }
+            attr('data-rows', String(rows.length));
+            var target = null;
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i].getAttribute('data-id') === pid) { target = rows[i]; break; }
+            }
+            if (!target) { target = rows[0]; }
+            attr('data-picked', target ? target.getAttribute('data-id') : '');
+            if (!target) { attr('data-done', 'no-rows'); return; }
+            var ev = new w.MouseEvent('dblclick', { bubbles: true, cancelable: true });
+            target.dispatchEvent(ev);
+            setTimeout(function () {
+                var tab = d.querySelector('#pfTabTree');
+                attr('data-tab-exists', tab ? '1' : '0');
+                if (tab) { tab.click(); }
+                setTimeout(function () {
+                    var view = d.querySelector('#pfTreeView');
+                    var dirs = d.querySelectorAll('#pfTreeView .pj-tnode--dir');
+                    var files = d.querySelectorAll('#pfTreeView .pj-tnode--file');
+                    var html = view ? view.innerHTML.replace(/\s+/g, ' ').slice(0, 600) : '';
+                    attr('data-dirs', String(dirs.length));
+                    attr('data-files', String(files.length));
+                    attr('data-view-html', html);
+                    attr('data-view-display', view ? (view.style.display || getComputedStyle(view).display) : 'none');
+                    attr('data-errors', errs.join(' || '));
+                    attr('data-elapsed', String(Date.now() - t0));
+                    attr('data-done', 'yes');
+                    try { attr('data-debug', JSON.stringify(w.__pjDebug || {}).slice(0, 900)); } catch (e) { attr('data-debug', 'err'); }
+                    log('dirs=' + dirs.length + ' files=' + files.length);
+                    log('errs=' + errs.join(' | '));
+                }, 1200);
+            }, 2200);
+        })();
+    };
+})();
+</script>
+</body>
+</html>

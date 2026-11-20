@@ -1,0 +1,308 @@
+/* ==========================================================================
+   help.css —— 帮助中心 · 使用说明书（页面级样式）
+   --------------------------------------------------------------------------
+   · 只被 help.html 引用，不改 app.css / element-ui.css（不触发全站版本号升级）；
+   · 颜色与尺寸沿用全站基调：主色 #409eff、正文 #606266、字号 13~14px、卡片 4px 圆角；
+   · 硬编码色值后紧跟 var(--theme-*) 覆盖，保持与其它页面一致的降级写法。
+   ========================================================================== */
+
+/* ---------- 布局：左目录（吸顶） + 右正文 ---------- */
+.help-layout {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: start; -ms-flex-align: start; align-items: flex-start;
+    gap: 16px;
+}
+
+/* ---------- 左：目录卡 ---------- */
+.help-toc {
+    -webkit-box-flex: 0; -ms-flex: 0 0 268px; flex: 0 0 268px;
+    position: -webkit-sticky; position: sticky; top: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+    -ms-flex-direction: column; flex-direction: column;
+    max-height: calc(100vh - 120px);
+    margin-bottom: 0;
+    overflow: hidden;
+}
+.help-toc__head {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #f2f6fc;
+    border-bottom: 1px solid var(--theme-border-light, #f2f6fc);
+}
+.help-toc__title {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    gap: 6px;
+    margin: 0 0 2px;
+    font-size: 14px; font-weight: 600; color: #303133;
+}
+.help-toc__title svg { width: 16px; height: 16px; color: #409eff; color: var(--theme-primary, #409eff); }
+.help-toc__hint { font-size: 12px; color: #909399; }
+
+/* 目录内检索框（复用 el-input 基座，只把高度压到 32px） */
+.help-toc__search { padding: 10px 12px 6px; }
+.help-toc__search .el-input__inner { height: 32px; line-height: 32px; font-size: 12px; padding-left: 30px; }
+.help-toc__search .el-input__prefix { display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; width: 30px; }
+.help-toc__search .el-input__prefix svg { width: 14px; height: 14px; color: #c0c4cc; }
+
+.help-toc__list {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    min-height: 120px;
+    padding: 4px 8px 10px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.help-toc__ch {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 4px;
+    font-size: 13px; color: #303133;
+    cursor: pointer;
+    -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+}
+.help-toc__ch:hover { background: #f5f7fa; background: var(--theme-fill-light, #f5f7fa); color: #409eff; color: var(--theme-primary, #409eff); }
+.help-toc__ch.is-active {
+    background: #ecf5ff; background: var(--theme-primary-light, #ecf5ff);
+    color: #409eff; color: var(--theme-primary, #409eff);
+    font-weight: 600;
+}
+.help-toc__no {
+    -ms-flex: 0 0 20px; flex: 0 0 20px;
+    font-size: 12px; color: #c0c4cc; font-family: Consolas, Monaco, "Courier New", monospace;
+}
+.help-toc__ch.is-active .help-toc__no { color: #409eff; color: var(--theme-primary, #409eff); }
+.help-toc__name { -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.help-toc__dot { width: 5px; height: 5px; border-radius: 50%; background: #f56c6c; -ms-flex: 0 0 auto; flex: 0 0 auto; }
+
+.help-toc__subs { padding: 0 0 4px; }
+.help-toc__sub {
+    display: block;
+    padding: 5px 9px 5px 37px;
+    border-radius: 4px;
+    font-size: 12px; line-height: 1.5; color: #606266;
+    cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.help-toc__sub:hover { background: #f5f7fa; color: #409eff; }
+.help-toc__sub.is-active { color: #409eff; color: var(--theme-primary, #409eff); background: #f5f9ff; }
+
+.help-toc__empty { padding: 18px 10px; text-align: center; font-size: 12px; color: #c0c4cc; }
+
+/* 目录底部：工具按钮（自定义容器，**不要**用 .toolbar，避免被 page_scan 收录成按钮权限） */
+.help-toc__foot {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid #f2f6fc;
+    background: #fafbfc;
+    border-radius: 0 0 4px 4px;
+}
+.help-tools { display: -webkit-box; display: -ms-flexbox; display: flex; gap: 8px; }
+.help-tools .el-button { height: 30px; padding: 0 10px; font-size: 12px; }
+.help-tools .el-button svg { width: 14px; height: 14px; }
+
+/* ---------- 右：正文卡 ---------- */
+.help-doc {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    min-width: 0;
+    margin-bottom: 0;
+    padding: 0;
+    overflow: hidden;
+}
+.help-doc__body { padding: 22px 26px 30px; }
+
+/* 文档信息条 */
+.help-meta {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+    gap: 8px 22px;
+    padding: 12px 16px;
+    margin: 0 0 18px;
+    border: 1px solid #ebeef5;
+    border-radius: 4px;
+    background: #fafbfc;
+    font-size: 12px; color: #909399;
+}
+.help-meta b { color: #303133; font-weight: 600; }
+.help-meta__item { display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex; -webkit-box-align: center; -ms-flex-align: center; align-items: center; gap: 5px; }
+
+/* 章节 */
+.help-chapter { padding-top: 4px; }
+.help-chapter + .help-chapter { margin-top: 30px; padding-top: 24px; border-top: 1px solid #f2f6fc; }
+.help-chapter__title {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 4px;
+    font-size: 18px; font-weight: 600; color: #303133;
+    scroll-margin-top: 12px;
+}
+.help-chapter__no {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    background: #409eff; background: var(--theme-primary, #409eff);
+    color: #fff; font-size: 12px; font-weight: 400; letter-spacing: .5px;
+}
+.help-chapter__desc { margin: 0 0 4px; font-size: 13px; line-height: 1.7; color: #909399; }
+
+.help-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 9px;
+    border: 1px solid #f5dab1;
+    background: #fdf6ec;
+    color: #e6a23c;
+    font-size: 11px; font-weight: 400;
+}
+.help-badge--off { border-color: #e9e9eb; background: #f4f4f5; color: #909399; }
+
+/* 小节 */
+.help-sec { margin-top: 18px; padding-top: 16px; border-top: 1px dashed #ebeef5; }
+.help-chapter__desc + .help-sec { margin-top: 12px; }
+.help-sec__title {
+    margin: 0 0 6px;
+    padding-left: 9px;
+    border-left: 3px solid #409eff; border-left: 3px solid var(--theme-primary, #409eff);
+    font-size: 15px; font-weight: 600; color: #303133; line-height: 1.3;
+    scroll-margin-top: 12px;
+}
+.help-sec p { margin: 8px 0; font-size: 13px; line-height: 1.85; color: #606266; }
+.help-sec strong { color: #303133; }
+.help-sec em { font-style: normal; color: #409eff; color: var(--theme-primary, #409eff); }
+.help-sec ul { margin: 8px 0; padding-left: 20px; }
+.help-sec ul li { margin: 3px 0; font-size: 13px; line-height: 1.8; color: #606266; list-style: disc; }
+.help-sec code, .help-kbd {
+    padding: 1px 5px;
+    border: 1px solid #e4e7ed;
+    border-radius: 3px;
+    background: #fafbfc;
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    font-size: 12px; color: #606266;
+}
+
+/* 步骤 */
+.help-steps { margin: 10px 0; padding: 0; list-style: none; counter-reset: hstep; }
+.help-steps > li {
+    position: relative;
+    margin: 0 0 8px;
+    padding-left: 30px;
+    font-size: 13px; line-height: 1.8; color: #606266;
+}
+.help-steps > li:before {
+    counter-increment: hstep;
+    content: counter(hstep);
+    position: absolute; left: 0; top: 2px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #409eff; background: var(--theme-primary, #409eff);
+    color: #fff; font-size: 12px; line-height: 20px; text-align: center;
+}
+
+/* 表格 */
+.help-table {
+    width: 100%;
+    margin: 10px 0 14px;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.help-table th {
+    padding: 8px 10px;
+    border: 1px solid #ebeef5;
+    background: #f5f7fa;
+    color: #606266; font-weight: 600; text-align: left; white-space: nowrap;
+}
+.help-table td { padding: 8px 10px; border: 1px solid #ebeef5; color: #606266; line-height: 1.7; vertical-align: top; }
+.help-table tr:hover td { background: #fafbfc; }
+.help-table .is-nowrap { white-space: nowrap; }
+.help-table .is-center { text-align: center; }
+.help-table a { color: #409eff; color: var(--theme-primary, #409eff); text-decoration: none; }
+.help-table a:hover { text-decoration: underline; }
+
+/* 状态流（用箭头串起来） */
+.help-flow { display: -webkit-box; display: -ms-flexbox; display: flex; -ms-flex-wrap: wrap; flex-wrap: wrap; -webkit-box-align: center; -ms-flex-align: center; align-items: center; gap: 6px; margin: 10px 0 14px; }
+.help-flow__step {
+    padding: 3px 10px;
+    border: 1px solid #b3d8ff;
+    border-radius: 14px;
+    background: #ecf5ff;
+    color: #409eff;
+    font-size: 12px;
+}
+.help-flow__step.is-end { border-color: #e9e9eb; background: #f4f4f5; color: #909399; }
+.help-flow__step.is-ok { border-color: #c2e7b0; background: #f0f9eb; color: #67c23a; }
+.help-flow__step.is-bad { border-color: #fbc4c4; background: #fef0f0; color: #f56c6c; }
+.help-flow__arrow { color: #c0c4cc; font-size: 12px; }
+
+/* 提示块 */
+.help-tip {
+    margin: 10px 0;
+    padding: 9px 12px;
+    border-left: 3px solid #409eff; border-left: 3px solid var(--theme-primary, #409eff);
+    border-radius: 0 4px 4px 0;
+    background: #ecf5ff;
+    font-size: 13px; line-height: 1.8; color: #606266;
+}
+.help-tip--warn { border-left-color: #e6a23c; background: #fdf6ec; }
+.help-tip--danger { border-left-color: #f56c6c; background: #fef0f0; }
+.help-tip__label { font-weight: 600; color: #303133; margin-right: 4px; }
+
+/* 附录里的检索行 */
+.help-filter {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    gap: 10px;
+    margin: 10px 0 12px;
+    -ms-flex-wrap: wrap; flex-wrap: wrap;
+}
+.help-filter .el-input { max-width: 260px; }
+.help-filter .el-input__inner { height: 32px; line-height: 32px; font-size: 13px; }
+.help-filter__hint { font-size: 12px; color: #909399; }
+.help-muted { color: #c0c4cc; }
+
+/* 表格横向滚动容器（窄屏 / iframe 窄时） */
+.help-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ---------- 响应式：≤1200 / ≤992 / ≤768 ---------- */
+@media screen and (max-width: 1200px) {
+    .help-toc { -ms-flex: 0 0 236px; flex: 0 0 236px; }
+    .help-doc__body { padding: 18px 18px 24px; }
+}
+@media screen and (max-width: 992px) {
+    .help-layout { -ms-flex-wrap: wrap; flex-wrap: wrap; }
+    .help-toc {
+        -ms-flex: 1 1 100%; flex: 1 1 100%;
+        width: 100%;
+        position: static;
+        max-height: none;
+        margin-bottom: 0;
+    }
+    .help-toc__list { max-height: 240px; }
+}
+@media screen and (max-width: 768px) {
+    .help-doc__body { padding: 14px 12px 20px; }
+    .help-chapter__title { font-size: 16px; }
+    .help-sec__title { font-size: 14px; }
+    .help-table { font-size: 12px; }
+    .help-table th, .help-table td { padding: 6px 8px; }
+    .help-toc__foot { -ms-flex-wrap: wrap; flex-wrap: wrap; }
+}
+
+/* ---------- 打印 / 另存 PDF ---------- */
+@media print {
+    .app-header, .app-side, .app-side__mask, .help-toc, .page-head, .help-filter,
+    .help-toc__search, .help-toc__foot { display: none !important; }
+    .app-main { margin: 0 !important; padding: 0 !important; }
+    .help-layout { display: block; }
+    .help-doc { border: 0 !important; }
+    .help-doc__body { padding: 0 !important; }
+    .help-chapter + .help-chapter { page-break-before: auto; }
+    .help-sec { page-break-inside: avoid; }
+    .help-table { page-break-inside: auto; }
+    .help-table tr { page-break-inside: avoid; }
+    body { background: #fff !important; }
+}

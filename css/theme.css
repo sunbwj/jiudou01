@@ -1,0 +1,153 @@
+/* ============================================================
+   theme.css · 全站主题（顶栏右侧「主题」按钮切换）
+   ------------------------------------------------------------
+   1) 主题以 <html data-theme="xxx"> 区分，只覆盖下面这组 CSS 变量；
+   2) app.css / element-ui.css 中的主色已改为 var(--theme-*)，
+      并保留硬编码原值作为旧浏览器（不支持 CSS 变量）的降级方案；
+   3) 框架页切换主题时会同步给所有 iframe 内的功能页，
+      因此左侧导航、Tab、按钮、表格、树等全部跟随变化。
+   ============================================================ */
+
+:root,
+html[data-theme="blue"] {
+    --theme-primary: #409eff;          /* 主色：按钮 / 选中 / 链接 */
+    --theme-primary-hover: #66b1ff;
+    --theme-primary-active: #3a8ee6;
+    --theme-primary-light: #ecf5ff;    /* 浅底：选中行 / hover */
+    --theme-primary-border: #b3d8ff;   /* 浅边：hover 边框 */
+    --theme-header-bg: #2b3a4b;        /* 顶栏底色 */
+    --theme-page-bg: #f0f2f5;          /* 页面底色（卡片之间的背景） */
+}
+
+html[data-theme="cyan"] {
+    --theme-primary: #13c2c2;
+    --theme-primary-hover: #3cdada;
+    --theme-primary-active: #0aa5a5;
+    --theme-primary-light: #e6fffb;
+    --theme-primary-border: #a8ecec;
+    --theme-header-bg: #0f4c5c;
+}
+
+html[data-theme="green"] {
+    --theme-primary: #2ba471;
+    --theme-primary-hover: #4cbd90;
+    --theme-primary-active: #238a5f;
+    --theme-primary-light: #eafaf3;
+    --theme-primary-border: #b3e3cf;
+    --theme-header-bg: #1f4b3f;
+}
+
+html[data-theme="orange"] {
+    --theme-primary: #ff7a18;
+    --theme-primary-hover: #ff9a4d;
+    --theme-primary-active: #e56a0c;
+    --theme-primary-light: #fff4ec;
+    --theme-primary-border: #ffd6b0;
+    --theme-header-bg: #7a431a;
+}
+
+html[data-theme="purple"] {
+    --theme-primary: #7c5cff;
+    --theme-primary-hover: #9a85ff;
+    --theme-primary-active: #6845e8;
+    --theme-primary-light: #f2eeff;
+    --theme-primary-border: #d8ccff;
+    --theme-header-bg: #3a2f63;
+}
+
+html[data-theme="rose"] {
+    --theme-primary: #d94f5c;
+    --theme-primary-hover: #e3727d;
+    --theme-primary-active: #bf3f4b;
+    --theme-primary-light: #fdeef0;
+    --theme-primary-border: #f7c9cf;
+    --theme-header-bg: #5a2731;
+}
+
+/* ---------- 淡雅灰：整体压低饱和度，主色为雾灰、顶栏深灰、页面底色更淡 ---------- */
+html[data-theme="gray"] {
+    --theme-primary: #6f7b8c;          /* 雾灰（带一点冷调，避免发脏） */
+    --theme-primary-hover: #8b96a6;
+    --theme-primary-active: #5d6878;
+    --theme-primary-light: #f2f4f7;    /* 极浅灰蓝底：选中行 / hover */
+    --theme-primary-border: #d5dbe3;
+    --theme-header-bg: #3f4750;        /* 深灰顶栏 */
+    --theme-page-bg: #f4f5f7;          /* 淡雅页面底色 */
+}
+/* 灰色系下弱化表格 / 卡片的冷色感，整体更接近纸质感 */
+html[data-theme="gray"] body { color: #5c6672; }
+html[data-theme="gray"] .frame-main { background-color: #eef0f2; }
+html[data-theme="gray"] .el-table__body tr:hover > td { background-color: #f6f7f9; }
+html[data-theme="gray"] .el-table__body tr.current-row:hover > td { background-color: #e7ebf0; }
+
+/* ============================ 主题切换按钮（顶栏最右侧） ============================ */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    margin-left: 14px;
+}
+/* 小图标按钮：32×32，居中显示调色板图标，右下角小圆点指示当前主题色 */
+.theme-switch__btn {
+    position: relative;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    width: 32px; height: 32px; padding: 0; border: 1px solid rgba(255, 255, 255, .28);
+    border-radius: 4px; background-color: rgba(255, 255, 255, .08);
+    color: #fff; font-size: 13px; cursor: pointer; white-space: nowrap;
+    -webkit-transition: background-color .2s, border-color .2s; transition: background-color .2s, border-color .2s;
+}
+.theme-switch__btn:hover { background-color: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .5); }
+.theme-switch__btn:active { background-color: rgba(255, 255, 255, .26); }
+.theme-switch__btn .ico { width: 18px; height: 18px; margin: 0; fill: #fff; }
+/* 主题名只给读屏软件与自动化测试用，界面上不占位 */
+.theme-switch__btn .txt {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
+}
+.theme-switch__dot {
+    position: absolute; right: -3px; bottom: -3px;
+    display: inline-block; width: 10px; height: 10px; margin: 0;
+    border-radius: 50%; vertical-align: middle;
+    background-color: #409eff; background-color: var(--theme-primary);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .85);
+}
+/* 功能页（iframe 内）自己也带顶栏时同样可用 */
+.app-header .theme-switch__btn { border-color: rgba(255, 255, 255, .28); }
+
+.theme-panel {
+    display: none; position: absolute; top: 36px; right: 0; z-index: 1200;
+    width: 210px; padding: 8px; border: 1px solid #e4e7ed; border-radius: 4px;
+    background-color: #fff; -webkit-box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .12);
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .12);
+}
+.theme-panel.is-open { display: block; }
+.theme-panel__title {
+    padding: 2px 6px 8px; font-size: 12px; color: #909399;
+    border-bottom: 1px solid #ebeef5; margin-bottom: 6px;
+}
+.theme-panel__item {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 7px 6px; border-radius: 4px; font-size: 13px; color: #606266; cursor: pointer;
+}
+.theme-panel__item:hover { background-color: #f5f7fa; }
+.theme-panel__item.is-active {
+    color: #409eff; color: var(--theme-primary);
+    background-color: #ecf5ff; background-color: var(--theme-primary-light);
+    font-weight: 600;
+}
+.theme-panel__swatch {
+    width: 30px; height: 18px; margin-right: 10px; border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, .08);
+}
+.theme-panel__name { -webkit-box-flex: 1; -ms-flex: 1; flex: 1; }
+.theme-panel__check { font-size: 13px; color: #409eff; color: var(--theme-primary); }
+
+/* 小屏：按钮略收窄，图标与色点保持不变 */
+@media screen and (max-width: 768px) {
+    .theme-switch { margin-left: 8px; }
+    .theme-switch__btn { width: 28px; height: 28px; }
+    .theme-switch__btn .ico { width: 16px; height: 16px; }
+    .theme-panel { width: 176px; }
+}

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>使用说明书 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<link rel="stylesheet" href="css/help.css?v=20261112a">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单（被框架页内嵌时由 layout.js 隐藏） ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">帮助中心</div>
+                <a class="app-side__item is-active" href="help.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h9l5 5v15H6V2zm8 1.7V8h4.3L14 3.7zM8 11h8v1.6H8V11zm0 3.4h8V16H8v-1.6zm0 3.4h5v1.6H8v-1.6z"/></svg></span>使用说明书
+                </a>
+                <a class="app-side__item" href="help.html#ch-appendix">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 5h16v2H4V5zm0 4h16v2H4V9zm0 4h10v2H4v-2zm0 4h10v2H4v-2zm13.2-3.1l3.5 3.5-1.4 1.4-3.5-3.5v-1.9h1.4z"/></svg></span>附录与速查
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容：左目录 / 右正文 ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="帮助中心/使用说明书">
+                <h2 class="page-head__title">使用说明书</h2>
+                <!--<p class="page-head__desc">按「登录 → 通用操作 → 各业务模块 → 附录」组织；左侧可检索章节，右下角可按当前账号生成功能地图。</p>-->
+            </div>
+
+            <div class="help-layout">
+                <!-- ==================== 左：章节目录 ==================== -->
+                <section class="el-card help-toc">
+                    <div class="help-toc__head">
+                        <h3 class="help-toc__title">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v2H4V5zm0 4h16v2H4V9zm0 4h10v2H4v-2zm0 4h10v2H4v-2z"/></svg>
+                            目录
+                        </h3>
+                        <div class="help-toc__hint" id="helpTocHint">共 0 章</div>
+                    </div>
+                    <div class="help-toc__search">
+                        <div class="el-input el-input--prefix">
+                            <span class="el-input__prefix">
+                                <svg viewBox="0 0 24 24" style="width:14px;height:14px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                            </span>
+                            <input class="el-input__inner" type="text" id="helpTocSearch" placeholder="检索章节 / 关键字" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="help-toc__list" id="helpTocList"></div>
+                    <div class="help-toc__empty" id="helpTocEmpty" style="display:none">没有匹配的章节</div>
+                    <div class="help-toc__foot">
+                        <!-- 注意：容器刻意用 .help-tools 而非 .toolbar，
+                             避免被 server/page_scan.py 收录成「页面操作按钮」后按角色隐藏 -->
+                        <div class="help-tools">
+                            <button type="button" class="el-button el-button--primary el-button--small" id="btnHelpPrint"
+                                    title="打印或另存为 PDF">
+                                <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3h10v4H7V3zm-3 5h16a1 1 0 011 1v7h-4v5H7v-5H3V9a1 1 0 011-1zm5 8h6v4H9v-4z"/></svg>
+                                打印 / PDF
+                            </button>
+                            <button type="button" class="el-button el-button--small" id="btnHelpTop"
+                                    title="回到文档顶部">
+                                <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4l8 8-1.4 1.4L13 7.8V20h-2V7.8L5.4 13.4 4 12l8-8z"/></svg>
+                                顶部
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== 右：正文 ==================== -->
+                <section class="el-card help-doc">
+                    <div class="help-doc__body" id="helpDocBody">
+                        <div class="help-toc__empty">正在生成说明书…</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+<script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/help.js?v=20261118c"></script>
+</body>
+</html>

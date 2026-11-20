@@ -1,0 +1,144 @@
+/* ==========================================================================
+   notify.css —— 主框架「消息提醒中心」样式（只被 main.html 引用）
+   1) 顶栏铃铛：图标 + 右上角红色数字气泡（有未读才显示）
+   2) 下拉面板：分「即时对话 / 新邮件」两段，样式与全站卡片同风格
+   3) 左侧菜单上标：菜单项右上角的小红点 + 数字（即时对话为红、邮件为橙）
+   说明：这些元素只存在于框架页，所以单独成文件，不动 app.css，避免全站页面跟着升版。
+   ========================================================================== */
+
+/* ---------- 1. 顶栏铃铛 ---------- */
+.frame-bell { position: relative; margin-right: 14px; }
+.frame-bell__btn {
+    position: relative; width: 32px; height: 32px; padding: 0;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+    border: 1px solid rgba(255, 255, 255, .22); border-radius: 50%;
+    background: rgba(255, 255, 255, .08); color: #d3dce6; cursor: pointer;
+    -webkit-transition: all .2s; transition: all .2s;
+}
+.frame-bell__btn:hover,
+.frame-bell__btn.is-open { color: #fff; border-color: rgba(18, 214, 194, .8); background: rgba(18, 214, 194, .18); }
+.frame-bell__btn .ico { width: 17px; height: 17px; fill: currentColor; }
+/* 有未读时轻轻摇一下，吸引注意（不影响无未读状态） */
+.frame-bell__btn.is-ring .ico { animation: frame-bell-ring .9s ease-in-out 1; }
+@keyframes frame-bell-ring {
+    0%, 100% { transform: rotate(0); }
+    15% { transform: rotate(14deg); }
+    30% { transform: rotate(-12deg); }
+    45% { transform: rotate(8deg); }
+    60% { transform: rotate(-6deg); }
+    80% { transform: rotate(3deg); }
+}
+.frame-bell__dot {
+    position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px;
+    border-radius: 8px; background: #f56c6c; color: #fff; font-size: 11px; line-height: 16px;
+    font-weight: 600; text-align: center; box-shadow: 0 0 0 2px #2b3a4b;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.frame-bell__dot[hidden] { display: none; }
+
+/* ---------- 2. 下拉面板 ---------- */
+.frame-bell__panel {
+    position: absolute; top: 42px; right: 0; z-index: 3000; width: 340px;
+    background: #fff; border: 1px solid #e4e7ed; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .16); overflow: hidden;
+    text-align: left;
+}
+.frame-bell__panel[hidden] { display: none; }
+.frame-bell__head {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    padding: 11px 14px; border-bottom: 1px solid #f0f2f5; background: #fafbfc;
+}
+.frame-bell__title { font-size: 14px; font-weight: 600; color: #303133; }
+.frame-bell__head-btns { display: -webkit-box; display: -ms-flexbox; display: flex; }
+.frame-bell__tool {
+    border: 0; background: transparent; padding: 2px 4px; margin-left: 8px;
+    font-size: 12px; color: #909399; cursor: pointer; border-radius: 4px;
+}
+.frame-bell__tool:hover { color: var(--theme-primary, #409eff); background: var(--theme-primary-light, #ecf5ff); }
+.frame-bell__body { max-height: 380px; overflow-y: auto; }
+.frame-bell__sec + .frame-bell__sec { border-top: 1px solid #f0f2f5; }
+.frame-bell__sec-head {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between;
+    padding: 9px 14px 6px; font-size: 12px; color: #909399;
+}
+.frame-bell__sec-title { display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center; }
+.frame-bell__sec-title b { color: #303133; font-size: 13px; font-weight: 600; margin-right: 6px; }
+.frame-bell__count {
+    min-width: 16px; height: 16px; padding: 0 5px; border-radius: 8px;
+    background: #f56c6c; color: #fff; font-size: 11px; line-height: 16px;
+    text-align: center; font-family: Arial, Helvetica, sans-serif;
+}
+.frame-bell__sec-title.is-mail .frame-bell__count { background: #e6a23c; }
+.frame-bell__more {
+    border: 0; background: transparent; font-size: 12px; color: var(--theme-primary, #409eff);
+    cursor: pointer; padding: 0;
+}
+.frame-bell__more:hover { text-decoration: underline; }
+.frame-bell__item {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 8px 14px; cursor: pointer; border-left: 2px solid transparent;
+}
+.frame-bell__item:hover { background: var(--theme-primary-light, #ecf5ff); border-left-color: var(--theme-primary, #409eff); }
+.frame-bell__avatar {
+    -webkit-box-flex: 0; -ms-flex: 0 0 32px; flex: 0 0 32px;
+    width: 32px; height: 32px; border-radius: 50%; background: var(--theme-primary, #409eff);
+    color: #fff; font-size: 13px; line-height: 32px; text-align: center;
+}
+.frame-bell__avatar.is-mail { background: #e6a23c; border-radius: 6px; }
+/* 群聊：方形圆角 + 橙色，与「人」的圆形蓝底区分开 */
+.frame-bell__avatar.is-group { background: #e6a23c; border-radius: 8px; }
+.frame-bell__main {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    min-width: 0; margin-left: 10px;
+}
+.frame-bell__row1 { display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between; }
+.frame-bell__who { font-size: 13px; color: #303133; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.frame-bell__time { -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto;
+    font-size: 11px; color: #c0c4cc; margin-left: 8px; }
+.frame-bell__text { font-size: 12px; color: #909399;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.frame-bell__n {
+    -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto;
+    min-width: 18px; height: 18px; padding: 0 5px; margin-left: 8px; border-radius: 9px;
+    background: #f56c6c; color: #fff; font-size: 11px; line-height: 18px; text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.frame-bell__empty { padding: 22px 14px; text-align: center; font-size: 12px; color: #c0c4cc; }
+.frame-bell__foot {
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 8px 14px; border-top: 1px solid #f0f2f5; background: #fafbfc;
+    font-size: 12px; color: #909399;
+}
+.frame-bell__sw { display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    margin-right: 16px; cursor: pointer; }
+.frame-bell__sw input { margin: 0 5px 0 0; cursor: pointer; }
+
+/* ---------- 3. 左侧菜单上标（小红点 + 数字） ---------- */
+.frame-side__item { position: relative; }
+.frame-nav-badge {
+    position: absolute; top: 3px; right: 8px; min-width: 16px; height: 16px; padding: 0 4px;
+    border-radius: 8px; background: #f56c6c; color: #fff; font-size: 11px; line-height: 16px;
+    font-weight: 600; text-align: center; font-family: Arial, Helvetica, sans-serif;
+    box-shadow: 0 0 0 2px #fff; pointer-events: none;
+}
+.frame-nav-badge.is-mail { background: #e6a23c; }
+/* 收起态只显示图标：气泡贴到图标右上角，避免压在文字看不见的位置 */
+.frame-side.is-collapsed .frame-nav-badge { right: 12px; top: 2px; }
+
+/* 窄屏：面板贴右边缘，避免超出视口 */
+@media (max-width: 640px) {
+    .frame-bell__panel { width: 300px; right: -46px; }
+}

@@ -1,0 +1,8 @@
+flask>=3.0
+pymysql>=1.1
+openpyxl>=3.1
+reportlab>=4.0
+oracledb>=2.0        # Oracle（纯 Python 瘦模式，不需要 Instant Client）
+pymssql>=2.2        # SQL Server（wheel 自带 FreeTDS，不用另装客户端）
+python-docx>=1.1
+sqlglot>=25,<28     # 字段血缘：解析视图 / 触发器 / 过程里的 SQL（纯 Python，无二进制）

@@ -1,0 +1,953 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>报表设计 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">数据中心</div>
+                <a class="app-side__item" href="dbinfo.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zm8 6.5v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3c1.7 1.3 4.7 2 8 2s6.3-.7 8-2zm0 6v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3c1.7 1.3 4.7 2 8 2s6.3-.7 8-2z"/></svg></span>数据库
+                </a>
+                <a class="app-side__item is-active" href="report-designer.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm2 3v3h5V6H6zm7 0v3h5V6h-5zM6 11v3h5v-3H6zm7 0v3h5v-3h-5zM6 16v2h12v-2H6z"/></svg></span>报表设计
+                </a>
+                <a class="app-side__item" href="report-center.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>报表中心
+                </a>
+                <div class="app-side__group-title">人力资源中心</div>
+                <a class="app-side__item" href="address-book.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M5 3h11l3 3v15H5V3zm2 2v14h10V7h-3V5H7zm2 5h6v2H9V10zm0 4h6v2H9v-2z"/></svg></span>员工通讯录
+                </a>
+                <a class="app-side__item" href="org.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 4a3 3 0 100 6 3 3 0 000-6zm-6 15v-1a5 5 0 015-5h2a5 5 0 015 5v1H3zm12-15a3 3 0 110 6 3 3 0 010-6zm-2 15v-1a5 5 0 013-4.6V19h-3z"/></svg></span>组织架构
+                </a>
+                <div class="app-side__group-title">邮件中心</div>
+                <a class="app-side__item" href="service-email.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.8 2L12 12.4 19.2 7H4.8z"/></svg></span>服务信箱设置
+                </a>
+                <a class="app-side__item" href="mail.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v10a1 1 0 01-1 1H9l-5 4V5a1 1 0 011-1z"/></svg></span>邮箱助手
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容：左（报表清单 / 数据源）· 中（画布）· 右（属性） ============ -->
+        <main class="app-main rpt-page">
+            <div class="page-head" id="pageHead" data-crumb="数据中心/报表设计">
+                <h2 class="page-head__title">报表设计</h2>
+                <!--<span class="page-head__hint">左：报表清单 / 数据源（拖字段与双击字段）/ 工具箱（拖组件到设计区） · 中：画布 · 右：字段属性 / 组件属性 / 报表参数 / 页面模板 · 预览确认后保存到报表信息表</span>-->
+            </div>
+
+            <div class="split-layout rpt-layout" id="rptLayout">
+
+                <!-- ================= 左区域 ================= -->
+                <section class="rpt-pane rpt-pane--left" id="rptLeft">
+                    <div class="el-tabs rpt-ltabs" id="rptLeftTabs">
+                        <div class="el-tabs__header rpt-ltabs__header">
+                            <div class="el-tabs__nav-wrap">
+                                <div class="el-tabs__nav" id="rptLeftNav" role="tablist">
+                                    <span class="el-tabs__active-bar" id="rptLeftBar"></span>
+                                    <div class="el-tabs__item is-active" data-ltab="list" role="tab" tabindex="0" aria-selected="true">报表清单</div>
+                                    <div class="el-tabs__item" data-ltab="source" role="tab" tabindex="0" aria-selected="false">数据源</div>
+                                    <div class="el-tabs__item" data-ltab="tool" role="tab" tabindex="0" aria-selected="false">工具箱</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-tabs__content rpt-ltabs__content">
+
+                            <!-- ---------- 报表清单 ---------- -->
+                            <div class="el-tab-pane is-active" data-lpane="list" role="tabpanel">
+                                <div class="rpt-left__search">
+                                    <div class="el-input el-input--prefix rpt-left__kw">
+                                        <span class="el-input__prefix">
+                                            <svg class="svg-ico" viewBox="0 0 24 24" style="width:15px;height:15px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                                        </span>
+                                        <input class="el-input__inner" type="text" id="rpKeyword" name="rpKeyword" placeholder="编码 / 名称 / 分类 / 主表">
+                                    </div>
+                                    <div class="rpt-left__row">
+                                        <div class="el-input rpt-left__sel">
+                                            <select class="el-input__inner" id="rpCategoryFilter" name="rpCategoryFilter">
+                                                <option value="">全部分类</option>
+                                            </select>
+                                        </div>
+                                        <div class="el-input rpt-left__sel">
+                                            <select class="el-input__inner" id="rpEnabled" name="rpEnabled">
+                                                <option value="">全部状态</option>
+                                                <option value="1">启用</option>
+                                                <option value="0">停用</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="rpt-left__row">
+                                        <button type="button" class="el-button el-button--primary el-button--small rpt-left__btn" id="btnSearch">查询</button>
+                                        <button type="button" class="el-button el-button--small rpt-left__btn" id="btnReset">重置</button>
+                                    </div>
+                                </div>
+
+                                <div class="toolbar rpt-toolbar">
+                                    <button type="button" class="el-button el-button--primary rpt-tool" id="btnNew" title="新建报表（清空画布）" aria-label="新建报表">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+                                    </button>
+                                    <button type="button" class="el-button el-button--success rpt-tool" id="btnCopy" title="复制选中的报表" aria-label="复制报表">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 3h9l3 3v11H9V3zm2 2v10h8V7h-2V5h-6zM3 7h4v2H5v10h8v-2h2v4H3V7z"/></svg>
+                                    </button>
+                                    <button type="button" class="el-button el-button--success rpt-tool" id="btnEnable" title="启用选中的报表" aria-label="启用">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1.2 14.6l-4.3-4.3 1.4-1.4 2.9 2.9 5.9-5.9 1.4 1.4-7.3 7.3z"/></svg>
+                                    </button>
+                                    <button type="button" class="el-button el-button--warning rpt-tool" id="btnDisable" title="停用选中的报表" aria-label="停用">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2a8 8 0 015.3 2L6 17.3A8 8 0 0112 4zm0 16a8 8 0 01-5.3-2L18 6.7A8 8 0 0112 20z"/></svg>
+                                    </button>
+                                    <button type="button" class="el-button el-button--danger rpt-tool" id="btnDelete" title="删除选中的报表" aria-label="删除">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2zM4 6h16v2H4V6z"/></svg>
+                                    </button>
+                                    <button type="button" class="el-button rpt-tool" id="btnRefresh" title="刷新报表清单" aria-label="刷新">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>
+                                    </button>
+                                </div>
+
+                                <div class="rpt-list" id="rpList">
+                                    <div class="rpt-list__empty">正在加载报表…</div>
+                                </div>
+                                <div class="rpt-pager" id="rpPager"></div>
+                            </div>
+
+                            <!-- ---------- 数据源 ---------- -->
+                            <div class="el-tab-pane" data-lpane="source" role="tabpanel">
+                                <div class="rpt-src__top">
+                                    <div class="rpt-src__line">
+                                        <span class="rpt-src__label">连接</span>
+                                        <div class="el-input rpt-src__sel">
+                                            <select class="el-input__inner" id="srcConn" name="srcConn" title="数据源连接（数据中心 → 数据库里的启用连接）"></select>
+                                        </div>
+                                        <button type="button" class="el-button el-button--small rpt-src__act" id="btnSrcRefresh" title="重新扫描实例与表">刷新</button>
+                                    </div>
+                                    <div class="rpt-src__line">
+                                        <span class="rpt-src__label">实例</span>
+                                        <div class="el-input rpt-src__sel">
+                                            <select class="el-input__inner" id="srcDb" name="srcDb" title="实例（库）"></select>
+                                        </div>
+                                    </div>
+                                    <div class="rpt-src__line">
+                                        <div class="el-input el-input--prefix rpt-src__kw">
+                                            <span class="el-input__prefix">
+                                                <svg class="svg-ico" viewBox="0 0 24 24" style="width:14px;height:14px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                                            </span>
+                                            <input class="el-input__inner" type="text" id="srcTableKw" name="srcTableKw" placeholder="过滤表 / 视图 / 字段">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="rpt-src__hint" id="srcTip">选择连接与实例后，点表 / 视图展开字段；把<b>字段</b>拖到中间画布，或双击字段加入一列</div>
+                                <div class="el-tree rpt-tree" id="srcTree">
+                                    <div class="rpt-tree__empty">还没有可用的表：先选一条连接（没有连接可去「数据库」页新增）</div>
+                                </div>
+                            </div>
+
+                            <!-- ---------- 工具箱（设计区组件） ---------- -->
+                            <div class="el-tab-pane" data-lpane="tool" role="tabpanel">
+                                <div class="rpt-src__hint" id="toolTip">
+                                    把下面的组件拖到中间画布的「设计区」，也可以双击直接加入；
+                                    「区域」是可放进表格与其他组件的容器
+                                </div>
+                                <div class="rpt-tool__grid" id="toolGrid">
+                                    <div class="rpt-tool__card" draggable="true" data-el-kind="label"
+                                         title="文本：静态文字，可改字号 / 颜色 / 对齐（拖到设计区）">
+                                        <span class="rpt-tool__ico">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v3h-2V7H13v11h2v2H9v-2h2V7H5v1H4V5z"/></svg>
+                                        </span>
+                                        <span class="rpt-tool__name">文本</span>
+                                    </div>
+                                    <div class="rpt-tool__card" draggable="true" data-el-kind="line"
+                                         title="线条：分隔线，可横可竖（拖到设计区）">
+                                        <span class="rpt-tool__ico">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 11h18v2H3z"/></svg>
+                                        </span>
+                                        <span class="rpt-tool__name">线条</span>
+                                    </div>
+                                    <div class="rpt-tool__card" draggable="true" data-el-kind="box"
+                                         title="区域：容器，可再放进表格 / 文本 / 图表等组件">
+                                        <span class="rpt-tool__ico">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M4 5h16v14H4z" stroke-dasharray="3 2"/></svg>
+                                        </span>
+                                        <span class="rpt-tool__name">区域</span>
+                                    </div>
+                                    <div class="rpt-tool__card" draggable="true" data-el-kind="image"
+                                         title="图像：按地址显示图片（拖到设计区）">
+                                        <span class="rpt-tool__ico">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h16v14H4V5zm2 12h12l-3.5-4.5-2.5 3-2-2.5L6 17zm2.5-6a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>
+                                        </span>
+                                        <span class="rpt-tool__name">图像</span>
+                                    </div>
+                                    <div class="rpt-tool__card" draggable="true" data-el-kind="chart"
+                                         title="图表：柱状 / 折线 / 饼图，按分类字段与数值字段统计">
+                                        <span class="rpt-tool__ico">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 19V11h3v8H5zm5.5 0V6h3v13h-3zM16 19v-5h3v5h-3z"/></svg>
+                                        </span>
+                                        <span class="rpt-tool__name">图表</span>
+                                    </div>
+                                    <div class="rpt-tool__card" draggable="true" data-el-kind="table"
+                                         title="表格：自己设行、列和每个格子的文字，可拖进区域里">
+                                        <span class="rpt-tool__ico">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5h18v3H3V5zm0 5h18v3H3v-3zm0 5h18v4H3v-4z"/></svg>
+                                        </span>
+                                        <span class="rpt-tool__name">表格</span>
+                                    </div>
+                                </div>
+                                <div class="rpt-tool__list" id="toolList">
+                                    <div class="rpt-tool__list-head">
+                                        <span>设计区组件</span>
+                                        <span class="rpt-tool__count" id="toolCount">0 个</span>
+                                    </div>
+                                    <div id="toolItems"><div class="rpt-tool__empty">还没有组件，拖一个进来试试</div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ================= 中区域：画布 ================= -->
+                <section class="rpt-pane rpt-pane--canvas" id="rptCanvas">
+                    <div class="rpt-bar">
+                        <span class="rpt-bar__field">
+                            <label for="rptCode">编码</label>
+                            <input class="el-input__inner" type="text" id="rptCode" name="rptCode" maxlength="60" placeholder="留空自动生成 RPTxxxx">
+                        </span>
+                        <span class="rpt-bar__field rpt-bar__field--wide">
+                            <label for="rptName">名称</label>
+                            <input class="el-input__inner" type="text" id="rptName" name="rptName" maxlength="120" placeholder="报表名称（必填）">
+                        </span>
+                        <span class="rpt-bar__field">
+                            <label for="rptCategory">分类</label>
+                            <input class="el-input__inner" type="text" id="rptCategory" name="rptCategory" maxlength="60" list="rptCategoryList" placeholder="如 人力资源">
+                            <datalist id="rptCategoryList"></datalist>
+                        </span>
+                        <!-- 英文报表名（选填）：存 reportinfos.reportNameEn -->
+                        <span class="rpt-bar__field">
+                            <label for="rptNameEn">英文名</label>
+                            <input class="el-input__inner" type="text" id="rptNameEn" name="rptNameEn" maxlength="120" placeholder="如 Monthly Headcount">
+                        </span>
+                        <!-- 公开否：勾上后其他用户也能在报表清单 / 报表中心看到这张报表（默认私有） -->
+                        <span class="rpt-bar__field rpt-bar__field--check" title="公开后，其他用户也能在报表清单 / 报表中心看到这张报表">
+                            <label class="el-checkbox" for="rptIsPublic">
+                                <input type="checkbox" class="el-checkbox__input" id="rptIsPublic" name="rptIsPublic">
+                                <span class="el-checkbox__label">公开</span>
+                            </label>
+                        </span>
+                        <span class="rpt-bar__spacer"></span>
+                        <button type="button" class="el-button el-button--primary el-button--small" id="btnSave" title="保存到报表信息表（Ctrl+S）">保存</button>
+                        <button type="button" class="el-button el-button--small" id="btnSaveAs" title="另存为一张新报表">另存为</button>
+                        <button type="button" class="el-button el-button--success el-button--small" id="btnPreview" title="按当前画布预览（Ctrl+Enter）">预览</button>
+                        <button type="button" class="el-button el-button--small" id="btnClear" title="清空画布（不删已保存的报表）">清空</button>
+                    </div>
+
+                    <!-- 报表功能介绍：随 reportinfos.description 一起保存，供使用者了解这张报表是干什么的 -->
+                    <div class="rpt-intro" id="rptIntro">
+                        <button type="button" class="rpt-intro__toggle" id="btnIntroToggle" aria-expanded="true"
+                                aria-controls="rptIntroBody" title="展开 / 收起功能介绍">
+                            <span class="rpt-intro__caret" id="rptIntroCaret">▾</span>
+                            <span class="rpt-intro__label">功能介绍</span>
+                            <span class="rpt-intro__hint" id="rptIntroHint">写清这张报表的用途、口径与适用场景（保存后随报表存储）</span>
+                        </button>
+                        <div class="rpt-intro__body" id="rptIntroBody">
+                            <textarea class="el-input__inner rpt-intro__text" id="rptDesc" rows="3" maxlength="500"
+                                placeholder="例：按部门统计在职员工人数与平均工龄，取数范围为 empinfos 中状态为在职的记录；数据每 5 分钟同步一次。"></textarea>
+                            <div class="rpt-intro__foot">
+                                <span class="form-tip">最多 500 字，支持换行；留空表示不做说明</span>
+                                <span class="rpt-intro__count" id="rptDescCount">0 / 500</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rpt-canvas__scroll" id="rptScroll">
+                        <div class="rpt-paper" id="rptPaper">
+                            <!-- 标题带 -->
+                            <div class="rpt-band rpt-band--title" data-band="title">
+                                <span class="rpt-band__tag">标题</span>
+                                <div class="rpt-title" id="rptTitleText">未命名报表</div>
+                                <div class="rpt-subtitle" id="rptSubtitleText"></div>
+                            </div>
+                            <!-- 参数带 -->
+                            <div class="rpt-band rpt-band--params" data-band="params" id="rptParamBand">
+                                <span class="rpt-band__tag">参数</span>
+                                <div class="rpt-params__preview" id="rptParamsPreview">
+                                    <span class="rpt-params__none">还没有报表参数（右栏「报表参数」里可新增）</span>
+                                </div>
+                            </div>
+                            <!-- 设计区：工具箱组件自由布局（文本 / 线条 / 区域 / 图像 / 图表 / 表格） -->
+                            <div class="rpt-band rpt-band--free" data-band="free" id="rptFreeBand">
+                                <span class="rpt-band__tag">设计区</span>
+                                <div class="rpt-free" id="rptFreeLayer">
+                                    <div class="rpt-free__empty" id="rptFreeHint">
+                                        把左栏「工具箱」里的组件拖到这里<br>
+                                        <span>区域可以再放进表格、文本、图表等组件</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 页眉带 -->
+                            <div class="rpt-band rpt-band--text" data-band="header">
+                                <span class="rpt-band__tag">页眉</span>
+                                <div class="rpt-text" id="rptHeaderText">（无）</div>
+                            </div>
+                            <!-- 明细带：拖拽落点 -->
+                            <div class="rpt-band rpt-band--detail" data-band="detail" id="rptDetailBand">
+                                <span class="rpt-band__tag">明细</span>
+                                <div class="rpt-grid" id="rptCols">
+                                    <div class="rpt-grid__empty">
+                                        把左侧「数据源」里表下面的<b>字段</b>拖到这里（或双击字段）<br>
+                                        <span>先点表展开字段　按字段逐个加入　画布内可左右拖动调整顺序</span>
+                                    </div>
+                                </div>
+                                <div class="rpt-sample" id="rptSample" hidden></div>
+                                <div class="rpt-drop" id="rptDropTip">松手即可加入明细区</div>
+                            </div>
+                            <!-- 汇总带 -->
+                            <div class="rpt-band rpt-band--text" data-band="summary" id="rptSummaryBand" hidden>
+                                <span class="rpt-band__tag">汇总</span>
+                                <div class="rpt-text" id="rptSummaryText">（按列属性里的「汇总」生成）</div>
+                            </div>
+                            <!-- 页脚带 -->
+                            <div class="rpt-band rpt-band--text" data-band="footer">
+                                <span class="rpt-band__tag">页脚</span>
+                                <div class="rpt-text" id="rptFooterText">第 1 页 / 共 1 页</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rpt-status" id="rptStatus">
+                        <span class="rpt-status__dot" id="rptStatusDot"></span>
+                        <span id="rptStatusText">未选择报表：左侧点一条已保存的报表继续编辑，或直接新建</span>
+                        <span class="rpt-status__spacer"></span>
+                        <span class="rpt-status__meta" id="rptStatusMeta"></span>
+                    </div>
+                </section>
+
+                <!-- ================= 右区域：属性 ================= -->
+                <section class="rpt-pane rpt-pane--props" id="rptProps">
+                    <div class="el-tabs rpt-ptabs" id="rptPropTabs">
+                        <div class="el-tabs__header rpt-ptabs__header">
+                            <div class="el-tabs__nav-wrap">
+                                <div class="el-tabs__nav" id="rptPropNav" role="tablist">
+                                    <span class="el-tabs__active-bar" id="rptPropBar"></span>
+                                    <div class="el-tabs__item is-active" data-ptab="col" role="tab" tabindex="0" aria-selected="true">字段属性</div>
+                                    <div class="el-tabs__item" data-ptab="elem" role="tab" tabindex="0" aria-selected="false">组件属性</div>
+                                    <div class="el-tabs__item" data-ptab="param" role="tab" tabindex="0" aria-selected="false">报表参数</div>
+                                    <div class="el-tabs__item" data-ptab="tmpl" role="tab" tabindex="0" aria-selected="false">页面模板</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-tabs__content rpt-ptabs__content">
+
+                            <!-- 字段属性 -->
+                            <div class="el-tab-pane is-active" data-ppane="col" role="tabpanel">
+                                <div class="rpt-col-empty" id="colEmpty">
+                                    点画布里的某一列，这里可改显示名、列标对齐、宽度、数据对齐、格式、汇总与是否显示
+                                </div>
+                                <form class="el-form rpt-form" id="colForm" hidden onsubmit="return false;">
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label">字段</label>
+                                        <div class="el-form-item__content">
+                                            <div class="rpt-readonly" id="colField">-</div>
+                                            <div class="form-tip" id="colFieldTip">来自数据源的原始字段名</div>
+                                        </div>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="colLabel">显示名</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input"><input class="el-input__inner" type="text" id="colLabel" maxlength="60" placeholder="表头显示的文字"></div>
+                                        </div>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="colHeaderAlign">列标对齐</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input">
+                                                <select class="el-input__inner" id="colHeaderAlign" title="表头（列标）文字的对齐方式">
+                                                    <option value="center">居中</option>
+                                                    <option value="left">左对齐</option>
+                                                    <option value="right">右对齐</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-tip">只影响表头文字，不影响数据单元格</div>
+                                        </div>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="colWidth">列宽</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input"><input class="el-input__inner" type="number" id="colWidth" min="40" max="800" step="10" placeholder="像素，40~800"></div>
+                                        </div>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="colAlign">对齐</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input">
+                                                <select class="el-input__inner" id="colAlign">
+                                                    <option value="left">左对齐</option>
+                                                    <option value="center">居中</option>
+                                                    <option value="right">右对齐</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="colFormat">显示格式</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input">
+                                                <select class="el-input__inner" id="colFormat">
+                                                    <option value="text">文本</option>
+                                                    <option value="int">整数</option>
+                                                    <option value="number">小数（两位）</option>
+                                                    <option value="money">金额（￥）</option>
+                                                    <option value="percent">百分比</option>
+                                                    <option value="date">日期</option>
+                                                    <option value="datetime">日期时间</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="colSummary">汇总</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input">
+                                                <select class="el-input__inner" id="colSummary">
+                                                    <option value="none">不汇总</option>
+                                                    <option value="sum">求和</option>
+                                                    <option value="avg">平均值</option>
+                                                    <option value="count">计数</option>
+                                                    <option value="max">最大值</option>
+                                                    <option value="min">最小值</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="colVisible">显示</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input">
+                                                <select class="el-input__inner" id="colVisible">
+                                                    <option value="1">显示这一列</option>
+                                                    <option value="0">隐藏（只在汇总里用）</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="rpt-form__actions">
+                                        <button type="button" class="el-button el-button--small" id="btnColLeft" title="左移一列">左移</button>
+                                        <button type="button" class="el-button el-button--small" id="btnColRight" title="右移一列">右移</button>
+                                        <button type="button" class="el-button el-button--danger el-button--small" id="btnColRemove">移除这一列</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- 组件属性（工具箱放进设计区的组件） -->
+                            <div class="el-tab-pane" data-ppane="elem" role="tabpanel">
+                                <div class="rpt-col-empty" id="elemEmpty">
+                                    点画布「设计区」里的组件（文本 / 线条 / 区域 / 图像 / 图表），
+                                    这里可改文字、位置尺寸、颜色与图表字段
+                                </div>
+                                <form class="el-form rpt-form" id="elemForm" hidden onsubmit="return false;">
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label">组件</label>
+                                        <div class="el-form-item__content">
+                                            <div class="rpt-readonly" id="elemKind">-</div>
+                                            <div class="form-tip" id="elemPath">设计区</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="rpt-form__section">位置与尺寸（像素）</div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell">
+                                            <label for="elemX">左边距 X</label>
+                                            <input class="el-input__inner" type="number" id="elemX" min="0" max="4000" step="1">
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="elemY">上边距 Y</label>
+                                            <input class="el-input__inner" type="number" id="elemY" min="0" max="4000" step="1">
+                                        </span>
+                                    </div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell">
+                                            <label for="elemW">宽度</label>
+                                            <input class="el-input__inner" type="number" id="elemW" min="20" max="4000" step="1">
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="elemH">高度</label>
+                                            <input class="el-input__inner" type="number" id="elemH" min="10" max="4000" step="1">
+                                        </span>
+                                    </div>
+
+                                    <!-- 文本 -->
+                                    <div class="rpt-elgrp" data-egroup="label">
+                                        <div class="rpt-form__section">文本内容</div>
+                                        <div class="el-form-item">
+                                            <label class="el-form-item__label" for="elemText">文字</label>
+                                            <div class="el-form-item__content">
+                                                <textarea class="el-input__inner rpt-el__text" id="elemText" rows="2" maxlength="200" placeholder="要显示的文字"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemFontSize">字号</label>
+                                                <input class="el-input__inner" type="number" id="elemFontSize" min="8" max="48" step="1">
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemBold">加粗</label>
+                                                <select class="el-input__inner" id="elemBold">
+                                                    <option value="0">正常</option>
+                                                    <option value="1">加粗</option>
+                                                </select>
+                                            </span>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemAlign">对齐</label>
+                                                <select class="el-input__inner" id="elemAlign">
+                                                    <option value="left">左对齐</option>
+                                                    <option value="center">居中</option>
+                                                    <option value="right">右对齐</option>
+                                                </select>
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemColor">文字颜色</label>
+                                                <input class="el-input__inner rpt-color" type="color" id="elemColor" value="#303133">
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- 线条 -->
+                                    <div class="rpt-elgrp" data-egroup="line">
+                                        <div class="rpt-form__section">线条</div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemLineDir">方向</label>
+                                                <select class="el-input__inner" id="elemLineDir">
+                                                    <option value="h">横线</option>
+                                                    <option value="v">竖线</option>
+                                                </select>
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemLineWidth">粗细</label>
+                                                <input class="el-input__inner" type="number" id="elemLineWidth" min="1" max="8" step="1">
+                                            </span>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemLineColor">颜色</label>
+                                                <input class="el-input__inner rpt-color" type="color" id="elemLineColor" value="#DCDFE6">
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- 区域 -->
+                                    <div class="rpt-elgrp" data-egroup="box">
+                                        <div class="rpt-form__section">区域（容器）</div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemBorder">边框</label>
+                                                <select class="el-input__inner" id="elemBorder">
+                                                    <option value="1">显示</option>
+                                                    <option value="0">不显示</option>
+                                                </select>
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemBorderColor">边框色</label>
+                                                <input class="el-input__inner rpt-color" type="color" id="elemBorderColor" value="#DCDFE6">
+                                            </span>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemBg">背景色</label>
+                                                <input class="el-input__inner" type="text" id="elemBg" maxlength="9" placeholder="留空 = 透明">
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemRadius">圆角</label>
+                                                <input class="el-input__inner" type="number" id="elemRadius" min="0" max="40" step="1">
+                                            </span>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemPadding">内边距</label>
+                                                <input class="el-input__inner" type="number" id="elemPadding" min="0" max="40" step="1">
+                                            </span>
+                                        </div>
+                                        <div class="form-tip" id="elemBoxTip">把工具箱里的「表格 / 文本 / 图表」直接拖到这个区域里，它就成为区域的子组件</div>
+                                    </div>
+
+                                    <!-- 图像 -->
+                                    <div class="rpt-elgrp" data-egroup="image">
+                                        <div class="rpt-form__section">图像</div>
+                                        <div class="el-form-item">
+                                            <label class="el-form-item__label" for="elemSrc">图片地址</label>
+                                            <div class="el-form-item__content">
+                                                <div class="el-input"><input class="el-input__inner" type="text" id="elemSrc" maxlength="500" placeholder="https://… 或 assets/logo.svg"></div>
+                                            </div>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemFit">填充</label>
+                                                <select class="el-input__inner" id="elemFit">
+                                                    <option value="contain">完整显示</option>
+                                                    <option value="cover">铺满裁剪</option>
+                                                    <option value="fill">拉伸</option>
+                                                </select>
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemImgRadius">圆角</label>
+                                                <input class="el-input__inner" type="number" id="elemImgRadius" min="0" max="40" step="1">
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- 图表 -->
+                                    <div class="rpt-elgrp" data-egroup="chart">
+                                        <div class="rpt-form__section">图表</div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemChartType">类型</label>
+                                                <select class="el-input__inner" id="elemChartType">
+                                                    <option value="bar">柱状图</option>
+                                                    <option value="line">折线图</option>
+                                                    <option value="pie">饼图</option>
+                                                </select>
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemLegend">图例</label>
+                                                <select class="el-input__inner" id="elemLegend">
+                                                    <option value="1">显示</option>
+                                                    <option value="0">不显示</option>
+                                                </select>
+                                            </span>
+                                        </div>
+                                        <div class="el-form-item">
+                                            <label class="el-form-item__label" for="elemChartTitle">标题</label>
+                                            <div class="el-form-item__content">
+                                                <div class="el-input"><input class="el-input__inner" type="text" id="elemChartTitle" maxlength="80" placeholder="图表标题（可留空）"></div>
+                                            </div>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemChartCat">分类字段</label>
+                                                <select class="el-input__inner" id="elemChartCat"></select>
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemChartVal">数值字段</label>
+                                                <select class="el-input__inner" id="elemChartVal"></select>
+                                            </span>
+                                        </div>
+                                        <div class="form-tip">按分类字段分组，对数值字段求和；没选字段时用前两列</div>
+                                    </div>
+
+                                    <!-- 表格（行 / 列 / 单元格内容自己填） -->
+                                    <div class="rpt-elgrp" data-egroup="table">
+                                        <div class="rpt-form__section">表格</div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemTblRows">行数</label>
+                                                <input class="el-input__inner" type="number" id="elemTblRows" min="1" max="30" step="1">
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemTblCols">列数</label>
+                                                <input class="el-input__inner" type="number" id="elemTblCols" min="1" max="10" step="1">
+                                            </span>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemTblShowHeader">列头显示</label>
+                                                <select class="el-input__inner" id="elemTblShowHeader">
+                                                    <option value="1">是（第 1 行作列头）</option>
+                                                    <option value="0">否（不显示列头行）</option>
+                                                </select>
+                                            </span>
+                                            <span class="rpt-form__cell">
+                                                <label for="elemTblHeader">列头样式</label>
+                                                <select class="el-input__inner" id="elemTblHeader">
+                                                    <option value="1">表头（加底色）</option>
+                                                    <option value="0">普通单元格</option>
+                                                </select>
+                                            </span>
+                                        </div>
+                                        <div class="rpt-form__row">
+                                            <span class="rpt-form__cell">
+                                                <label for="elemTblAlign">单元格对齐</label>
+                                                <select class="el-input__inner" id="elemTblAlign">
+                                                    <option value="left">左对齐</option>
+                                                    <option value="center">居中</option>
+                                                    <option value="right">右对齐</option>
+                                                </select>
+                                            </span>
+                                        </div>
+                                        <div class="rpt-cellgrid__bar">
+                                            <span class="rpt-cellgrid__size" id="elemTblSize">3 行 × 3 列</span>
+                                            <span class="rpt-bar__spacer"></span>
+                                            <button type="button" class="el-button el-button--small" id="btnTblAddRow">+ 行</button>
+                                            <button type="button" class="el-button el-button--small" id="btnTblDelRow">- 行</button>
+                                            <button type="button" class="el-button el-button--small" id="btnTblAddCol">+ 列</button>
+                                            <button type="button" class="el-button el-button--small" id="btnTblDelCol">- 列</button>
+                                            <button type="button" class="el-button el-button--small" id="btnTblClear">清空内容</button>
+                                        </div>
+                                        <div class="rpt-cellgrid" id="elemTblCells"></div>
+                                        <div class="form-tip">每个格子填一段文字（最多 60 字）；首行表头只是样式，不影响内容</div>
+                                    </div>
+
+                                    <div class="rpt-form__actions">
+                                        <button type="button" class="el-button el-button--small" id="btnElemUp" title="上移一层（更靠前）">上移一层</button>
+                                        <button type="button" class="el-button el-button--small" id="btnElemDown" title="下移一层（更靠后）">下移一层</button>
+                                        <button type="button" class="el-button el-button--danger el-button--small" id="btnElemRemove">删除组件</button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- 报表参数 -->
+                            <div class="el-tab-pane" data-ppane="param" role="tabpanel">
+                                <div class="rpt-param__bar">
+                                    <span class="rpt-param__title">报表参数</span>
+                                    <span class="rpt-param__count" id="paramCount">0 个</span>
+                                    <span class="rpt-bar__spacer"></span>
+                                    <button type="button" class="el-button el-button--primary el-button--small" id="btnParamAdd">新增参数</button>
+                                    <button type="button" class="el-button el-button--small" id="btnParamDemo">插入示例</button>
+                                </div>
+                                <div class="rpt-param__hint">
+                                    SQL 里用 <code>:参数名</code> 引用（如 <code>WHERE code = :code</code>）；参数名只能是字母、数字、下划线
+                                </div>
+                                <div class="rpt-param__body" id="paramBody">
+                                    <div class="rpt-param__empty">还没有参数。报表需要按条件筛选时点「新增参数」</div>
+                                </div>
+
+                                <div class="rpt-sql">
+                                    <div class="rpt-sql__head">
+                                        <span>数据集 SQL</span>
+                                        <button type="button" class="el-button el-button--small rpt-sql__auto" id="btnSqlAuto" title="按主表 + 已拖入字段生成 SELECT">按主表生成</button>
+                                    </div>
+                                    <textarea class="rpt-sql__text" id="rptSqlText" spellcheck="false"
+                                        placeholder="留空则按「主表 + 已拖入的字段」自动生成 SELECT&#10;需要条件时可用 :参数名，例如 WHERE code = :code"></textarea>
+                                    <div class="rpt-sql__info" id="rptSqlInfo">留空即自动生成查询</div>
+                                </div>
+                            </div>
+
+                            <!-- 页面模板 -->
+                            <div class="el-tab-pane" data-ppane="tmpl" role="tabpanel">
+                                <form class="el-form rpt-form" id="tmplForm" onsubmit="return false;">
+                                    <div class="rpt-form__section">纸张与边距</div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell">
+                                            <label for="tplPaper">纸张</label>
+                                            <select class="el-input__inner" id="tplPaper">
+                                                <option value="A4">A4</option>
+                                                <option value="A5">A5</option>
+                                                <option value="A3">A3</option>
+                                                <option value="Letter">Letter</option>
+                                                <option value="Custom">自定义</option>
+                                            </select>
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplOrientation">方向</label>
+                                            <select class="el-input__inner" id="tplOrientation">
+                                                <option value="portrait">纵向</option>
+                                                <option value="landscape">横向</option>
+                                            </select>
+                                        </span>
+                                    </div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell"><label for="tplMt">上边距</label><input class="el-input__inner" type="number" id="tplMt" min="0" max="80"></span>
+                                        <span class="rpt-form__cell"><label for="tplMr">右边距</label><input class="el-input__inner" type="number" id="tplMr" min="0" max="80"></span>
+                                        <span class="rpt-form__cell"><label for="tplMb">下边距</label><input class="el-input__inner" type="number" id="tplMb" min="0" max="80"></span>
+                                        <span class="rpt-form__cell"><label for="tplMl">左边距</label><input class="el-input__inner" type="number" id="tplMl" min="0" max="80"></span>
+                                    </div>
+
+                                    <div class="rpt-form__section">字体与标题</div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell rpt-form__cell--wide">
+                                            <label for="tplFont">字体</label>
+                                            <input class="el-input__inner" type="text" id="tplFont" maxlength="60" placeholder="Microsoft YaHei">
+                                        </span>
+                                        <span class="rpt-form__cell"><label for="tplFontSize">字号</label><input class="el-input__inner" type="number" id="tplFontSize" min="8" max="20"></span>
+                                    </div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell"><label for="tplTitleSize">标题字号</label><input class="el-input__inner" type="number" id="tplTitleSize" min="10" max="36"></span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplTitleAlign">标题对齐</label>
+                                            <select class="el-input__inner" id="tplTitleAlign">
+                                                <option value="center">居中</option>
+                                                <option value="left">左对齐</option>
+                                                <option value="right">右对齐</option>
+                                            </select>
+                                        </span>
+                                    </div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell">
+                                            <label for="tplTitleBold">标题加粗</label>
+                                            <select class="el-input__inner" id="tplTitleBold">
+                                                <option value="1">加粗</option>
+                                                <option value="0">常规</option>
+                                            </select>
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplCompact">紧凑</label>
+                                            <select class="el-input__inner" id="tplCompact">
+                                                <option value="0">标准行高</option>
+                                                <option value="1">紧凑行高</option>
+                                            </select>
+                                        </span>
+                                    </div>
+
+                                    <div class="rpt-form__section">表格样式</div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell">
+                                            <label for="tplZebra">斑马纹</label>
+                                            <select class="el-input__inner" id="tplZebra"><option value="1">显示</option><option value="0">不显示</option></select>
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplBordered">边框</label>
+                                            <select class="el-input__inner" id="tplBordered"><option value="1">全部</option><option value="0">只有横线</option></select>
+                                        </span>
+                                    </div>
+
+                                    <div class="rpt-form__section">文字与页脚</div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="tplSubtitle">副标题</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input"><input class="el-input__inner" type="text" id="tplSubtitle" maxlength="120" placeholder="如：2026 年度统计（可留空）"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="rpt-form__section">页眉（文字 / 对齐 / Logo）</div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="tplHeader">页眉文字</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input"><input class="el-input__inner" type="text" id="tplHeader" maxlength="120" placeholder="如：九豆综合管理平台"></div>
+                                        </div>
+                                    </div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell">
+                                            <label for="tplHeaderAlign">文字对齐</label>
+                                            <select class="el-input__inner" id="tplHeaderAlign">
+                                                <option value="left">左对齐</option>
+                                                <option value="center">居中</option>
+                                                <option value="right">右对齐</option>
+                                            </select>
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplHeaderLogoPos">Logo 位置</label>
+                                            <select class="el-input__inner" id="tplHeaderLogoPos">
+                                                <option value="left">贴左</option>
+                                                <option value="right">贴右</option>
+                                            </select>
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplHeaderLogoH">Logo 高(px)</label>
+                                            <input class="el-input__inner" type="number" id="tplHeaderLogoH" min="12" max="120" step="2">
+                                        </span>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="tplHeaderLogo">页眉 Logo</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input"><input class="el-input__inner" type="text" id="tplHeaderLogo" maxlength="500" placeholder="图片地址：assets/logo.svg 或 http(s)://…"></div>
+                                            <div class="form-tip">留空表示页眉不放 logo</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="rpt-form__section">页脚（文字 / 对齐 / Logo）</div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="tplFooter">页脚文字</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input"><input class="el-input__inner" type="text" id="tplFooter" maxlength="120" placeholder="如：制表人：张三"></div>
+                                        </div>
+                                    </div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell">
+                                            <label for="tplFooterAlign">文字对齐</label>
+                                            <select class="el-input__inner" id="tplFooterAlign">
+                                                <option value="left">左对齐</option>
+                                                <option value="center">居中</option>
+                                                <option value="right">右对齐</option>
+                                            </select>
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplFooterLogoPos">Logo 位置</label>
+                                            <select class="el-input__inner" id="tplFooterLogoPos">
+                                                <option value="left">贴左</option>
+                                                <option value="right">贴右</option>
+                                            </select>
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplFooterLogoH">Logo 高(px)</label>
+                                            <input class="el-input__inner" type="number" id="tplFooterLogoH" min="12" max="120" step="2">
+                                        </span>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="tplFooterLogo">页脚 Logo</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input"><input class="el-input__inner" type="text" id="tplFooterLogo" maxlength="500" placeholder="图片地址：assets/logo.svg 或 http(s)://…"></div>
+                                            <div class="form-tip">页码 / 打印时间由下面的开关控制，显示在页脚文字后面</div>
+                                        </div>
+                                    </div>
+                                    <div class="el-form-item">
+                                        <label class="el-form-item__label" for="tplWatermark">水印</label>
+                                        <div class="el-form-item__content">
+                                            <div class="el-input"><input class="el-input__inner" type="text" id="tplWatermark" maxlength="40" placeholder="留空表示不加水印"></div>
+                                        </div>
+                                    </div>
+                                    <div class="rpt-form__row">
+                                        <span class="rpt-form__cell">
+                                            <label for="tplPageNo">显示页码</label>
+                                            <select class="el-input__inner" id="tplPageNo"><option value="1">显示</option><option value="0">不显示</option></select>
+                                        </span>
+                                        <span class="rpt-form__cell">
+                                            <label for="tplTime">打印时间</label>
+                                            <select class="el-input__inner" id="tplTime"><option value="1">显示</option><option value="0">不显示</option></select>
+                                        </span>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/report-viewer.js?v=20261105c"></script>
+<script src="js/report-designer.js?v=20261106d"></script>
+</body>
+</html>

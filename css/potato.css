@@ -1,0 +1,728 @@
+/* ==========================================================================
+   potato.css —— 主框架右下角「土豆小助手」悬浮按钮（只被 main.html 引用）
+   1) 圆形柔光底 + 卡通土豆：纯内联 SVG，不额外请求图片，缩放不失真
+   2) 小动效：整颗上下浮动 / 定时眨眼 / 嫩芽摇摆 / 悬停跳一下
+   3) 点击弹出小气泡（提示语轮换），点空白处或按 Esc 关闭
+   说明：这些元素只存在于框架页，所以单独成文件，不动 app.css，避免全站页面跟着升版。
+   层级 1600：在内容之上、消息提醒下拉（3000）与弹窗之下，不挡业务操作。
+   ========================================================================== */
+
+/* ---------- 1. 悬浮容器 ---------- */
+.potato-fab {
+    position: fixed; right: 22px; bottom: 56px; z-index: 9999;   /* 永远置顶：压过抽屉 2400 / 小窗 2500 / 提醒面板 3000 */
+    width: 76px; height: 76px;
+    /* 底栏 40px，再留 16px 间隙；移动端见文末媒体查询 */
+    touch-action: none;   /* 触屏拖动土豆时不要触发页面滚动/缩放 */
+}
+
+.potato-fab__btn {
+    position: relative; display: block; width: 100%; height: 100%;
+    padding: 0; border: 0; background: transparent; cursor: -webkit-grab; cursor: grab;
+    -webkit-animation: potato-float 3.6s ease-in-out infinite;
+            animation: potato-float 3.6s ease-in-out infinite;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+}
+/* 拖动中：抓手光标 + 停掉浮动（否则按钮会跟着动画离开指针 5px，手感发飘） */
+.potato-fab.is-dragging .potato-fab__btn { cursor: -webkit-grabbing; cursor: grabbing; }
+.potato-fab.is-dragging .potato-fab__btn,
+.potato-fab.is-dragging .potato-fab__btn::before { -webkit-animation-play-state: paused; animation-play-state: paused; }
+.potato-fab.is-dragging .potato { -webkit-transform: none; transform: none; }
+.potato-fab__btn:focus { outline: none; }
+.potato-fab__btn:focus-visible::after {
+    content: ''; position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+    border-radius: 50%; box-shadow: 0 0 0 2px rgba(64, 158, 255, .8);
+}
+
+/* 按钮底下的暖色柔光：随浮动一起呼吸，让土豆像「浮」在页面上 */
+.potato-fab__btn::before {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 60px; height: 60px;
+    margin: -30px 0 0 -30px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at 50% 46%, rgba(255, 190, 110, .5), rgba(255, 190, 110, 0) 70%);
+    -webkit-animation: potato-glow 3.6s ease-in-out infinite;
+            animation: potato-glow 3.6s ease-in-out infinite;
+}
+
+/* ---------- 2. 卡通土豆（内联 SVG） ---------- */
+.potato {
+    position: relative; display: block; width: 100%; height: 100%;
+    overflow: visible;
+    -webkit-transition: -webkit-transform .22s ease;
+            transition: transform .22s ease;
+}
+.potato-fab__btn:hover .potato { -webkit-transform: scale(1.07) rotate(-3deg); transform: scale(1.07) rotate(-3deg); }
+.potato-fab__btn:active .potato { -webkit-transform: scale(.95); transform: scale(.95); }
+
+.potato__shadow { fill: #000; opacity: .13; }
+.potato__skin   { fill: url(#potatoSkin); }
+.potato__spot   { fill: #8d5a22; opacity: .26; }
+.potato__stem   { fill: none; stroke: #5f9e46; stroke-width: 2.6; stroke-linecap: round; }
+.potato__leaf   { fill: #6cb84f; }
+.potato__arm    { fill: none; stroke: #a8692a; stroke-width: 4.6; stroke-linecap: round; opacity: .82; }
+.potato__eyew   { fill: #fff; }
+.potato__pupil  { fill: #3a2a1a; }
+.potato__glint  { fill: #fff; }
+.potato__cheek  { fill: #ff9f7a; opacity: .5; }
+.potato__mouth  { fill: none; stroke: #6b4520; stroke-width: 2.2; stroke-linecap: round; }
+
+/* 眨眼：整组眼睛压扁一下（SVG 的 transform-box 让缩放以自身中心为原点） */
+.potato__eyes {
+    -webkit-transform-box: fill-box; transform-box: fill-box;
+    -webkit-transform-origin: 50% 50%; transform-origin: 50% 50%;
+    -webkit-animation: potato-blink 5.4s ease-in-out infinite;
+            animation: potato-blink 5.4s ease-in-out infinite;
+}
+/* 嫩芽随风摇 */
+.potato__sprout {
+    -webkit-transform-box: fill-box; transform-box: fill-box;
+    -webkit-transform-origin: 50% 100%; transform-origin: 50% 100%;
+    -webkit-animation: potato-sway 3.2s ease-in-out infinite;
+            animation: potato-sway 3.2s ease-in-out infinite;
+}
+/* 悬停时挥手（右臂绕肩部摆动） */
+.potato-fab__btn:hover .potato__arm--r {
+    -webkit-transform-box: fill-box; transform-box: fill-box;
+    -webkit-transform-origin: 10% 90%; transform-origin: 10% 90%;
+    -webkit-animation: potato-wave .5s ease-in-out infinite alternate;
+            animation: potato-wave .5s ease-in-out infinite alternate;
+}
+/* 点击后蹦一下 */
+.potato-fab__btn.is-happy .potato { animation: potato-hop .62s ease-out 1; }
+
+@keyframes potato-float {
+    0%, 100% { -webkit-transform: translateY(0); transform: translateY(0); }
+    50%      { -webkit-transform: translateY(-5px); transform: translateY(-5px); }
+}
+@keyframes potato-glow {
+    0%, 100% { opacity: .55; -webkit-transform: scale(.94); transform: scale(.94); }
+    50%      { opacity: .95; -webkit-transform: scale(1.06); transform: scale(1.06); }
+}
+@keyframes potato-blink {
+    0%, 90%, 100% { -webkit-transform: scaleY(1); transform: scaleY(1); }
+    93%, 96%      { -webkit-transform: scaleY(.08); transform: scaleY(.08); }
+}
+@keyframes potato-sway {
+    0%, 100% { -webkit-transform: rotate(-5deg); transform: rotate(-5deg); }
+    50%      { -webkit-transform: rotate(6deg); transform: rotate(6deg); }
+}
+@keyframes potato-wave {
+    from { -webkit-transform: rotate(0); transform: rotate(0); }
+    to   { -webkit-transform: rotate(-26deg); transform: rotate(-26deg); }
+}
+@keyframes potato-hop {
+    0%   { -webkit-transform: translateY(0) scale(1); transform: translateY(0) scale(1); }
+    35%  { -webkit-transform: translateY(-10px) scale(1.05, .95); transform: translateY(-10px) scale(1.05, .95); }
+    70%  { -webkit-transform: translateY(-2px) scale(.98, 1.02); transform: translateY(-2px) scale(.98, 1.02); }
+    100% { -webkit-transform: translateY(0) scale(1); transform: translateY(0) scale(1); }
+}
+
+/* ---------- 3. 点击后的小气泡 ---------- */
+.potato-fab__bubble {
+    position: absolute; right: 2px; bottom: 100%; width: 198px; margin-bottom: 10px;
+    padding: 11px 26px 11px 12px; background: #fff;
+    border: 1px solid #e4e7ed; border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .14);
+    text-align: left; color: #606266; font-size: 12.5px; line-height: 1.65;
+    -webkit-animation: potato-bubble-in .18s ease-out 1;
+            animation: potato-bubble-in .18s ease-out 1;
+}
+.potato-fab__bubble[hidden] { display: none; }
+/* 指向土豆的小尾巴 */
+.potato-fab__bubble::after {
+    content: ''; position: absolute; right: 26px; bottom: -6px; width: 10px; height: 10px;
+    background: #fff; border-right: 1px solid #e4e7ed; border-bottom: 1px solid #e4e7ed;
+    -webkit-transform: rotate(45deg); transform: rotate(45deg);
+}
+/* 土豆被拖到贴近顶部：气泡翻到下方，尾巴朝上 */
+.potato-fab__bubble.is-below { top: 100%; bottom: auto; margin-top: 10px; margin-bottom: 0; }
+.potato-fab__bubble.is-below::after {
+    bottom: auto; top: -6px;
+    border-right: 0; border-bottom: 0;
+    border-left: 1px solid #e4e7ed; border-top: 1px solid #e4e7ed;
+}
+/* 土豆被拖到贴近左侧：气泡改成左对齐，尾巴靠左，别跑出屏幕 */
+.potato-fab__bubble.is-align-left { right: auto; left: 0; }
+.potato-fab__bubble.is-align-left::after { right: auto; left: 26px; }
+.potato-fab__bubble-text { margin: 0; }
+.potato-fab__bubble-close {
+    position: absolute; right: 4px; top: 3px; width: 20px; height: 20px;
+    padding: 0; border: 0; border-radius: 50%; background: transparent;
+    color: #c0c4cc; font-size: 15px; line-height: 20px; text-align: center; cursor: pointer;
+}
+.potato-fab__bubble-close:hover { color: #909399; background: #f5f7fa; }
+
+/* ---------- 3.5 拖拽遮罩（见 potato.js：拦住 iframe，避免拖动中途丢事件） ---------- */
+.potato-drag-shield {
+    display: none; position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 9998;   /* 拖拽遮罩紧随其后 */
+    cursor: -webkit-grabbing; cursor: grabbing; background: transparent;
+}
+.potato-drag-shield.is-on { display: block; }
+
+@keyframes potato-bubble-in {
+    from { opacity: 0; -webkit-transform: translateY(4px) scale(.96); transform: translateY(4px) scale(.96); }
+    to   { opacity: 1; -webkit-transform: translateY(0) scale(1); transform: translateY(0) scale(1); }
+}
+
+/* ---------- 4. 右侧「即时对话」抽屉（双击土豆打开，原生渲染，不内嵌页面） ---------- */
+.potato-im {
+    position: fixed; top: 60px; right: 0; bottom: 0; z-index: 2400;
+    width: 400px; max-width: calc(100vw - 16px);
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+        -ms-flex-direction: column; flex-direction: column;
+    background: #fff; border-left: 1px solid #e4e7ed;
+    box-shadow: -10px 0 28px rgba(0, 0, 0, .16);
+    -webkit-transform: translateX(102%); transform: translateX(102%);
+    visibility: hidden;
+    -webkit-transition: -webkit-transform .26s ease, visibility 0s linear .26s;
+            transition: transform .26s ease, visibility 0s linear .26s;
+}
+.potato-im.is-open {
+    -webkit-transform: none; transform: none; visibility: visible;
+    -webkit-transition: -webkit-transform .26s ease; transition: transform .26s ease;
+}
+.potato-im__head {
+    -webkit-box-flex: 0; -ms-flex: 0 0 40px; flex: 0 0 40px;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    padding: 0 8px 0 14px; border-bottom: 1px solid #ebeef5; background: #fafbfc;
+}
+.potato-im__title { font-size: 14px; font-weight: 600; color: #303133; }
+.potato-im__me {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    margin-left: 8px; font-size: 12px; color: #909399;
+    overflow: hidden; white-space: nowrap; -o-text-overflow: ellipsis; text-overflow: ellipsis;
+}
+.potato-im__link {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; margin-right: 6px; padding: 4px 8px;
+    border: 1px solid #dcdfe6; border-radius: 4px; background: #fff;
+    font-size: 12px; color: #606266; cursor: pointer;
+}
+.potato-im__link:hover { color: #409eff; border-color: #a9d3ff; background: #ecf5ff; }
+.potato-im__close {
+    width: 28px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: transparent;
+    color: #909399; font-size: 18px; line-height: 1; cursor: pointer;
+}
+.potato-im__close:hover { color: #303133; background: #eef1f5; }
+
+/* 抽屉主体：搜索 + 两个标签 + 名单（**没有会话区、没有输入框**，只做通讯录） */
+.pi-body {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+        -ms-flex-direction: column; flex-direction: column;
+    min-height: 0; background: #f7f8fa;
+}
+.pi-search { padding: 8px; }
+.pi-search input {
+    width: 100%; height: 30px; padding: 0 8px; -webkit-box-sizing: border-box; box-sizing: border-box;
+    border: 1px solid #dcdfe6; border-radius: 4px; font-size: 12px; color: #303133; background: #fff;
+}
+.pi-search input:focus { outline: none; border-color: #409eff; }
+.pi-tabs { display: flex; padding: 0 6px; border-bottom: 1px solid #ebeef5; }
+.pi-tab {
+    -webkit-box-flex: 1; -ms-flex: 1 1 0; flex: 1 1 0;
+    padding: 8px 0; border: 0; background: transparent; cursor: pointer;
+    font-size: 13px; color: #606266; border-bottom: 2px solid transparent;
+}
+.pi-tab:hover { color: #409eff; }
+.pi-tab.is-active { color: #409eff; border-bottom-color: #409eff; font-weight: 600; }
+/* 标签上的未读红点（有未读才显示，带数字，>99 显示 99+） */
+.pi-tab__dot {
+    display: inline-block; min-width: 15px; height: 15px; padding: 0 4px; margin-left: 5px;
+    border-radius: 8px; background: #f56c6c; color: #fff; font-size: 10px; line-height: 15px;
+    font-weight: 400; text-align: center; vertical-align: 1px;
+    -webkit-box-sizing: border-box; box-sizing: border-box;
+}
+.pi-tab__dot[hidden] { display: none; }
+.pi-list { -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; overflow-y: auto; min-height: 0; }
+.pi-list__tip { padding: 18px 12px; font-size: 12px; color: #c0c4cc; text-align: center; }
+/* 组织架构的部门分组头 */
+.pi-dept {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 10px; background: #eef1f6; border-bottom: 1px solid #e4e8ef;
+    font-size: 12px; font-weight: 600; color: #606266;
+}
+.pi-dept__count {
+    flex: 0 0 auto; margin-left: 8px; padding: 0 6px; border-radius: 8px;
+    background: #fff; color: #909399; font-size: 11px; font-weight: 400; line-height: 16px;
+}
+.pi-item {
+    display: flex; align-items: flex-start; padding: 9px 10px; cursor: pointer;
+    border-bottom: 1px solid #f2f3f5;
+}
+.pi-item:hover { background: #eef4ff; }
+.pi-item.is-active { background: #e6f0ff; }
+.pi-avatar {
+    -ms-flex: 0 0 34px; flex: 0 0 34px; position: relative;
+    width: 34px; height: 34px; border-radius: 50%; background: #409eff; color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+.pi-avatar.is-group { background: #67c23a; }
+.pi-dot {
+    position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%;
+    border: 2px solid #f7f8fa; background: #c0c4cc;
+}
+.pi-dot.is-online { background: #67c23a; }
+.pi-item__body { flex: 1 1 auto; min-width: 0; margin-left: 9px; }
+.pi-item__top { display: flex; align-items: baseline; justify-content: space-between; }
+.pi-item__name {
+    font-size: 13px; color: #303133; overflow: hidden; white-space: nowrap;
+    -o-text-overflow: ellipsis; text-overflow: ellipsis;
+}
+.pi-item__time { -ms-flex: 0 0 auto; flex: 0 0 auto; margin-left: 6px; font-size: 11px; color: #c0c4cc; }
+.pi-item__row2 { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+.pi-item__msg {
+    flex: 1 1 auto; min-width: 0; font-size: 12px; color: #909399;
+    overflow: hidden; white-space: nowrap; -o-text-overflow: ellipsis; text-overflow: ellipsis;
+}
+.pi-badge {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; min-width: 17px; height: 17px; padding: 0 5px; margin-left: 6px;
+    border-radius: 9px; background: #f56c6c; color: #fff; font-size: 11px; line-height: 17px; text-align: center;
+}
+.pi-foot {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; padding: 8px 12px; border-top: 1px solid #ebeef5;
+    background: #fafbfc; font-size: 11px; color: #a8abb2; line-height: 1.5;
+}
+
+
+/* 标签行右侧「建群」入口 */
+.pi-newgroup {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; width: 32px; margin-left: 2px;
+    border: 0; border-radius: 4px; background: transparent; cursor: pointer;
+    color: #909399; font-size: 17px; line-height: 1;
+}
+.pi-newgroup:hover { color: #409eff; background: #ecf5ff; }
+
+/* 群条目上的「改名」铅笔（仅群主，悬停才显示） */
+.pi-item__rename {
+    display: none; -ms-flex: 0 0 auto; flex: 0 0 auto;
+    width: 20px; height: 20px; margin-left: 6px; padding: 0; border: 0; border-radius: 4px;
+    background: transparent; color: #909399; font-size: 13px; line-height: 20px; cursor: pointer;
+}
+.pi-item:hover .pi-item__rename { display: inline-block; }
+.pi-item__rename:hover { color: #409eff; background: #e6f0ff; }
+
+/* 建群 / 改名 弹窗（抽屉内自绘） */
+.pi-modal { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 10; }
+.pi-modal[hidden] { display: none; }
+.pi-modal__mask { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, .32); }
+.pi-modal__box {
+    position: absolute; left: 50%; top: 50%; width: 330px; max-width: calc(100% - 24px);
+    max-height: calc(100% - 40px);
+    -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+        -ms-flex-direction: column; flex-direction: column;
+    background: #fff; border-radius: 8px; box-shadow: 0 12px 32px rgba(0, 0, 0, .22); overflow: hidden;
+}
+.pi-modal__head {
+    -ms-flex: 0 0 40px; flex: 0 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 8px 0 14px; border-bottom: 1px solid #ebeef5; background: #fafbfc;
+}
+.pi-modal__title { font-size: 14px; font-weight: 600; color: #303133; }
+.pi-modal__close {
+    width: 28px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: transparent;
+    color: #909399; font-size: 18px; line-height: 1; cursor: pointer;
+}
+.pi-modal__close:hover { color: #303133; background: #eef1f5; }
+.pi-modal__body {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    min-height: 0; overflow-y: auto; padding: 12px 14px;
+}
+.pi-modal__err { min-height: 16px; padding: 0 14px; font-size: 12px; color: #f56c6c; }
+.pi-modal__foot {
+    -ms-flex: 0 0 auto; flex: 0 0 auto;
+    display: flex; justify-content: flex-end; padding: 8px 12px; border-top: 1px solid #ebeef5;
+}
+.pi-modal__tip { margin-top: 8px; font-size: 11px; color: #909399; }
+.pi-btn {
+    height: 30px; padding: 0 14px; margin-left: 8px; border: 1px solid #dcdfe6; border-radius: 4px;
+    background: #fff; color: #606266; font-size: 13px; cursor: pointer;
+}
+.pi-btn:hover { color: #409eff; border-color: #a9d3ff; background: #ecf5ff; }
+.pi-btn--primary { background: #409eff; border-color: #409eff; color: #fff; }
+.pi-btn--primary:hover { background: #66b1ff; border-color: #66b1ff; color: #fff; }
+.pi-field { margin-bottom: 10px; }
+.pi-field label { display: block; margin-bottom: 4px; font-size: 12px; color: #909399; }
+.pi-field input[type="text"] {
+    width: 100%; height: 30px; padding: 0 8px; -webkit-box-sizing: border-box; box-sizing: border-box;
+    border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; color: #303133; background: #fff;
+}
+.pi-field input[type="text"]:focus { outline: none; border-color: #409eff; }
+.pi-pick { margin-top: 6px; max-height: 190px; overflow-y: auto; border: 1px solid #ebeef5; border-radius: 4px; }
+.pi-pick__item {
+    display: flex; align-items: center; padding: 6px 8px; cursor: pointer;
+    border-bottom: 1px solid #f5f7fa;
+}
+.pi-pick__item:last-child { border-bottom: 0; }
+.pi-pick__item:hover { background: #f5f9ff; }
+/* 复选框要被全站 input 样式接管过，这里强制回小尺寸 */
+.pi-pick__item input[type="checkbox"] {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; width: 14px; height: 14px; margin: 0 8px 0 0; padding: 0;
+}
+.pi-pick__name { -ms-flex: 0 0 auto; flex: 0 0 auto; white-space: nowrap; font-size: 13px; color: #303133; }
+.pi-pick__sub {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; margin-left: 6px;
+    font-size: 11px; color: #c0c4cc; white-space: nowrap; overflow: hidden;
+    -o-text-overflow: ellipsis; text-overflow: ellipsis;
+}
+.pi-pick__empty { padding: 14px; text-align: center; font-size: 12px; color: #c0c4cc; }
+
+/* 抽屉内的小提示（建群 / 改名成功） */
+.pi-toast {
+    position: absolute; left: 50%; bottom: 52px; z-index: 12;
+    -webkit-transform: translateX(-50%); transform: translateX(-50%);
+    max-width: calc(100% - 32px); padding: 7px 14px; border-radius: 16px;
+    background: rgba(48, 49, 51, .92); color: #fff; font-size: 12px; white-space: nowrap;
+    overflow: hidden; -o-text-overflow: ellipsis; text-overflow: ellipsis;
+}
+.pi-toast[hidden] { display: none; }
+
+/* 双击弹出的即时对话小窗（不跳转消息中心页面） */
+.pi-chatwin {
+    position: fixed; left: 50%; top: 50%; z-index: 2500;
+    width: 720px; max-width: calc(100vw - 40px); height: 620px; max-height: calc(100vh - 96px);
+    -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-orient: vertical; -webkit-box-direction: normal;
+        -ms-flex-direction: column; flex-direction: column;
+    background: #fff; border: 1px solid #e4e7ed; border-radius: 8px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .24); overflow: hidden;
+}
+.pi-chatwin[hidden] { display: none; }
+/* 最大化：铺满视口（留一点边） */
+.pi-chatwin.is-max {
+    width: calc(100vw - 40px); height: calc(100vh - 96px);
+    max-width: none; max-height: none;
+}
+.pi-chatwin__head {
+    -ms-flex: 0 0 42px; flex: 0 0 42px;
+    display: flex; align-items: center; padding: 0 8px 0 14px;
+    border-bottom: 1px solid #ebeef5; background: #fafbfc;
+    cursor: -webkit-grab; cursor: grab;
+}
+.pi-chatwin.is-dragging { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+.pi-chatwin.is-dragging .pi-chatwin__head { cursor: -webkit-grabbing; cursor: grabbing; }
+.pi-chatwin.is-max .pi-chatwin__head { cursor: default; }
+.pi-chatwin__title { font-size: 14px; font-weight: 600; color: #303133; }
+.pi-chatwin__sub {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    margin-left: 8px; font-size: 11px; color: #909399;
+    overflow: hidden; white-space: nowrap; -o-text-overflow: ellipsis; text-overflow: ellipsis;
+}
+.pi-chatwin__close {
+    width: 28px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: transparent;
+    color: #909399; font-size: 18px; line-height: 1; cursor: pointer;
+}
+.pi-chatwin__close:hover { color: #303133; background: #eef1f5; }
+.pi-chatwin__body {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    min-height: 0; overflow-y: auto; padding: 12px; background: #f5f6f8;
+}
+.pi-chatwin__input {
+    -ms-flex: 0 0 auto; flex: 0 0 auto;
+    display: flex; align-items: flex-end; padding: 8px; border-top: 1px solid #ebeef5; background: #fff;
+}
+.pi-chatwin__input textarea {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; width: 100%; height: 56px;
+    padding: 6px 8px; -webkit-box-sizing: border-box; box-sizing: border-box; resize: none;
+    border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; line-height: 1.5;
+    color: #303133; font-family: inherit;
+}
+.pi-chatwin__input textarea:focus { outline: none; border-color: #409eff; }
+.pi-chatwin__send {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; margin-left: 8px; height: 56px; padding: 0 14px;
+    border: 0; border-radius: 4px; background: #409eff; color: #fff; font-size: 13px; cursor: pointer;
+}
+.pi-chatwin__send:hover { background: #66b1ff; }
+.pi-chatwin__send:active { background: #3a8ee6; }
+
+/* 小窗里的消息列表：与即时对话页 .im-msg 同一套度量（头像 38 / 内容 460 / 气泡 14px 9×13 / 时间 11px） */
+.pi-chatwin .pi-msg { display: flex; align-items: flex-start; margin-bottom: 16px; }
+.pi-chatwin .pi-msg.is-me { -webkit-box-orient: horizontal; -webkit-box-direction: reverse;
+    -ms-flex-direction: row-reverse; flex-direction: row-reverse; }
+.pi-chatwin .pi-msg__avatar {
+    -ms-flex: 0 0 38px; flex: 0 0 38px; width: 38px; height: 38px; border-radius: 50%;
+    background: #909399; color: #fff; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+}
+.pi-chatwin .pi-msg.is-me .pi-msg__avatar { background: #409eff; }
+.pi-chatwin .pi-msg__wrap { width: 460px; max-width: calc(100% - 96px); min-width: 0; margin: 0 12px; }
+.pi-chatwin .pi-msg__from { display: block; margin-bottom: 4px; font-size: 12px; color: #909399; }
+.pi-chatwin .pi-bubble {
+    display: block; box-sizing: border-box; padding: 9px 13px; border-radius: 8px;
+    background: #fff; border: 1px solid #ebeef5; font-size: 14px; line-height: 1.6;
+    color: #303133; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
+}
+.pi-chatwin .pi-msg.is-me .pi-bubble { background: #409eff; border-color: #409eff; color: #fff; }
+.pi-chatwin .pi-meta { display: block; margin-top: 4px; font-size: 11px; color: #c0c4cc; }
+.pi-chatwin .pi-msg.is-me .pi-meta { text-align: right; }
+.pi-chatwin .pi-chat__tip { text-align: center; font-size: 12px; color: #c0c4cc; padding: 20px 0; }
+
+/* 最大化按钮 */
+.pi-chatwin__max {
+    width: 28px; height: 28px; margin-right: 2px; padding: 0; border: 0; border-radius: 4px;
+    background: transparent; color: #909399; font-size: 15px; line-height: 1; cursor: pointer;
+}
+.pi-chatwin__max:hover { color: #303133; background: #eef1f5; }
+
+/* 工具条：表情 / 图片 / 文件 / 语音 / 截屏 */
+.pi-chatwin__tools {
+    -ms-flex: 0 0 auto; flex: 0 0 auto;
+    display: flex; align-items: center; padding: 4px 8px;
+    border-top: 1px solid #f2f3f5; background: #fff;
+}
+.pi-tool {
+    width: 30px; height: 28px; margin-right: 4px; padding: 0; border: 0; border-radius: 4px;
+    background: transparent; color: #606266; font-size: 15px; line-height: 1; cursor: pointer;
+}
+.pi-tool svg { display: block; width: 18px; height: 18px; margin: auto; }
+.pi-tool:hover { background: #ecf5ff; }
+.pi-tool.is-active { background: #409eff; color: #fff; }
+.pi-chatwin__status {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0;
+    margin-left: 6px; font-size: 11px; color: #909399; text-align: right;
+    overflow: hidden; white-space: nowrap; -o-text-overflow: ellipsis; text-overflow: ellipsis;
+}
+
+/* 表情面板（emoji + 图片表情包） */
+.pi-chatwin__emoji {
+    -ms-flex: 0 0 auto; flex: 0 0 auto;
+    max-height: 196px; overflow-y: auto; padding: 6px 8px;
+    border-top: 1px solid #ebeef5; background: #fafbfc;
+}
+.pi-chatwin__emoji[hidden] { display: none; }
+.pi-emoji__tabs { display: flex; margin-bottom: 6px; }
+.pi-emoji__tab {
+    padding: 2px 8px; margin-right: 4px; border: 0; border-radius: 10px;
+    background: transparent; font-size: 12px; color: #606266; cursor: pointer;
+}
+.pi-emoji__tab.is-active { background: #409eff; color: #fff; }
+.pi-emoji__grid { display: flex; flex-wrap: wrap; }
+.pi-emoji__item {
+    width: 30px; height: 30px; padding: 0; border: 0; border-radius: 4px;
+    background: transparent; font-size: 19px; line-height: 1; cursor: pointer;
+}
+.pi-emoji__item:hover { background: #e6f0ff; }
+.pi-emoji__item img { display: block; width: 26px; height: 26px; margin: auto; object-fit: contain; }
+.pi-emoji__tip { padding: 6px 2px; font-size: 11px; color: #c0c4cc; }
+
+/* 媒体气泡：图片 / 表情包 / 文件 / 纯 emoji（与即时对话页同口径：气泡去底色，内容自带卡片） */
+.pi-chatwin .pi-bubble.is-media {
+    display: inline-block; width: auto; padding: 0; background: transparent !important;
+    border: none !important; box-shadow: none !important;
+}
+.pi-chatwin .pi-img {
+    display: block; max-width: 260px; max-height: 220px; border-radius: 8px;
+    border: 1px solid #ebeef5; background: #fff; cursor: zoom-in;
+}
+.pi-chatwin .pi-msg.is-me .pi-img { border-color: #a3c8f7; }
+.pi-chatwin .pi-sticker { display: block; max-width: 130px; max-height: 130px; cursor: pointer; }
+.pi-chatwin .pi-msg.is-me .pi-sticker { margin-left: auto; }
+.pi-chatwin .pi-audio { display: block; width: 250px; height: 36px; }
+.pi-chatwin .pi-audio-fail { display: block; margin-top: 4px; font-size: 12px; color: #f56c6c; }
+.pi-chatwin .pi-file {
+    display: flex; align-items: center; width: 250px; padding: 10px 12px; border-radius: 8px;
+    background: #fff; border: 1px solid #ebeef5; text-decoration: none; color: #303133;
+}
+.pi-chatwin .pi-file:hover { border-color: #a3c8f7; }
+.pi-chatwin .pi-msg.is-me .pi-file { background: #ecf5ff; border-color: #a3c8f7; }
+.pi-chatwin .pi-file__ico {
+    -ms-flex: 0 0 auto; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 6px;
+    background: #e8f0fe; color: #409eff; font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; text-transform: uppercase;
+}
+.pi-chatwin .pi-file__body { -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; margin-left: 10px; text-align: left; }
+.pi-chatwin .pi-file__name { display: block; font-size: 13px; overflow: hidden; white-space: nowrap; -o-text-overflow: ellipsis; text-overflow: ellipsis; }
+.pi-chatwin .pi-file__meta { display: block; font-size: 11px; color: #909399; margin-top: 2px; }
+.pi-chatwin .pi-file__dl { -ms-flex: 0 0 auto; flex: 0 0 auto; margin-left: 8px; font-size: 12px; color: #409eff; }
+.pi-chatwin .pi-bubble.is-emoji {
+    display: inline-block; width: auto; padding: 2px 0 !important; border: none !important;
+    background: transparent !important; box-shadow: none !important; font-size: 34px; line-height: 1.25;
+}
+
+/* ---------- 5. 响应式 / 打印 / 降低动效 ---------- */
+@media (max-width: 768px) {
+    .potato-fab { right: 12px; bottom: 52px; width: 62px; height: 62px; }
+    .potato-fab__bubble { width: 176px; }
+    .potato-im { top: 52px; width: 100%; max-width: 100%; }
+}
+@media print {
+    .potato-fab { display: none !important; }
+    .potato-im { display: none !important; }
+}
+/* 系统里开了「减少动态效果」就全部静止，只保留静态插画 */
+@media (prefers-reduced-motion: reduce) {
+    .potato-fab__btn,
+    .potato-fab__btn::before,
+    .potato__eyes,
+    .potato__sprout,
+    .potato-fab__btn:hover .potato__arm--r,
+    .potato-fab__btn.is-happy .potato,
+    .potato-fab__bubble {
+        -webkit-animation: none !important;
+                animation: none !important;
+    }
+}
+
+
+/* ---------- 6. 组织架构树 / 员工详情 ---------- */
+.pi-dept { cursor: pointer; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+.pi-dept:hover { background: #e6ebf3; }
+.pi-dept__caret { -ms-flex: 0 0 14px; flex: 0 0 14px; margin-right: 2px; color: #909399; font-size: 11px; line-height: 1; }
+.pi-dept__caret.is-leaf { visibility: hidden; }
+.pi-dept__name { -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; -o-text-overflow: ellipsis; text-overflow: ellipsis; }
+
+/* 人员行右侧「查看详情」图标按钮 */
+.pi-item__info {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; width: 18px; height: 18px; margin-left: 6px; padding: 0;
+    border: 0; border-radius: 50%; background: #ecf5ff; color: #409eff;
+    font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 12px;
+    line-height: 18px; text-align: center; cursor: pointer;
+}
+.pi-item__info:hover { background: #409eff; color: #fff; }
+
+/* 员工详情弹窗内容 */
+.pi-detail__row { display: flex; padding: 6px 2px; border-bottom: 1px dashed #f0f2f5; font-size: 13px; }
+.pi-detail__row:last-child { border-bottom: 0; }
+.pi-detail__k { -ms-flex: 0 0 46px; flex: 0 0 46px; color: #909399; }
+.pi-detail__v { -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; color: #303133; word-break: break-all; }
+.pi-copy {
+    -webkit-box-flex: 0; -ms-flex: 0 0 20px; flex: 0 0 20px;
+    width: 20px; height: 20px; margin-left: 4px; padding: 0;
+    border: 0; border-radius: 3px; background: transparent; color: #c0c4cc;
+    cursor: pointer; display: -webkit-inline-box; display: -ms-inline-flexbox; display: inline-flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.pi-copy:hover { color: #409eff; background: #ecf5ff; }
+.pi-copy .svg-ico { width: 13px; height: 13px; margin: 0; }
+.pi-detail__loading { padding: 12px; text-align: center; color: #c0c4cc; font-size: 12px; }
+
+
+/* ---------- 7. 群成员按钮 / 成员列表 ---------- */
+.pi-item__members {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; width: 20px; height: 20px; margin-left: 6px; padding: 0;
+    border: 0; border-radius: 50%; background: #eef8ec; color: #67c23a; cursor: pointer;
+    display: -webkit-box; display: -ms-flexbox; display: flex;
+    -webkit-box-align: center; -ms-flex-align: center; align-items: center;
+    -webkit-box-pack: center; -ms-flex-pack: center; justify-content: center;
+}
+.pi-item__members svg { width: 12px; height: 12px; }
+.pi-item__members:hover { background: #67c23a; color: #fff; }
+
+.pi-groupinfo { padding: 2px 2px 8px; border-bottom: 1px solid #f0f2f5; margin-bottom: 6px; }
+.pi-groupinfo__name { font-size: 14px; font-weight: 600; color: #303133; }
+.pi-groupinfo__meta { margin-top: 2px; font-size: 11px; color: #909399; }
+
+.pi-gmembers { max-height: 300px; overflow-y: auto; }
+.pi-gmember { display: flex; align-items: center; padding: 6px 2px; border-bottom: 1px dashed #f5f7fa; }
+.pi-gmember:last-child { border-bottom: 0; }
+.pi-avatar--sm {
+    -ms-flex: 0 0 26px; flex: 0 0 26px; width: 26px; height: 26px; font-size: 11px;
+}
+.pi-gmember__body { -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; margin-left: 8px; }
+.pi-gmember__name { display: block; font-size: 13px; color: #303133; white-space: nowrap; overflow: hidden; -o-text-overflow: ellipsis; text-overflow: ellipsis; }
+.pi-gmember__tag {
+    display: inline-block; margin-left: 6px; padding: 0 5px; border-radius: 8px;
+    background: #fdf6ec; color: #e6a23c; font-size: 10px; line-height: 15px; vertical-align: 1px;
+}
+.pi-gmember__sub { display: block; margin-top: 1px; font-size: 11px; color: #909399; white-space: nowrap; overflow: hidden; -o-text-overflow: ellipsis; text-overflow: ellipsis; }
+
+
+/* ---------- 8. 抽屉最小化 / 还原胶囊 ---------- */
+.potato-im__min {
+    width: 28px; height: 28px; margin-right: 2px; padding: 0; border: 0; border-radius: 4px;
+    background: transparent; color: #909399; font-size: 18px; line-height: 1; cursor: pointer;
+}
+.potato-im__min:hover { color: #303133; background: #eef1f5; }
+.potato-im__pill {
+    position: fixed; right: 0; top: 46%; z-index: 2400;
+    -webkit-transform: translateY(-50%); transform: translateY(-50%);
+    padding: 12px 7px; border: 1px solid #dcdfe6; border-right: 0; border-radius: 8px 0 0 8px;
+    background: #fff; color: #409eff; font-size: 12px; line-height: 1.2; letter-spacing: 1px;
+    cursor: pointer; box-shadow: -6px 0 18px rgba(0, 0, 0, .12);
+}
+.potato-im__pill:hover { background: #ecf5ff; }
+.potato-im__pill[hidden] { display: none; }
+
+
+/* ---------- 9. 群成员勾选（增删） ---------- */
+.pi-gmembers__title { padding: 8px 2px 4px; font-size: 11px; font-weight: 600; color: #909399; background: #fafbfc; }
+.pi-gmember.is-pickable { cursor: pointer; }
+.pi-gmember.is-pickable:hover { background: #f5f9ff; }
+.pi-gmember input[type="checkbox"] {
+    -ms-flex: 0 0 auto; flex: 0 0 auto; width: 14px; height: 14px; margin: 0 6px 0 0; padding: 0;
+}
+
+/* ---------- 10. 员工 IM 小窗：富文本输入 + 群聊 @ 组员 ---------- */
+/* 小窗输入区：RichText 挂载后变成 .rt（格式栏 + 可编辑区），对齐即时对话页 */
+.pi-chatwin__area {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0;
+    min-height: 56px; max-height: 120px; overflow-y: auto; padding: 6px 10px;
+    border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; line-height: 1.6;
+    color: #303133; background: #fff; word-break: break-word; overflow-wrap: anywhere;
+}
+.pi-chatwin__input .rt { -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; }
+.pi-chatwin__input .rt__bar { padding: 2px 4px; }
+.pi-chatwin__input .rt__btn { width: 22px; height: 22px; }
+.pi-chatwin__input .rt__btn svg { width: 14px; height: 14px; }
+.pi-chatwin__input .rt__area { min-height: 56px; max-height: 120px; padding: 6px 10px; font-size: 13px; line-height: 1.6; }
+.pi-chatwin__input .rt__select { height: 22px; font-size: 11px; }
+
+/* @ 组员浮层：绝对定位在小窗内、输入区上方，不撑高窗口 */
+.pi-mention {
+    position: absolute; left: 8px; right: 8px; bottom: 96px; z-index: 6;
+    background: #fff; border: 1px solid #e4e7ed; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .16); overflow: hidden;
+}
+.pi-mention[hidden] { display: none; }
+.pi-mention__hd {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 10px; font-size: 12px; color: #909399; border-bottom: 1px solid #f2f3f5;
+}
+.pi-mention__close { cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
+.pi-mention__kw {
+    width: 100%; box-sizing: border-box; padding: 6px 10px; border: 0; border-bottom: 1px solid #f2f3f5;
+    font-size: 12px; outline: none;
+}
+.pi-mention__list { max-height: 180px; overflow-y: auto; }
+.pi-mention__item { display: flex; align-items: center; padding: 6px 10px; cursor: pointer; }
+.pi-mention__item:hover { background: #f5f9ff; }
+.pi-mention__av {
+    flex: 0 0 24px; width: 24px; height: 24px; margin-right: 8px; border-radius: 50%;
+    background: #409eff; color: #fff; font-size: 11px; line-height: 24px; text-align: center;
+}
+.pi-mention__name { font-size: 12px; color: #303133; }
+.pi-mention__empty { padding: 14px; text-align: center; font-size: 12px; color: #c0c4cc; }
+
+/* 富文本气泡：段落 / 列表 / 引用 / 链接 / 图片 */
+.pi-chatwin .pi-bubble.is-rich { white-space: normal; }
+.pi-chatwin .pi-bubble.is-rich p { margin: 0 0 4px; }
+.pi-chatwin .pi-bubble.is-rich p:last-child { margin-bottom: 0; }
+.pi-chatwin .pi-bubble.is-rich ul, .pi-chatwin .pi-bubble.is-rich ol { margin: 4px 0; padding-left: 18px; }
+.pi-chatwin .pi-bubble.is-rich blockquote { margin: 4px 0; padding: 2px 8px; border-left: 3px solid rgba(0, 0, 0, .15); }
+.pi-chatwin .pi-bubble.is-rich a { color: #409eff; text-decoration: underline; word-break: break-all; }
+.pi-chatwin .pi-msg.is-me .pi-bubble.is-rich a { color: #eaf4ff; }
+.pi-chatwin .pi-bubble.is-rich img { max-width: 100%; }
+/* 被 @ 到的消息加一圈浅色描边 */
+.pi-chatwin .pi-bubble.is-artme { box-shadow: 0 0 0 2px #fdf6ec, 0 1px 2px rgba(0, 0, 0, .03); }
+/* @某人 高亮 */
+.pi-chatwin .pi-bubble .im-at {
+    color: #409eff; background: #ecf5ff; border-radius: 3px; padding: 0 2px;
+}
+.pi-chatwin .pi-msg.is-me .pi-bubble .im-at { color: #eaf4ff; background: rgba(255, 255, 255, .18); }
+
+
+/* ---------- 11. 抽屉列表：消息列 / 姓名超宽时的悬停提示 ---------- */
+.pi-msg-tip {
+    position: fixed; z-index: 2600; max-width: 340px; padding: 8px 10px;
+    background: rgba(48, 49, 51, .96); color: #fff; font-size: 12px; line-height: 1.5;
+    border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, .22);
+    white-space: normal; word-break: break-word; overflow-wrap: anywhere;
+    pointer-events: none;
+}
+.pi-msg-tip[hidden] { display: none !important; }

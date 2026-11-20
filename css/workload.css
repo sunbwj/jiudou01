@@ -1,0 +1,177 @@
+/* ==========================================================================
+   workload.css —— 项目中心 · 员工工作量统计（workload-report.html 专属）
+   --------------------------------------------------------------------------
+   · 只被 workload-report.html 引用，属页面级样式，不进 app.css（不触发全站 ?v=）；
+   · 骨架沿用标准列表页：.search-card / .toolbar / .table-card，这里只补
+     「区间快捷按钮」「指标卡」「表头排序」「完成率条」「明细弹窗」几块；
+   · 颜色一律写两遍：先硬编码再 var(--theme-primary) 覆盖（旧浏览器降级约定）。
+   ========================================================================== */
+
+/* ---------- 检索区：日期区间 + 快捷按钮 ---------- */
+.wl-search .el-card__body { display: block; }
+.wl-range { display: flex; align-items: center; gap: 6px; }
+.wl-range .el-input__inner { width: 140px; }
+.wl-range__dash { color: #909399; font-size: 12px; }
+
+.wl-quick {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+    margin: -2px 0 0; padding: 8px 0 0; border-top: 1px dashed #ebeef5;
+}
+.wl-quick__label { font-size: 12px; color: #909399; margin-right: 2px; }
+.wl-quick__btn {
+    height: 26px; padding: 0 10px; font-size: 12px; cursor: pointer;
+    color: #606266; background: #fff; border: 1px solid #dcdfe6; border-radius: 4px;
+    transition: all .15s;
+}
+.wl-quick__btn:hover { color: #409eff; color: var(--theme-primary); border-color: #b3d8ff; background: #ecf5ff; }
+.wl-quick__btn.is-active {
+    color: #fff; background: #409eff; background: var(--theme-primary);
+    border-color: #409eff; border-color: var(--theme-primary);
+}
+.wl-quick__tip { font-size: 12px; color: #909399; margin-left: 6px; }
+.wl-quick__tip b { color: #303133; }
+
+.wl-note {
+    margin: 10px 0 0; font-size: 12px; line-height: 1.7; color: #909399;
+    display: flex; align-items: flex-start; gap: 4px;
+}
+.wl-note .svg-ico { width: 14px; height: 14px; flex: 0 0 14px; margin-top: 2px; color: #c0c4cc; }
+/* 文字必须包在一个 flex item 里：直接放文本节点 + <b> 时它们会各自成为 flex item，
+   窄屏下每个词被挤成独立一列（430px 实测过，整段口径说明竖着排）。 */
+.wl-note__text { flex: 1 1 auto; min-width: 0; }
+.wl-note b { color: #606266; font-weight: 500; }
+
+/* ---------- 汇总指标卡 ---------- */
+.wl-kpi-card .el-card__body { padding: 14px 20px; }
+.wl-kpi { display: flex; flex-wrap: wrap; gap: 0; }
+.wl-kpi__item {
+    flex: 1 1 0; min-width: 130px; padding: 4px 16px;
+    border-left: 1px solid #ebeef5; display: flex; flex-direction: column; gap: 2px;
+}
+.wl-kpi__item:first-child { border-left: 0; padding-left: 0; }
+.wl-kpi__label { font-size: 12px; color: #909399; }
+.wl-kpi__num {
+    font-size: 26px; line-height: 1.2; font-weight: 600; color: #303133;
+    font-family: "Helvetica Neue", Helvetica, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+}
+.wl-kpi__num.is-ok { color: #67c23a; }
+.wl-kpi__num.is-warn { color: #f56c6c; }
+.wl-kpi__sub { font-size: 12px; color: #c0c4cc; font-style: normal; }
+
+/* ---------- 表头排序 ---------- */
+.wl-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+.wl-sort:hover { color: #409eff; color: var(--theme-primary); }
+.wl-sort::after {
+    content: '⇅'; margin-left: 3px; font-size: 11px; color: #c0c4cc;
+}
+.wl-sort.is-asc::after { content: '↑'; color: #409eff; color: var(--theme-primary); }
+.wl-sort.is-desc::after { content: '↓'; color: #409eff; color: var(--theme-primary); }
+
+/* ---------- 员工单元格 ---------- */
+.wl-emp { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.wl-emp__name { color: #303133; font-weight: 500; }
+.wl-emp__meta { font-size: 12px; color: #909399; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wl-emp__meta .wl-dot { margin: 0 4px; color: #dcdfe6; }
+.wl-emp.is-unknown .wl-emp__name { color: #909399; font-weight: 400; }
+
+/* ---------- 完成率条 ---------- */
+.wl-rate { display: flex; align-items: center; gap: 6px; }
+.wl-rate__bar {
+    flex: 1; height: 6px; border-radius: 3px; background: #f0f2f5; overflow: hidden;
+}
+.wl-rate__fill { display: block; height: 100%; border-radius: 3px; background: #409eff; background: var(--theme-primary); }
+.wl-rate__fill.is-high { background: #67c23a; }
+.wl-rate__fill.is-mid { background: #409eff; background: var(--theme-primary); }
+.wl-rate__fill.is-low { background: #e6a23c; }
+.wl-rate__fill.is-zero { background: #dcdfe6; }
+.wl-rate__text { flex: 0 0 42px; text-align: right; font-size: 12px; color: #606266; font-variant-numeric: tabular-nums; }
+
+/* ---------- 数值列 ---------- */
+.wl-num { font-variant-numeric: tabular-nums; }
+.wl-num.is-muted { color: #c0c4cc; }
+.wl-num.is-warn { color: #f56c6c; font-weight: 600; }
+.wl-time { font-size: 12px; color: #606266; white-space: nowrap; }
+.wl-link { color: #409eff; color: var(--theme-primary); cursor: pointer; text-decoration: none; }
+.wl-link:hover { text-decoration: underline; }
+.wl-gen { margin-left: 10px; color: #c0c4cc; }
+
+/* 加载遮罩要相对表格卡定位（与其它列表页一致） */
+.wl-page .table-card { position: relative; }
+.wl-page .table-card .el-loading-mask { border-radius: 4px; }
+
+/* 「仅看我的」是切换按钮：按下态沿用主色描边 */
+.wl-page .toolbar .el-button--icon.is-active {
+    color: #409eff; color: var(--theme-primary);
+    border-color: #b3d8ff; background: #ecf5ff;
+}
+.wl-page .toolbar .el-button--icon.is-active:hover { color: #66b1ff; border-color: #66b1ff; }
+
+/* 行可点：整行钻取到明细 */
+.wl-page #wlTbody tr[data-owner] { cursor: pointer; }
+
+/* ---------- 空态 ---------- */
+.wl-empty { padding: 46px 16px; text-align: center; }
+.wl-empty__icon .svg-ico { width: 46px; height: 46px; color: #dcdfe6; }
+.wl-empty__title { margin: 10px 0 4px; font-size: 14px; color: #909399; }
+.wl-empty__hint { margin: 0; font-size: 12px; color: #c0c4cc; }
+
+/* 空数据时表格本身要隐藏，否则表头 + 空态会一起出现 */
+.table-card.is-empty .el-table { display: none; }
+
+/* ---------- 明细弹窗 ---------- */
+.wl-detail__head {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
+    padding: 0 0 10px; margin-bottom: 10px; border-bottom: 1px solid #ebeef5;
+    font-size: 12px; color: #909399;
+}
+.wl-detail__head b { color: #303133; font-size: 14px; }
+.wl-detail__stat { display: inline-flex; align-items: baseline; gap: 4px; }
+.wl-detail__stat strong { color: #303133; font-size: 15px; font-variant-numeric: tabular-nums; }
+.wl-detail__stat strong.is-ok { color: #67c23a; }
+.wl-detail__stat strong.is-warn { color: #f56c6c; }
+.wl-detail__scroll { max-height: 46vh; overflow: auto; border: 1px solid #ebeef5; border-radius: 4px; }
+.wl-detail__table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.wl-detail__table th {
+    position: sticky; top: 0; z-index: 1; background: #f5f7fa; color: #606266;
+    font-weight: 500; text-align: left; padding: 8px; white-space: nowrap;
+    border-bottom: 1px solid #ebeef5;
+}
+.wl-detail__table td { padding: 7px 8px; border-bottom: 1px solid #f2f6fc; vertical-align: middle; }
+.wl-detail__table tbody tr:last-child td { border-bottom: 0; }
+.wl-detail__table tbody tr:hover td { background: #f5f7fa; }
+.wl-detail__table .is-center { text-align: center; }
+.wl-detail__table .is-mono { font-family: Consolas, Monaco, "Courier New", monospace; color: #409eff; color: var(--theme-primary); }
+.wl-detail__table .is-nowrap { white-space: nowrap; }
+.wl-detail__table tr.is-overdue td { background: #fef0f0; }
+.wl-detail__table tr.is-overdue td.is-center { color: #f56c6c; }
+.wl-detail__pager { padding-top: 10px; }
+.wl-detail__empty { padding: 30px 12px; text-align: center; color: #909399; font-size: 12px; }
+.wl-tag {
+    display: inline-block; height: 20px; line-height: 18px; padding: 0 7px;
+    font-size: 12px; border-radius: 3px; border: 1px solid transparent;
+}
+.wl-tag.is-todo { color: #909399; background: #f4f4f5; border-color: #e9e9eb; }
+.wl-tag.is-doing { color: #409eff; color: var(--theme-primary); background: #ecf5ff; border-color: #b3d8ff; }
+.wl-tag.is-done { color: #67c23a; background: #f0f9eb; border-color: #c2e7b0; }
+.wl-tag.is-late { color: #f56c6c; background: #fef0f0; border-color: #fbc4c4; }
+
+/* ---------- 响应式（沿用全站 4 个断点） ---------- */
+@media (max-width: 1200px) {
+    .wl-kpi__item { min-width: 110px; padding: 4px 12px; }
+    .wl-kpi__num { font-size: 22px; }
+}
+@media (max-width: 992px) {
+    .wl-kpi__item { flex: 1 1 30%; min-width: 0; border-left: 0; padding: 8px 0; }
+    .wl-kpi { gap: 0 12px; }
+    .wl-kpi__item:nth-child(n+4) { border-top: 1px solid #f2f6fc; }
+    .wl-range { flex-wrap: wrap; }
+}
+@media (max-width: 768px) {
+    .wl-quick { padding-top: 6px; }
+    .wl-quick__tip { width: 100%; margin-left: 0; }
+    .wl-kpi__item { flex: 1 1 46%; }
+    .wl-note { font-size: 11px; }
+    .wl-detail__scroll { max-height: 52vh; }
+    /* 弹窗里的明细表在窄屏横滚，不要压塌列宽 */
+    .wl-detail__table { min-width: 720px; }
+}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>系统字典左右分栏几何探针（临时）</title></head>
+<body data-probe="OK leftW=430 rightW=596 btn=40x40 iconBtns=12 sdCols=2 siCols=7 sdRows=1 siEmpty=true barActive=false afterDblclickSiRows=2 curDict=__布局探针字典__ barActive2=true itemAddDisabled=false">
+<script>
+/* 同源父页先注入有效 SSO 会话，避免 iframe 子页 401 把顶层送去登录页 */
+(function () {
+  try {
+    localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+      token: 'd4ed3c9e56aa49a79b2d1ff0a94547f5',
+      time: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      expireAt: Date.now() + 8 * 3600 * 1000,
+      ttlHours: 8,
+      user: { ename: '布局探针', empId: 0, account: 'probe' }
+    }));
+  } catch (e) {
+    document.body.setAttribute('data-probe', 'SESSION-ERROR ' + e.message);
+  }
+  var f = document.createElement('iframe');
+  f.id = 'probeFrame';
+  f.src = '/sysdict.html';
+  f.style.cssText = 'width:1280px;height:900px;border:0';
+  document.body.appendChild(f);
+})();
+</script><iframe id="probeFrame" src="/sysdict.html" style="width: 1280px; height: 900px; border: 0px;"></iframe>
+<script>
+var FRAME = document.getElementById('probeFrame');
+function report(t) { document.body.setAttribute('data-probe', t); }
+function rect(el) { var r = el.getBoundingClientRect(); return r.width + 'x' + r.height; }
+function round(n) { return Math.round(n); }
+
+window.addEventListener('load', function () {
+  setTimeout(function () {
+    var parts = [];
+    var doc, win;
+    try {
+      doc = FRAME.contentDocument;
+      win = FRAME.contentWindow;
+      var left = doc.querySelector('.syssplit > .split-col--left');
+      var right = doc.querySelector('.syssplit > .split-col--right');
+      if (!left || !right) {
+        report('MISSING split left=' + !!left + ' right=' + !!right +
+               ' url=' + win.location.href);
+        return;
+      }
+      var lw = left.getBoundingClientRect().width;
+      var rw = right.getBoundingClientRect().width;
+      var add = doc.querySelector('#btnAdd');
+      var addRect = add.getBoundingClientRect();
+      parts.push('leftW=' + round(lw));
+      parts.push('rightW=' + round(rw));
+      parts.push('btn=' + round(addRect.width) + 'x' + round(addRect.height));
+      parts.push('iconBtns=' + doc.querySelectorAll('.toolbar--icons .el-button--icon').length);
+      parts.push('sdCols=' + doc.querySelectorAll('#sdTable thead th').length);
+      parts.push('siCols=' + doc.querySelectorAll('#siTable thead th').length);
+      parts.push('sdRows=' + doc.querySelectorAll('#sdTbody tr[data-id]').length);
+      parts.push('siEmpty=' + /请在左侧双击一条字典/.test(doc.querySelector('#siTbody').textContent));
+      parts.push('barActive=' + doc.querySelector('#siCurrentBar').classList.contains('is-active'));
+
+      // 真实双击左区第一行 → 应把右区切到该字典
+      var row = doc.querySelector('#sdTbody tr[data-id]');
+      if (!row) {
+        report('OK-NODATA ' + parts.join(' '));
+        return;
+      }
+      var ev = new win.Event('dblclick', { bubbles: true });
+      row.dispatchEvent(ev);
+
+      setTimeout(function () {
+        var more = [];
+        more.push('afterDblclickSiRows=' + doc.querySelectorAll('#siTbody tr[data-id]').length);
+        more.push('curDict=' + doc.querySelector('#siCurrentDict').textContent);
+        more.push('barActive2=' + doc.querySelector('#siCurrentBar').classList.contains('is-active'));
+        more.push('itemAddDisabled=' + doc.querySelector('#btnItemAdd').disabled);
+        report('OK ' + parts.concat(more).join(' '));
+      }, 1400);
+    } catch (e) {
+      report('ERROR ' + e.message);
+    }
+  }, 3200);
+});
+</script>
+
+
+</body></html>

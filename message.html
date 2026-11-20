@@ -1,0 +1,562 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>即时对话 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<style>
+/* 即时对话（IM）：页面级样式，不升 app.css 版本（避免全站页面跟着动） */
+.im { display: flex; height: calc(100vh - 132px); min-height: 480px; background: #fff;
+      border: 1px solid #ebeef5; border-radius: 6px; overflow: hidden; }
+.im__side { flex: 0 0 20%; width: 20%; max-width: 20%; min-width: 0;
+            display: flex; flex-direction: column; border-right: 1px solid #ebeef5;
+            background: #f7f8fa; overflow: hidden; }
+.im__side-head { display: flex; align-items: center; padding: 12px 14px; border-bottom: 1px solid #ebeef5; }
+.im__me { display: flex; align-items: center; min-width: 0; }
+.im__me .im-avatar { width: 38px; height: 38px; font-size: 15px; }
+.im__me-info { margin-left: 10px; min-width: 0; }
+.im__me-name { font-size: 14px; font-weight: 600; color: #303133; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.im__me-sub { font-size: 12px; color: #909399; margin-top: 2px; }
+.im__tabs { display: flex; padding: 0 14px; border-bottom: 1px solid #ebeef5; }
+.im__tab { flex: 0 0 auto; padding: 10px 4px; margin-right: 18px; font-size: 14px; color: #606266;
+           cursor: pointer; border-bottom: 2px solid transparent; }
+.im__tab.is-active { color: #409eff; border-bottom-color: #409eff; font-weight: 600; }
+.im__search { padding: 10px 14px; }
+.im__search .el-input__inner { background: #fff; }
+.im__list { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; min-width: 0; }
+.im-contact { display: flex; align-items: center; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f2f3f5; position: relative; min-width: 0; }
+.im-contact:hover { background: #eef4ff; }
+.im-contact.is-active { background: #e6f0ff; }
+.im-avatar { flex: 0 0 42px; width: 42px; height: 42px; border-radius: 50%; background: #409eff; color: #fff;
+             display: flex; align-items: center; justify-content: center; font-size: 16px; position: relative; }
+.im-contact__body { flex: 1 1 auto; min-width: 0; margin-left: 12px; }
+.im-contact__row1 { display: flex; align-items: center; justify-content: space-between; }
+.im-contact__name { font-size: 14px; color: #303133; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.im-contact__time { font-size: 12px; color: #c0c4cc; flex: 0 0 auto; margin-left: 8px; }
+.im-contact__row2 { display: flex; align-items: center; justify-content: space-between; margin-top: 3px; }
+.im-contact__msg { font-size: 12px; color: #909399; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 消息列超出宽度时，悬停显示完整内容（js/message.js 动态创建并定位） */
+.im-msg-tip {
+    position: fixed; z-index: 60; max-width: 380px; padding: 8px 10px;
+    background: rgba(48, 49, 51, .96); color: #fff; font-size: 12px; line-height: 1.5;
+    border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, .22);
+    white-space: normal; word-break: break-word; overflow-wrap: anywhere;
+    pointer-events: none;
+}
+.im-msg-tip[hidden] { display: none !important; }
+.im-contact__dept { font-size: 12px; color: #c0c4cc; margin-left: 8px; flex: 0 0 auto; }
+.im-dot { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%;
+         border: 2px solid #f7f8fa; background: #c0c4cc; }
+.im-dot.is-online { background: #67c23a; }
+.im-badge { flex: 0 0 auto; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #f56c6c;
+            color: #fff; font-size: 12px; line-height: 18px; text-align: center; }
+.im__side-foot { padding: 8px 14px; border-top: 1px solid #ebeef5; font-size: 12px; color: #909399;
+                 display: flex; align-items: center; justify-content: space-between; }
+.im-conn { display: flex; align-items: center; }
+.im-conn__dot { width: 8px; height: 8px; border-radius: 50%; background: #c0c4cc; margin-right: 6px; }
+.im-conn.is-online .im-conn__dot { background: #67c23a; }
+.im-conn.is-offline .im-conn__dot { background: #f56c6c; }
+
+/* 右侧聊天区 */
+.im__main { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+.im__empty { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #c0c4cc; }
+.im__empty svg { width: 64px; height: 64px; margin-bottom: 14px; }
+.im-chat { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.im-chat__head { display: flex; align-items: center; padding: 12px 18px; border-bottom: 1px solid #ebeef5; }
+.im-chat__title { font-size: 15px; font-weight: 600; color: #303133; }
+.im-chat__sub { font-size: 12px; color: #909399; margin-left: 10px; }
+.im-chat__online { color: #67c23a; }
+.im-chat__offline { color: #c0c4cc; }
+.im-chat__body { flex: 1 1 auto; overflow-y: auto; padding: 18px; background: #f5f6f8; }
+.im-msg { display: flex; margin-bottom: 16px; align-items: flex-start; }
+.im-msg.is-me { flex-direction: row-reverse; }
+.im-msg__avatar { flex: 0 0 38px; width: 38px; height: 38px; border-radius: 50%; background: #909399; color: #fff;
+                  display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.im-msg.is-me .im-msg__avatar { background: #409eff; }
+.im-msg__content { width: 460px; max-width: calc(100% - 96px); min-width: 0; margin: 0 12px; }
+.im-msg__bubble { display: block; box-sizing: border-box; padding: 9px 13px; border-radius: 8px; font-size: 14px; line-height: 1.6;
+                  word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap;
+                  background: #fff; color: #303133;
+                  border: 1px solid #ebeef5; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+/* 富文本气泡：HTML 内容要按 normal 排版（pre-wrap 会把源码缩进当换行留着） */
+.im-msg__bubble.is-rich { white-space: normal; }
+.im-msg__bubble.is-rich p { margin: 0 0 4px; }
+.im-msg__bubble.is-rich p:last-child { margin-bottom: 0; }
+.im-msg__bubble.is-rich ul, .im-msg__bubble.is-rich ol { margin: 4px 0; padding-left: 20px; }
+.im-msg__bubble.is-rich blockquote { margin: 4px 0; padding: 2px 8px; border-left: 3px solid rgba(0,0,0,.15); }
+.im-msg__bubble.is-rich a { color: #409eff; text-decoration: underline; word-break: break-all; }
+.im-msg.is-me .im-msg__bubble.is-rich a { color: #eaf4ff; }
+.im-msg__bubble.is-rich img { max-width: 100%; }
+/* @某人：气泡里高亮，被提到的人（自己）再多一个浅色底 */
+.im-at { color: #409eff; font-weight: 600; }
+.im-msg.is-me .im-at { color: #eaf4ff; }
+.im-msg__bubble.is-artme { box-shadow: 0 0 0 2px #fdf6ec, 0 1px 2px rgba(0,0,0,.03); }
+.im-at-tip { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 9px;
+             background: #fdf6ec; color: #e6a23c; font-size: 11px; line-height: 17px; vertical-align: 1px; }
+.im-msg.is-me .im-msg__bubble { background: #409eff; color: #fff; border-color: #409eff; }
+.im-msg__meta { font-size: 11px; color: #c0c4cc; margin-top: 4px; }
+.im-msg.is-me .im-msg__meta { text-align: right; }
+.im-typing { display: flex; align-items: center; color: #909399; font-size: 12px; padding: 6px 18px; height: 22px; }
+.im-typing__dots { display: inline-flex; margin-right: 6px; }
+.im-typing__dots i { width: 5px; height: 5px; border-radius: 50%; background: #b0b3b8; margin: 0 2px;
+                     animation: im-blink 1.2s infinite both; }
+.im-typing__dots i:nth-child(2) { animation-delay: .2s; }
+.im-typing__dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes im-blink { 0%,80%,100%{opacity:.3} 40%{opacity:1} }
+.im-input { border-top: 1px solid #ebeef5; padding: 12px 18px; display: flex; flex-direction: column;
+             position: relative; min-width: 0; }
+.im-input__row { display: flex; align-items: flex-end; }
+/* 富文本输入区（js/rich-text.js 挂载后 .rt 包住工具栏 + 可编辑区） */
+.im-input .rt { flex: 1 1 auto; min-width: 0; }
+.im-input .rt__area { min-height: 64px; max-height: 180px; padding: 9px 11px;
+                      font-size: 14px; line-height: 1.6; }
+.im-input .rt__bar { padding: 2px 4px; }
+.im-input .rt__btn { width: 24px; height: 24px; }
+.im-input__send { margin-left: 12px; align-self: flex-end; }
+.im-input__hint { font-size: 12px; color: #c0c4cc; margin-top: 6px; }
+/* 联系人选择弹窗 */
+.emp-pick__search { margin-bottom: 12px; }
+.emp-pick__list { max-height: 340px; overflow-y: auto; border: 1px solid #ebeef5; border-radius: 6px; }
+.emp-pick__item { display: flex; align-items: center; padding: 9px 12px; border-bottom: 1px solid #f2f3f5; cursor: pointer; }
+.emp-pick__item:hover { background: #f5f9ff; }
+.emp-pick__item.is-checked { background: #e6f0ff; }
+.emp-pick__empty { padding: 30px; text-align: center; color: #c0c4cc; font-size: 13px; }
+
+/* ---------- 输入区媒体工具行：图片 / 表情 / 文件 / 语音输入 / 截屏。
+   布局对齐「员工IM 小窗」：媒体行独立一行，位于富文本框（格式栏 + 编辑区）正上方；
+   js/message.js 的 placeMediaTools() 负责把它放回 .im-input__row 之前，普通文档流，不会被编辑区遮挡。 ---------- */
+.im-input__tools { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.im-input > .im-input__tools {
+    display: flex; align-items: center; padding: 0 0 6px;
+}
+.im-input .rt .im-input__tools {
+    display: flex; align-items: center; padding: 4px 5px;
+    background: #fafbfc; border-bottom: 1px solid #ebeef5;
+}
+.im-tool { width: 26px; height: 26px; margin-right: 2px; border-radius: 4px; border: 1px solid transparent;
+           background: transparent; color: #606266; display: inline-flex; align-items: center;
+           justify-content: center; cursor: pointer; }
+.im-tool svg { width: 17px; height: 17px; }
+.im-tool:hover { background: #f2f6fc; color: #409eff; }
+.im-tool.is-active { background: #fef0f0; border-color: #fbc4c4; color: #f56c6c; animation: im-pulse 1.4s infinite; }
+.im-tool[disabled] { opacity: .45; cursor: not-allowed; }
+@keyframes im-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+.im-input__status { margin-right: 8px; font-size: 12px; color: #909399; }
+.im-input__status.is-error { color: #f56c6c; }
+.im-input__status:empty { display: none; }
+
+/* ---------- @ 组员浮层：浮在输入区上方，不撑高页面。
+   bottom 用 100%（输入区顶边）而不是写死像素：富文本工具栏会折行，输入区高度不固定 ---------- */
+.im-mention {
+  position: absolute; left: 18px; bottom: calc(100% + 2px); max-width: 320px; z-index: 8;
+  background: #fff; border: 1px solid #e4e7ed; border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .14); overflow: hidden;
+}
+.im-mention[hidden] { display: none; }
+.im-mention__hd { display: flex; align-items: center; justify-content: space-between;
+                  padding: 8px 12px; font-size: 12px; color: #909399; border-bottom: 1px solid #f2f6fc; }
+.im-mention__close { cursor: pointer; font-size: 15px; line-height: 1; color: #c0c4cc; }
+.im-mention__close:hover { color: #f56c6c; }
+.im-mention__kw { width: 100%; box-sizing: border-box; border: none; border-bottom: 1px solid #f2f6fc;
+                  padding: 7px 12px; font-size: 13px; outline: none; font-family: inherit; }
+.im-mention__list { max-height: 210px; overflow-y: auto; }
+.im-mention__item { display: flex; align-items: center; padding: 7px 12px; cursor: pointer; }
+.im-mention__item:hover { background: #f5f9ff; }
+.im-mention__av { width: 24px; height: 24px; border-radius: 50%; background: #c0c4cc; color: #fff;
+                  display: inline-flex; align-items: center; justify-content: center;
+                  font-size: 12px; margin-right: 8px; }
+.im-mention__name { font-size: 13px; color: #303133; }
+.im-mention__empty { padding: 18px; text-align: center; color: #c0c4cc; font-size: 12px; }
+
+/* ---------- 图片气泡 / 文件卡片 ---------- */
+.im-msg__bubble.is-media { display: inline-block; width: auto; padding: 0; background: transparent !important;
+                           border: none !important; box-shadow: none !important; }
+.im-img { display: block; max-width: 260px; max-height: 220px; border-radius: 8px;
+          border: 1px solid #ebeef5; background: #fff; cursor: zoom-in; }
+.im-msg.is-me .im-img { border-color: #a3c8f7; }
+.im-file { display: flex; align-items: center; width: 250px; padding: 10px 12px; border-radius: 8px;
+           background: #fff; border: 1px solid #ebeef5; text-decoration: none; color: #303133; }
+.im-file:hover { border-color: #a3c8f7; }
+.im-msg.is-me .im-file { background: #ecf5ff; border-color: #a3c8f7; }
+.im-file__ico { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 6px; background: #e8f0fe;
+                color: #409eff; display: flex; align-items: center; justify-content: center;
+                font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.im-file__body { flex: 1 1 auto; min-width: 0; margin-left: 10px; }
+.im-file__name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.im-file__meta { font-size: 11px; color: #909399; margin-top: 2px; }
+.im-file__dl { flex: 0 0 auto; margin-left: 8px; font-size: 12px; color: #409eff; }
+/* 语音消息：原生播放器，宽度固定好排版 */
+.im-audio { display: block; width: 250px; height: 36px; }
+.im-audio-fail { display: block; margin-top: 4px; font-size: 12px; color: #f56c6c; }
+
+/* ---------- 图片查看器 ---------- */
+/* 注意：默认必须是 display:none。原来写 display:flex 会盖掉 HTML 的 hidden 属性
+   （作者样式的优先级高于浏览器默认的 [hidden]{display:none}），导致这层全屏遮罩
+   从页面加载起就一直盖在整页上、点哪里都关不掉。现在改成用 .is-open 类控制。 */
+.im-viewer { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 3000;
+             background: rgba(0, 0, 0, .72); display: none;
+             align-items: center; justify-content: center; }
+.im-viewer.is-open { display: flex; }
+.im-viewer img { max-width: 92vw; max-height: 88vh; border-radius: 6px; box-shadow: 0 8px 40px rgba(0, 0, 0, .4); }
+.im-viewer__close { position: absolute; top: 18px; right: 24px; width: 36px; height: 36px; border: none;
+                    border-radius: 50%; background: rgba(255, 255, 255, .16); color: #fff;
+                    font-size: 20px; line-height: 1; cursor: pointer; }
+
+/* ---------- 群聊头部 / 建群与成员弹窗 ---------- */
+.im-chat__spacer { flex: 1 1 auto; }
+.im-chat__btn { flex: 0 0 auto; padding: 4px 10px; border: 1px solid #dcdfe6; border-radius: 4px;
+                background: #fff; color: #606266; font-size: 12px; cursor: pointer; }
+.im-chat__btn:hover { color: #409eff; border-color: #a3c8f7; }
+.im-tip { font-size: 12px; color: #909399; margin-bottom: 8px; }
+.im-group-pick { max-height: 300px; overflow-y: auto; border: 1px solid #ebeef5; border-radius: 6px; }
+.im-group-pick__item { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+.im-group-pick__item:hover { background: #f5f9ff; }
+.im-group-pick__item.is-checked { background: #e6f0ff; }
+.im-group-pick__name { font-size: 13px; color: #303133; }
+.im-group-pick__sub { font-size: 12px; color: #909399; margin-left: 8px; }
+.im-member { display: flex; align-items: center; padding: 8px 2px; border-bottom: 1px solid #f5f5f5; }
+.im-member__tag { margin-left: 6px; padding: 0 4px; border: 1px solid #f5dab1; border-radius: 3px;
+                  font-size: 11px; color: #e6a23c; }
+.im-group-name { width: 100%; height: 34px; padding: 0 11px; border: 1px solid #dcdfe6; border-radius: 4px;
+                 font-size: 14px; outline: none; box-sizing: border-box; }
+.im-group-name:focus { border-color: #409eff; }
+
+/* ---------- 表情面板 / 表情气泡 ---------- */
+.im-emoji { position: absolute; left: 12px; bottom: calc(100% + 2px); width: 360px;
+            background: #fff; border: 1px solid #e4e7ed; border-radius: 8px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .14); z-index: 30; overflow: hidden; }
+.im-emoji[hidden] { display: none !important; }
+.im-emoji__tabs { display: flex; align-items: center; gap: 2px; padding: 6px 8px;
+                  border-bottom: 1px solid #f0f2f5; background: #fafbfc; }
+.im-emoji__tab { flex: 0 0 auto; height: 26px; padding: 0 9px; border: none; border-radius: 5px;
+                 background: transparent; color: #606266; font-size: 12px; cursor: pointer; }
+.im-emoji__tab:hover { background: #eef2f7; }
+.im-emoji__tab.is-active { background: #409eff; color: #fff; }
+.im-emoji__body { height: 208px; overflow-y: auto; padding: 6px 8px 10px;
+                  display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+.im-emoji__item { height: 36px; border: none; border-radius: 5px; background: transparent;
+                  font-size: 22px; line-height: 1; cursor: pointer; display: flex;
+                  align-items: center; justify-content: center; }
+.im-emoji__item:hover { background: #eef2f7; }
+.im-emoji__empty { grid-column: 1 / -1; padding: 26px 0; text-align: center;
+                   font-size: 12px; color: #c0c4cc; }
+.im-emoji__foot { display: flex; align-items: center; justify-content: space-between;
+                  padding: 6px 10px; border-top: 1px solid #f0f2f5; background: #fafbfc; }
+.im-emoji__add { height: 24px; padding: 0 9px; border: 1px dashed #c8ccd4; border-radius: 5px;
+                 background: transparent; color: #606266; font-size: 12px; cursor: pointer; }
+.im-emoji__add:hover { border-color: #409eff; color: #409eff; }
+.im-emoji__tip { font-size: 11px; color: #c0c4cc; }
+/* 图片表情包：比普通图片小一圈，无背景无边框 */
+.im-sticker { display: block; max-width: 130px; max-height: 130px; cursor: pointer; }
+.im-msg.is-me .im-sticker { margin-left: auto; }
+/* 纯 emoji 消息：去掉气泡底色，放大显示 */
+.im-msg__bubble.is-emoji { display: inline-block; width: auto;
+                           background: transparent !important; border: none !important;
+                           box-shadow: none !important; padding: 2px 0 !important;
+                           font-size: 34px; line-height: 1.25; }
+/* 表情面板里的自定义表情包缩略图 */
+.im-emoji__sticker { height: 40px; border: none; border-radius: 5px; background: transparent;
+                     padding: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.im-emoji__sticker:hover { background: #eef2f7; }
+.im-emoji__sticker img { max-width: 36px; max-height: 36px; display: block;
+                         pointer-events: none; }
+.im-emoji__sticker { position: relative; }
+.im-emoji__del { position: absolute; right: -2px; top: -2px; width: 14px; height: 14px;
+                 border: none; border-radius: 50%; background: #f56c6c; color: #fff;
+                 font-size: 10px; line-height: 1; cursor: pointer; display: none;
+                 align-items: center; justify-content: center; padding: 0; }
+.im-emoji__sticker:hover .im-emoji__del { display: flex; }
+
+/* ---------- 群重命名 ---------- */
+/* 聊天头群名旁的「改名」小图标（仅群主可见） */
+.im-title-edit { flex: 0 0 auto; width: 22px; height: 22px; margin-left: 6px; padding: 0;
+                 border: none; border-radius: 4px; background: transparent; color: #c0c4cc;
+                 cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.im-title-edit svg { width: 14px; height: 14px; }
+.im-title-edit:hover { background: #ecf5ff; color: #409eff; }
+.im-title-edit[hidden] { display: none !important; }
+/* 群列表行右侧的「改名」小图标（仅自己建的群可见，非群主的行不给按钮） */
+.im-contact__rename { flex: 0 0 auto; width: 20px; height: 20px; margin-left: 4px; padding: 0;
+                      border: none; border-radius: 4px; background: transparent; color: #c8ccd4;
+                      cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.im-contact__rename svg { width: 13px; height: 13px; }
+.im-contact__rename:hover { background: #ecf5ff; color: #409eff; }
+.im-contact__rename[hidden] { display: none !important; }
+/* 非群主在群成员弹窗里看到的说明 */
+.im-group-owner-tip { font-size: 12px; color: #909399; }
+.im-group-name-row { display: flex; align-items: center; padding: 4px 2px 10px; margin-bottom: 4px;
+                     border-bottom: 1px solid #ebeef5; }
+.im-group-name-row__label { flex: 0 0 auto; font-size: 12px; color: #909399; }
+.im-group-name-row__val { flex: 1 1 auto; margin: 0 10px; font-size: 14px; font-weight: 600;
+                          color: #303133; word-break: break-all; }
+.im-group-name-row .im-chat__btn[hidden] { display: none; }
+.im-group-rename__err { min-height: 18px; margin-top: 6px; font-size: 12px; color: #f56c6c; }
+</style>
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">邮件中心</div>
+                <a class="app-side__item" href="service-email.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.8 2L12 12.4 19.2 7H4.8zM4 9.2V17h16V9.2l-7.4 5.5a1 1 0 01-1.2 0L4 9.2z"/></svg></span>服务信箱设置
+                </a>
+                <a class="app-side__item" href="mail.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v10a1 1 0 01-1 1H9l-5 4V5a1 1 0 011-1z"/></svg></span>邮箱助手
+                </a>
+                <a class="app-side__item" href="emp-mail.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg></span>我的邮箱
+                </a>
+                <a class="app-side__item is-active" href="message.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a2 2 0 012 2v9a2 2 0 01-2 2H9l-5 4V6a2 2 0 012-2zm2 4v2h12V8H6zm0 4v2h8v-2H6z"/></svg></span>即时对话
+                </a>
+                <div class="app-side__group-title">系统管理</div>
+                <a class="app-side__item" href="menu.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h12v2H3v-2z"/></svg></span>菜单项管理
+                </a>
+                <a class="app-side__item" href="menu-group.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>菜单组管理
+                </a>
+                <a class="app-side__item" href="org.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 4a3 3 0 100 6 3 3 0 000-6zm-6 15v-1a5 5 0 015-5h2a5 5 0 015 5v1H3zm12-15a3 3 0 110 6 3 3 0 010-6zm-2 15v-1a5 5 0 013-4.6V19h-3z"/></svg></span>组织架构
+                </a>
+                <a class="app-side__item" href="emp.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg></span>员工信息管理
+                </a>
+                <a class="app-side__item" href="user.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 9a3 3 0 100-6 3 3 0 000 6zm0 2c-3.9 0-7 2-7 4.5V18h14v-2.5C19 13 15.9 11 12 11zm7-3h2v2h2v2h-2v2h-2v-2h-2v-2h2V8z"/></svg></span>用户信息管理
+                </a>
+                <a class="app-side__item" href="role.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l7 3v5.5c0 4.2-2.9 7.4-7 8.9-4.1-1.5-7-4.7-7-8.9V6l7-3zm0 2.2L7 7.1v4.4c0 3.1 2 5.6 5 6.9 3-1.3 5-3.8 5-6.9V7.1l-5-1.9z"/></svg></span>用户角色管理
+                </a>
+                <a class="app-side__item" href="role-power.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l8 4v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6l8-4z"/></svg></span>角色权限配置
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="邮件中心/即时对话">
+                <h2 class="page-head__title">即时对话</h2>
+                <div class="page-head__actions toolbar">
+                    <button type="button" class="el-button el-button--primary" id="btnWrite" title="新建会话">
+                        <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M5 19h2.4l9.3-9.3-2.4-2.4L5 16.6V19zM3 21v-4.2L15.9 3.9l4.2 4.2L7.2 21H3z"/></svg>新建会话
+                    </button>
+                    <button type="button" class="el-button" id="btnGroup" title="创建群组">
+                        <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7zm0 2c-3.9 0-7 1.9-7 4.2V19h14v-1.8C16 14.9 12.9 13 9 13zm8.5-2a3 3 0 100-6 3 3 0 000 6zm0 2c-.9 0-1.7.1-2.5.4 1.3 1 2 2.3 2 3.8V19H22v-1.8c0-2-2-3.2-4.5-3.2z"/></svg>创建群组
+                    </button>
+                    <button type="button" class="el-button" id="btnMarkRead" title="标记当前会话已读" disabled>
+                        <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.2l-3.5-3.5L4 14.2 9 19l11-11-1.5-1.5z"/></svg>标记已读
+                    </button>
+                    <button type="button" class="el-button el-button--danger" id="btnDelete" title="清空当前会话（仅对我）" disabled>
+                        <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z"/></svg>清空会话
+                    </button>
+                    <button type="button" class="el-button" id="btnRefresh" title="刷新联系人 / 未读">
+                        <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>刷新
+                    </button>
+                </div>
+            </div>
+
+            <section class="im">
+                <!-- 左侧：联系人 / 会话 -->
+                <aside class="im__side">
+                    <div class="im__side-head">
+                        <div class="im__me">
+                            <div class="im-avatar" id="imMeAvatar">我</div>
+                            <div class="im__me-info">
+                                <div class="im__me-name" id="imMeName">—</div>
+                                <div class="im__me-sub" id="imMeSub">未连接</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="im__tabs">
+                        <div class="im__tab is-active" data-tab="msg">消息</div>
+                        <div class="im__tab" data-tab="group">群组</div>
+                        <div class="im__tab" data-tab="contacts">联系人</div>
+                    </div>
+                    <div class="im__search">
+                        <div class="el-input el-input--prefix">
+                            <span class="el-input__prefix">
+                                <svg class="svg-ico" viewBox="0 0 24 24" style="width:16px;height:16px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                            </span>
+                            <input class="el-input__inner" type="text" id="imSearch" placeholder="搜索同事 / 部门">
+                        </div>
+                    </div>
+                    <div class="im__list" id="imContacts"></div>
+                    <div class="im__side-foot">
+                        <span class="im-conn" id="imConn"><span class="im-conn__dot"></span><span id="imConnText">连接中…</span></span>
+                        <span id="imOnlineCount"></span>
+                    </div>
+                </aside>
+
+                <!-- 右侧：聊天 -->
+                <div class="im__main" id="imMain">
+                    <div class="im__empty" id="imEmpty">
+                        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a2 2 0 012 2v9a2 2 0 01-2 2H9l-5 4V6a2 2 0 012-2zm2 4v2h12V8H6zm0 4v2h8v-2H6z"/></svg>
+                        <p>选择一个同事开始聊天</p>
+                    </div>
+                    <div class="im-chat" id="imChat" style="display:none;">
+                        <div class="im-chat__head">
+                            <div class="im-chat__title" id="imChatTitle">—</div>
+                            <button type="button" class="im-title-edit" id="imChatTitleEdit" hidden
+                                    title="重命名群聊" aria-label="重命名群聊">
+                                <svg viewBox="0 0 16 16"><path fill="currentColor" d="M11.7 1.6a1.4 1.4 0 012 2l-8.1 8.1-2.6.7.7-2.6 8-8.2zM2.5 13.2h11v1.3h-11z"/></svg>
+                            </button>
+                            <div class="im-chat__sub" id="imChatSub"></div>
+                            <div class="im-chat__spacer"></div>
+                            <button type="button" class="im-chat__btn" id="imGroupMembers" hidden>群成员</button>
+                        </div>
+                        <div class="im-chat__body" id="imChatBody"></div>
+                        <div class="im-typing" id="imTyping" style="display:none;">
+                            <span class="im-typing__dots"><i></i><i></i><i></i></span><span id="imTypingText">对方正在输入…</span>
+                        </div>
+                        <div class="im-input">
+                            <!-- 媒体工具行（图片 / 表情 / 文件 / 语音 / 截屏）：保持原始布局，
+                                 js/message.js 的 placeMediaTools() 会把它放到
+                                 富文本格式栏与可编辑区之间（紧贴编辑区正上方），不会被编辑区遮挡 -->
+                            <div class="im-input__tools" id="imInputTools">
+                                <button type="button" class="im-tool" id="imPickImage" title="发送图片">
+                                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm1 2v8.6l3.6-3.6 2.9 2.9 2.4-2.4L19 16.6V7H5zm3 4.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>
+                                </button>
+                                <button type="button" class="im-tool" id="imEmoji" title="表情">
+                                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2a8 8 0 110 16 8 8 0 010-16zM8.5 9.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm7 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM7.6 14.2a1 1 0 011.4.2A3.7 3.7 0 0012 16c1.2 0 2.3-.6 3-1.6a1 1 0 111.6 1.2A5.7 5.7 0 0112 18a5.7 5.7 0 01-4.6-2.4 1 1 0 01.2-1.4z"/></svg>
+                                </button>
+                                <button type="button" class="im-tool" id="imPickFile" title="上传文件">
+                                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm0 2.5L17.5 8H14V4.5zM8 13h8v1.6H8V13zm0 3.4h8V18H8v-1.6z"/></svg>
+                                </button>
+                                <button type="button" class="im-tool" id="imVoice" title="语音输入">
+                                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 14a3 3 0 003-3V6a3 3 0 10-6 0v5a3 3 0 003 3zm5-3a1 1 0 10-2 0 3 3 0 11-6 0 1 1 0 10-2 0 5 5 0 004 4.9V19H9a1 1 0 100 2h6a1 1 0 100-2h-2v-3.1A5 5 0 0017 11z"/></svg>
+                                </button>
+                                <button type="button" class="im-tool" id="imShot" title="截屏标注">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><path d="M8.2 7.8 20 19.6M8.2 16.2 20 4.4"/></svg>
+                                </button>
+                            </div>
+                            <div class="im-input__row">
+                                <div class="im-input__area" id="imText" contenteditable="true"
+                                     role="textbox" aria-multiline="true" aria-label="消息输入框"
+                                     data-rt-placeholder="输入消息，Enter 发送 / Shift+Enter 换行"></div>
+                                <button type="button" class="el-button el-button--primary im-input__send" id="imSend">发送</button>
+                            </div>
+                            <div class="im-input__hint"><span class="im-input__status" id="imInputStatus"></span><!--支持富文本（加粗 / 颜色 / 列表 / 链接）、图片、文件、表情包、语音消息与截屏标注；群聊可输入 @ 或点 @ 按钮提醒组员；消息仅平台内传递，不发送邮件--></div>
+                            <!-- 表情面板：绝对定位浮在输入区上方，不撑高页面 -->
+                            <div class="im-emoji" id="imEmojiPanel" hidden>
+                                <div class="im-emoji__tabs" id="imEmojiTabs"></div>
+                                <div class="im-emoji__body" id="imEmojiBody"></div>
+                                <div class="im-emoji__foot">
+                                    <button type="button" class="im-emoji__add" id="imEmojiAdd">＋ 添加表情包</button>
+                                    <span class="im-emoji__tip" id="imEmojiTip"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- ============ 选择联系人弹窗模板 ============ -->
+<div id="empPickTpl" style="display:none;">
+    <div class="emp-pick">
+        <div class="emp-pick__search">
+            <div class="el-input el-input--prefix">
+                <span class="el-input__prefix">
+                    <svg class="svg-ico" viewBox="0 0 24 24" style="width:16px;height:16px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                </span>
+                <input class="el-input__inner" type="text" id="empPickSearch" placeholder="搜索姓名 / 部门 / 岗位">
+            </div>
+        </div>
+        <div class="emp-pick__list" id="empPickList"></div>
+    </div>
+</div>
+
+<!-- ============ 建群弹窗模板 ============ -->
+<div id="groupTpl" style="display:none;">
+    <div class="im-group-form">
+        <div class="im-tip">群名称（可留空，按成员姓名自动生成）</div>
+        <input type="text" class="im-group-name" id="imGroupName" maxlength="100" placeholder="例如：项目周会">
+        <div class="im-tip" style="margin:12px 0 8px;">
+            选择群成员（至少 1 位，<span id="imGroupPicked">已选 0 人</span>）
+        </div>
+        <div class="im-group-pick" id="imGroupPickList"></div>
+    </div>
+</div>
+
+<!-- ============ 群成员弹窗模板 ============ -->
+<div id="groupMembersTpl" style="display:none;">
+    <div class="im-group-members">
+        <div class="im-group-name-row">
+            <span class="im-group-name-row__label">群名称</span>
+            <span class="im-group-name-row__val" id="imGroupNameVal"></span>
+            <button type="button" class="im-chat__btn" id="imGroupRename" hidden>重命名</button>
+        </div>
+        <div class="im-tip" id="imGroupMemberTip"></div>
+        <div id="imGroupMemberList"></div>
+        <div style="margin-top:14px;text-align:right;">
+            <button type="button" class="el-button el-button--small el-button--danger" id="imGroupLeave">退出群聊</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============ 群重命名弹窗模板 ============ -->
+<div id="groupRenameTpl" style="display:none;">
+    <div class="im-group-rename">
+        <div class="im-tip">新的群名称（1 ~ 100 个字）</div>
+        <input type="text" class="im-group-name" id="imGroupRenameInput" maxlength="100" placeholder="例如：项目周会">
+        <div class="im-group-rename__err" id="imGroupRenameErr"></div>
+    </div>
+</div>
+
+<!-- ============ 图片查看器（点气泡里的图片放大） ============ -->
+<div class="im-viewer" id="imViewer" hidden>
+    <button type="button" class="im-viewer__close" id="imViewerClose" aria-label="关闭">✕</button>
+    <img id="imViewerImg" alt="图片预览">
+</div>
+
+<!-- 隐藏的文件选择器：图片 / 任意文件 -->
+<input type="file" id="imImageInput" accept="image/*" style="display:none;">
+<input type="file" id="imFileInput" style="display:none;">
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/rich-text.js?v=20261116a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/im-shot.js?v=20261110d"></script>
+<script src="js/message.js?v=20261110f"></script>
+</body>
+</html>

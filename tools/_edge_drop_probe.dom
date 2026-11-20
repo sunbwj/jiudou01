@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-rows="4" data-row-text="3PRO000001九豆综合管理平台研发研发进行中2公用杨伟康2026-11-0" data-panel="—— 九豆综合管理平台研发（PRO000001）" data-dir-count="4" data-file-count="2" data-nodes="true/true/true" data-target-dir-id="pdr-0000-4000-8000-000000000001" data-target-dir-files="1 文件" data-point="1267,789" data-hit-self="yes" data-hit-text="pj-tnode__name" data-shift="0" data-over-prevented="yes" data-highlight-dir="yes" data-highlight-child="no" data-drop-prevented="yes" data-payload="{&quot;id&quot;:&quot;pfl-0000-4000-8000-000000000002&quot;,&quot;dirId&quot;:&quot;pdr-0000-4000-8000-000000000001&quot;}" data-payload-ok="yes" data-after-dragging="no" data-after-drop-target="0" data-toast="文件「架构设计.png」已移动到「需求文档」" data-ajax-blocked="2" data-errors="" data-done="yes"><head>
+<meta charset="UTF-8">
+<title>drag drop probe（真实浏览器几何 + 落点解析）</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1460px;height:940px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out">dirs=4 files=2 payload={"id":"pfl-0000-4000-8000-000000000002","dirId":"pdr-0000-4000-8000-000000000001"}
+</pre>
+<iframe id="fr"></iframe>
+<script>
+/* 真实 Edge 探针：验证「文件拖到非空目录里的子文件上也能移入该目录」。
+   后端不参与：在注入的 api.js 之前把 jQuery.ajax 打死 → api.js 自动回退 Mock。 */
+(function () {
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+    var fr = document.getElementById('fr');
+
+    fetch('../project.html').then(function (r) { return r.text(); }).then(function (html) {
+        // ① 注入 <base>，让相对路径指回站点根
+        html = html.replace('<head>', '<head>\n<base href="/">');
+        // ② 在 api.js 之前注入：写 SSO 会话 + 屏蔽所有 ajax（api.js 探测失败 → 回退 Mock）
+        var patch = '<script>\n' +
+            'try{localStorage.setItem("menu_admin_login_v1",JSON.stringify({token:"probe",account:"13813970452",' +
+            'empId:3,ename:"探针",expireAt:Date.now()+6*3600*1000,time:new Date().toISOString(),ttlHours:8}));}catch(e){}\n' +
+            'window.__ajaxBlocked=0;\n' +
+            'jQuery.ajax=function(){window.__ajaxBlocked++;var d=jQuery.Deferred();' +
+            'd.reject({status:0,statusText:"probe-blocked"},"error","probe-blocked");return d.promise();};\n' +
+            '<\/script>\n';
+        var re = /<script src="js\/api\.js[^"]*"><\/script>/;
+        if (!re.test(html)) { attr('data-done', 'no-api-tag'); return; }
+        html = html.replace(re, patch + '<script src="js/api.js?v=20261106l"><\/script>');
+
+        var doc = fr.contentDocument;
+        doc.open(); doc.write(html); doc.close();
+
+        var w = fr.contentWindow;
+        try { w.onerror = function (m, u, l) { errs.push('iframe: ' + m + ' @' + l); }; } catch (e) { }
+        setTimeout(function () { start(w, doc); }, 1200);
+    }).catch(function (e) { attr('data-done', 'fetch-fail:' + e.message); });
+
+    function start(w, doc) {
+        var tries = 0;
+        (function waitRows() {
+            var rows = doc.querySelectorAll('#pjTbody tr[data-id]');
+            if (!rows.length && tries < 60) { tries++; return setTimeout(waitRows, 250); }
+            attr('data-rows', String(rows.length));
+            if (!rows.length) { attr('data-done', 'no-rows'); return; }
+            // 选「九豆综合管理平台研发」：Mock 种子里唯一带目录与文件的项目
+            var row = rows[0];
+            for (var i = 0; i < rows.length; i++) {
+                if (/九豆/.test(rows[i].textContent)) { row = rows[i]; break; }
+            }
+            attr('data-row-text', row.textContent.replace(/\s+/g, ' ').slice(0, 40));
+            row.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+            row.dispatchEvent(new w.MouseEvent('dblclick', { bubbles: true }));
+            setTimeout(function () {
+                var tab = doc.querySelector('#pfTabTree');
+                if (tab) { tab.click(); }
+                setTimeout(function () {
+                    attr('data-panel', String((doc.querySelector('#pfPanelProject') || {}).textContent || '').slice(0, 40));
+                    runDrag(w, doc);
+                }, 2600);
+            }, 900);
+        })();
+    }
+
+    function runDrag(w, doc) {
+        var d = fr.contentDocument;
+        var dirs = [].slice.call(d.querySelectorAll('#pfTreeView .pj-tnode--dir'));
+        var files = [].slice.call(d.querySelectorAll('#pfTreeView .pj-tnode--file'));
+        attr('data-dir-count', String(dirs.length));
+        attr('data-file-count', String(files.length));
+        function byName(list, re) {
+            return list.filter(function (n) { return re.test(n.textContent); })[0] || null;
+        }
+        var dirTarget = byName(dirs, /需求文档/);
+        var src = byName(files, /架构设计\.png/);
+        var child = byName(files, /需求规格说明书\.docx/);
+        attr('data-nodes', [!!dirTarget, !!src, !!child].join('/'));
+        if (!dirTarget || !src || !child) { attr('data-done', 'no-nodes'); return; }
+        attr('data-target-dir-id', dirTarget.getAttribute('data-id'));
+        attr('data-target-dir-files', String(dirTarget.querySelector('.pj-tnode__meta').textContent));
+
+        // ① 落点几何：子文件行的中心点，真实 elementFromPoint 命中谁？
+        var cr = child.getBoundingClientRect();
+        var x = Math.round(cr.left + cr.width / 2), y = Math.round(cr.top + cr.height / 2);
+        var hit = d.elementFromPoint(x, y);
+        attr('data-point', x + ',' + y);
+        attr('data-hit-self', child.contains(hit) || hit === child ? 'yes' : 'no');
+        attr('data-hit-text', hit ? String(hit.className || hit.tagName) : 'null');
+
+        // ② 拦截写接口，只验证提交参数，不动 Mock 数据
+        var captured = null;
+        w.Api.projectFile.update = function (payload) {
+            captured = payload;
+            var dfd = w.jQuery.Deferred(); dfd.resolve({});
+            return dfd.promise();
+        };
+
+        // ③ 布局是否在 dragstart 后发生位移（提示条已挪到列表末尾）
+        var topBefore = Math.round(dirTarget.getBoundingClientRect().top);
+        src.dispatchEvent(new w.DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: new w.DataTransfer() }));
+        var topAfter = Math.round(dirTarget.getBoundingClientRect().top);
+        attr('data-shift', String(topAfter - topBefore));
+
+        // ④ 在子文件行上 dragover / drop（真实坐标）
+        var dt = new w.DataTransfer();
+        var oe = new w.DragEvent('dragover', { bubbles: true, cancelable: true, clientX: x, clientY: y, dataTransfer: dt });
+        hit.dispatchEvent(oe);
+        attr('data-over-prevented', oe.defaultPrevented ? 'yes' : 'no');
+        attr('data-highlight-dir', dirTarget.classList.contains('is-drop-target') ? 'yes' : 'no');
+        attr('data-highlight-child', child.classList.contains('is-drop-target') ? 'yes' : 'no');
+
+        var de = new w.DragEvent('drop', { bubbles: true, cancelable: true, clientX: x, clientY: y, dataTransfer: dt });
+        hit.dispatchEvent(de);
+        src.dispatchEvent(new w.DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }));
+
+        setTimeout(function () {
+            attr('data-drop-prevented', de.defaultPrevented ? 'yes' : 'no');
+            attr('data-payload', captured ? JSON.stringify(captured) : 'none');
+            attr('data-payload-ok', captured && String(captured.dirId) === String(dirTarget.getAttribute('data-id')) ? 'yes' : 'no');
+            attr('data-after-dragging', d.querySelector('#pfTreeView').classList.contains('is-dragging') ? 'yes' : 'no');
+            attr('data-after-drop-target', String(d.querySelectorAll('#pfTreeView .is-drop-target').length));
+            var msg = d.querySelector('.el-message__content') || d.querySelector('.el-message');
+            attr('data-toast', msg ? msg.textContent.trim().slice(0, 80) : 'none');
+            attr('data-ajax-blocked', String(w.__ajaxBlocked || 0));
+            attr('data-errors', errs.join(' || '));
+            attr('data-done', 'yes');
+            log('dirs=' + dirs.length + ' files=' + files.length + ' payload=' + JSON.stringify(captured));
+        }, 900);
+    }
+
+    window.onerror = function (m) { errs.push(String(m)); };
+})();
+</script>
+
+
+</body></html>

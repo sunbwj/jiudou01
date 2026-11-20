@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>file dialog dir probe</title>
+<style>body{font-family:monospace;padding:8px}iframe{width:1400px;height:900px;border:1px solid #ccc}</style>
+</head>
+<body>
+<pre id="out"></pre>
+<iframe id="fr" src=""></iframe>
+<script>
+(function () {
+    var q = new URLSearchParams(location.search);
+    var tk = q.get('tk') || '';
+    var pid = q.get('pid') || '';
+    var out = document.getElementById('out');
+    var errs = [];
+    function log(s) { out.textContent += s + '\n'; }
+    function attr(k, v) { document.documentElement.setAttribute(k, v); }
+
+    try {
+        localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+            token: tk, account: q.get('acc') || '13813970452', empId: 1,
+            ename: q.get('ename') || '', expireAt: Date.now() + 6 * 3600 * 1000,
+            time: new Date().toISOString(), ttlHours: 8
+        }));
+    } catch (e) { errs.push('localStorage: ' + e.message); }
+
+    var fr = document.getElementById('fr');
+    fr.src = '../project-file.html?probe=1';
+    var t0 = Date.now();
+
+    fr.onload = function () {
+        var w = fr.contentWindow, d = fr.contentDocument;
+        w.onerror = function (m, u, l, c, e) {
+            errs.push('iframe error: ' + m + ' @' + l +
+                (e && e.stack ? ' STACK:' + String(e.stack).replace(/\n/g, ' << ').slice(0, 300) : ''));
+        };
+        var tries = 0;
+        (function waitReady() {
+            var btn = d.querySelector('#btnAdd');
+            var rows = d.querySelectorAll('#pfTbody tr[data-id]');
+            if ((!rows.length || !btn || btn.disabled) && tries < 80) { tries++; return setTimeout(waitReady, 250); }
+            attr('data-rows', String(rows.length));
+            attr('data-btn-disabled', btn ? String(btn.disabled) : 'none');
+            attr('data-has-ui', typeof w.UI + '/' + typeof w.jQuery);
+            var $ = w.jQuery;
+            $('#btnAdd').trigger('click');
+            setTimeout(function () {
+                var $dlg = $('.el-overlay .el-dialog').last();
+                var $form = $dlg.find('.pj-form');
+                attr('data-dialog', $dlg.length ? '1' : '0');
+                attr('data-project-options', String($form.find('#pfProject option').length));
+                $form.find('#pfProject').val(pid).trigger('change');
+                setTimeout(function () {
+                    var nodes = $form.find('#pfDirTree .pj-tnode').length;
+                    attr('data-dir-nodes', String(nodes));
+                    var $dir = $form.find('#pfDirTree .pj-tnode[data-id!=""]').last();
+                    $dir.trigger('click');
+                    attr('data-picked-id', $form.find('#pfDirId').val());
+                    attr('data-picked-name', $form.find('#pfDirName').text());
+                    attr('data-tree-text', $form.find('#pfDirTree').text().replace(/\s+/g, ' ').slice(0, 160));
+                    attr('data-errors', errs.join(' || ').slice(0, 400));
+                    attr('data-elapsed', String(Date.now() - t0));
+                    attr('data-done', 'yes');
+                    log('nodes=' + nodes + ' picked=' + $form.find('#pfDirId').val());
+                }, 1500);
+            }, 900);
+        })();
+    };
+})();
+</script>
+</body>
+</html>

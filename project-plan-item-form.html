@@ -1,0 +1,214 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>计划事项 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+<style>
+    /* 项目计划：列表 / 甘特 / 日历 / 事项 */
+    .pp-views { margin-top: 10px; }
+    .pp-gantt { border: 1px solid #ebeef5; border-radius: 4px; overflow: hidden; }
+    .pp-gantt__row { display: flex; align-items: center; border-bottom: 1px dashed #f0f2f5; font-size: 12px; }
+    .pp-gantt__row:last-child { border-bottom: 0; }
+    .pp-gantt__label { flex: 0 0 220px; padding: 6px 8px; color: #303133; white-space: nowrap;
+                       overflow: hidden; text-overflow: ellipsis; }
+    .pp-gantt__track { position: relative; flex: 1 1 auto; height: 26px; background: #fafbfc; }
+    .pp-gantt__bar { position: absolute; top: 5px; height: 16px; border-radius: 3px;
+                     background: #409eff; color: #fff; font-size: 10px; line-height: 16px;
+                     padding: 0 4px; overflow: hidden; white-space: nowrap; }
+    .pp-gantt__bar.is-完成 { background: #67c23a; }
+    .pp-gantt__bar.is-异常 { background: #f56c6c; }
+    .pp-gantt__bar.is-执行中 { background: #e6a23c; }
+    .pp-gantt__axis { display: flex; font-size: 11px; color: #909399; border-bottom: 1px solid #ebeef5; }
+    .pp-gantt__axis span { flex: 1 1 auto; padding: 3px 4px; text-align: center; }
+    .pp-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .pp-cal__head { font-size: 12px; color: #909399; text-align: center; padding: 4px 0; }
+    .pp-cal__day { min-height: 72px; border: 1px solid #ebeef5; border-radius: 4px; padding: 4px;
+                   font-size: 11px; color: #606266; }
+    .pp-cal__day.is-out { background: #fafafa; color: #c0c4cc; }
+    .pp-cal__date { font-weight: 600; margin-bottom: 2px; }
+    .pp-cal__item { margin-top: 2px; padding: 1px 4px; border-radius: 3px; background: #ecf5ff;
+                    color: #409eff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pp-zones { display: flex; flex-direction: column; gap: 12px; }
+    .pp-item-tip { font-size: 12px; color: #909399; }
+</style>
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单（被框架页内嵌时由 layout.js 隐藏） ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">项目管理</div>
+                <a class="app-side__item" href="project.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h7l2 2h9v12H3V5zm2 2v10h14V9h-7.2L9.8 7H5z"/></svg></span>项目信息
+                </a>
+                <a class="app-side__item is-active" href="project-file.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h8l5 5v15H6V2zm7 1.5V8h4.5L13 3.5zM8 11h8v2H8v-2zm0 4h8v2H8v-2z"/></svg></span>项目文件
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="项目管理/项目计划/事项">
+                <h2 class="page-head__title" id="itemTitle">新增计划事项 / 任务</h2>
+            </div>
+
+            <section class="el-card">
+                <div class="el-card__body">
+                    <form class="el-form" id="itemForm" autocomplete="off" onsubmit="return false;">
+                        <div class="el-form-item is-required">
+                            <label class="el-form-item__label" for="itProject">所属项目</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <input class="el-input__inner" type="text" id="itProject" readonly></div>
+                                <div class="form-tip">由所属计划带入</div></div>
+                        </div>
+                        <div class="el-form-item is-required">
+                            <label class="el-form-item__label" for="itPlan">所属计划</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <input class="el-input__inner" type="text" id="itPlan" readonly></div></div>
+                        </div>
+                        <div class="el-form-item is-required">
+                            <label class="el-form-item__label" for="itName">事项 / 任务</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <input class="el-input__inner" type="text" id="itName" maxlength="200" placeholder="如：需求调研 / 接口联调"></div></div>
+                        </div>
+                        <div class="el-form-item is-required">
+                            <label class="el-form-item__label" for="itType">类型</label>
+                            <div class="el-form-item__content"><div class="el-input search-input--select">
+                                <select class="el-input__inner" id="itType"><option value="事项">事项</option><option value="任务">任务</option></select>
+                            </div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itPre">前置事项 / 任务</label>
+                            <div class="el-form-item__content"><div class="el-input search-input--select">
+                                <select class="el-input__inner" id="itPre"><option value="">（无）</option></select></div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itDesc">事项 / 任务说明</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <textarea class="el-input__inner" id="itDesc" rows="3" maxlength="2000"></textarea></div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itInput">输入条件</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <textarea class="el-input__inner" id="itInput" rows="2" maxlength="2000"
+                                    placeholder="开始前必须具备的输入（文档 / 数据 / 前置确认等）"></textarea></div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itOut">里程碑输出</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <textarea class="el-input__inner" id="itOut" rows="2" maxlength="2000"
+                                    placeholder="完成时要交付的成果（报告 / 代码 / 验收单等）"></textarea></div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itStart">计划开始时间</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <input class="el-input__inner" type="datetime-local" id="itStart"></div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itEnd">计划结束时间</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <input class="el-input__inner" type="datetime-local" id="itEnd"></div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itOwner">责任人</label>
+                            <div class="el-form-item__content"><div class="el-input search-input--select">
+                                <select class="el-input__inner" id="itOwner"><option value="">（暂不指定）</option></select></div>
+                                <div class="form-tip">保存后立即发站内消息（含事项链接）与通知邮件，并生成该事项的工单</div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itParts">参与人员</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <select class="el-input__inner" id="itParts" multiple size="5"></select></div>
+                                <div class="form-tip">按住 Ctrl / Cmd 多选</div></div>
+                        </div>
+                        <div class="el-form-item is-required">
+                            <label class="el-form-item__label" for="itStatus">状态</label>
+                            <div class="el-form-item__content"><div class="el-input search-input--select">
+                                <select class="el-input__inner" id="itStatus"></select></div>
+                                <div class="form-tip">选项来自系统字典 project_plan_item_status</div></div>
+                        </div>
+                        <div class="el-form-item">
+                            <label class="el-form-item__label" for="itSort">排序号</label>
+                            <div class="el-form-item__content"><div class="el-input">
+                                <input class="el-input__inner" type="number" id="itSort" min="0" max="9999" value="0"></div></div>
+                        </div>
+                    </form>
+                    <div style="margin-top:8px">
+                        <button type="button" class="el-button el-button--primary" id="btnSaveItem">保存事项</button>
+                        <button type="button" class="el-button" id="btnBackPlan">返回计划</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="el-card" id="fileCard">
+                <div class="el-card__body">
+                    <div class="toolbar toolbar--icons" role="toolbar" aria-label="事项附件">
+                        <label class="el-button el-button--success el-button--icon" id="btnPickFile" title="上传附件" aria-label="上传附件">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l5 5h-3v7h-4V8H7l5-5zm-7 15h14v2H5v-2z"/></svg>
+                            <input type="file" id="itFile" hidden>
+                        </label>
+                        <button type="button" class="el-button el-button--icon" id="btnPreviewFile" disabled title="预览附件" aria-label="预览附件">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5s9.3-3.1 11-7.5C21.3 7.6 17 4.5 12 4.5zm0 12.5a5 5 0 110-10 5 5 0 010 10z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--danger el-button--icon" id="btnDeleteFile" disabled title="删除附件" aria-label="删除附件">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4h10l1 2h3v2H3V6h3l1-2zm-1 6h12l-1 11H7L6 10z"/></svg>
+                        </button>
+                        <span class="toolbar-hint">共 <b id="fileCount">0</b> 个附件（图片 / PDF / txt / docx / xlsx / pptx 可在线预览）</span>
+                    </div>
+                    <div class="table-wrapper" style="margin-top:10px">
+                        <table class="el-table">
+                            <thead><tr>
+                                <th>文件名</th><th style="width:80px" class="is-center">类型</th>
+                                <th style="width:100px" class="is-center">大小</th>
+                                <th style="width:160px" class="is-center">上传时间</th>
+                                <th style="width:110px">上传人</th>
+                            </tr></thead>
+                            <tbody id="fileTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+<script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/file-preview.js?v=20261110e"></script>
+<script src="js/project-plan-item.js?v=20261110d"></script>
+</body>
+</html>

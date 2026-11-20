@@ -1,0 +1,146 @@
+/* ==========================================================================
+   bug.css —— 缺陷管理（登记 / 评估时间线 / 确认缺陷转修复工单）
+   --------------------------------------------------------------------------
+   · 只放本页独有的样式；表格 / 工具栏 / 弹窗基础样式来自 app.css + workplan.css；
+   · 结果区撑满页高的 flex 链与 requirement.html 同口径（检索卡 + 列表卡两卡片变体）；
+   · 人员选择、多选下拉、时间线是本页自绘控件，类名统一 bug- 前缀，避免与需求页互相影响。
+   ========================================================================== */
+
+/* ---------- 结果区撑满剩余页高 ----------
+   .table-card > .el-card__body 这一层 app.css 没接上 flex，导致 .table-wrapper 的
+   flex:1 没有可用高度 → 表格永远只有内容高。这里把链路补全，行高拉伸由 bug.js 的 layoutRows 负责。 */
+@media screen and (min-width: 769px) {
+    .table-card > .el-card__body {
+        -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+        display: -webkit-box; display: -ms-flexbox; display: flex;
+        -webkit-box-orient: vertical; -webkit-box-direction: normal;
+        -ms-flex-direction: column; flex-direction: column;
+        min-height: 0;
+    }
+    .table-card > .el-card__body > .toolbar { -webkit-box-flex: 0; -ms-flex: 0 0 auto; flex: 0 0 auto; }
+    .table-card .table-wrapper { height: 0; min-height: 0; overflow: auto; }
+}
+
+.search-card { overflow: visible; }
+
+/* ---------- 状态多选下拉 ---------- */
+.bug-multi { position: relative; width: 100%; min-width: 130px; }
+.bug-multi__box { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; padding: 0 9px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; color: #606266; font-size: 13px; text-align: left; cursor: pointer; }
+.bug-multi__box:hover, .bug-multi__box:focus { border-color: #409eff; outline: none; }
+.bug-multi__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bug-multi__caret { flex: 0 0 auto; margin-left: 6px; color: #c0c4cc; }
+.bug-multi.has-value .bug-multi__text { color: #303133; }
+.bug-multi__drop { position: absolute; left: 0; right: 0; top: 36px; z-index: 60; padding: 0; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.bug-multi__list { max-height: 260px; overflow: auto; padding: 5px 4px; }
+.bug-multi__opt { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 13px; color: #606266; cursor: pointer; }
+.bug-multi__opt:hover { background: #f5f7fa; color: #409eff; }
+.bug-multi__opt input { width: auto; flex: 0 0 auto; margin: 0; }
+.bug-multi__foot { padding: 4px 8px 2px; border-top: 1px solid #f0f2f5; text-align: right; }
+.bug-multi__clear { padding: 0; border: 0; background: none; color: #909399; font-size: 12px; cursor: pointer; }
+.bug-multi__clear:hover { color: #f56c6c; }
+
+/* ---------- 表单 ---------- */
+.bug-form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 14px; }
+.el-dialog.bug-form-dialog { max-height: calc(100vh - 24px); display: flex; flex-direction: column; margin: 12px auto; }
+.el-dialog.bug-form-dialog .el-dialog__body { overflow: auto; max-height: calc(100vh - 150px); }
+.bug-form-dialog .el-form-item { margin-bottom: 6px; }
+.bug-desc-item { display: block; }
+.bug-desc-item .el-form-item__content { margin-left: 0; width: 100%; }
+.bug-desc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.bug-desc-label { font-size: 13px; color: #606266; font-weight: 600; }
+.bug-desc { height: 40vh; min-height: 200px; max-height: 40vh; overflow: auto; resize: vertical; }
+.bug-form-dialog .rt { height: 40vh; display: flex; flex-direction: column; }
+.bug-form-dialog .rt__area { flex: 1 1 auto; height: auto; overflow: auto; }
+.bug-form-dialog .rt .bug-desc { height: auto; min-height: 0; max-height: none; }
+.bug-hint { font-size: 12px; color: #909399; line-height: 1.6; }
+
+/* ---------- 人员选择（点击打开组织架构选人弹窗） ---------- */
+.bug-person { display: flex; align-items: center; justify-content: space-between; min-height: 32px; padding: 0 9px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; color: #606266; font-size: 13px; text-align: left; cursor: pointer; width: 100%; }
+.bug-person:hover { border-color: #409eff; }
+.bug-person.has-value { color: #303133; }
+.bug-person__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bug-person__caret { flex: 0 0 auto; margin-left: 6px; color: #c0c4cc; }
+.bug-person.is-empty .bug-person__text { color: #c0c4cc; }
+
+/* 确认缺陷：三组责任人卡片 */
+.bug-team { border: 1px solid #ebeef5; border-radius: 6px; padding: 10px 12px 2px; margin-bottom: 10px; background: #fafbfc; }
+.bug-team__title { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #303133; }
+.bug-team__tag { display: inline-block; height: 18px; padding: 0 6px; border-radius: 9px; background: #ecf5ff; color: #409eff; font-size: 11px; font-weight: 400; line-height: 18px; }
+.bug-team__grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 0 12px; }
+
+/* ---------- 详情 ---------- */
+.bug-detail { font-size: 13px; color: #303133; line-height: 1.7; }
+.bug-detail__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 16px; }
+.bug-detail__row { margin-bottom: 4px; }
+.bug-detail__label { color: #909399; }
+.bug-detail__sub { margin: 12px 0 6px; padding-top: 8px; border-top: 1px solid #ebeef5; font-weight: 600; font-size: 13px; }
+.bug-detail__body { padding: 8px 10px; background: #fafbfc; border-radius: 4px; color: #606266; }
+.bug-detail__empty { color: #c0c4cc; font-size: 12px; padding: 6px 0; }
+
+.bug-order { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px dashed #f0f0f0; font-size: 12px; color: #606266; }
+.bug-order__kind { flex: 0 0 74px; color: #909399; }
+.bug-order__code { flex: 0 0 96px; color: #409eff; }
+.bug-order__title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bug-order__time { flex: 0 0 168px; color: #909399; }
+
+/* ---------- 评估时间线 ---------- */
+.bug-timeline { position: relative; padding-left: 22px; }
+.bug-timeline:before { content: ""; position: absolute; left: 7px; top: 4px; bottom: 4px; width: 2px; background: #e4e7ed; }
+.bug-tl-item { position: relative; padding: 0 0 16px 8px; }
+.bug-tl-dot { position: absolute; left: -22px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: #409eff; border: 2px solid #fff; box-shadow: 0 0 0 1px #409eff; }
+.bug-tl-item.is-fail .bug-tl-dot { background: #f56c6c; box-shadow: 0 0 0 1px #f56c6c; }
+.bug-tl-item.is-wait .bug-tl-dot { background: #e6a23c; box-shadow: 0 0 0 1px #e6a23c; }
+.bug-tl-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #303133; }
+.bug-tl-time { color: #909399; font-size: 12px; }
+.bug-tl-meta { margin-top: 4px; color: #606266; font-size: 12px; line-height: 1.7; }
+.bug-tl-reason { margin-top: 4px; padding: 6px 10px; background: #fafbfc; border-left: 3px solid #e4e7ed; color: #606266; font-size: 12px; }
+.bug-tl-empty { padding: 18px 0; text-align: center; color: #c0c4cc; }
+
+/* ---------- 评估弹窗 ---------- */
+.el-dialog.bug-eval-dialog { max-height: calc(100vh - 24px); display: flex; flex-direction: column; margin: 12px auto; }
+.el-dialog.bug-eval-dialog .el-dialog__body { overflow-y: auto; max-height: calc(100vh - 150px); }
+.bug-eval-field { display: block; margin-bottom: 12px; }
+.bug-eval-label { display: block; width: auto; padding: 0 0 6px; text-align: left; font-size: 13px; color: #606266; line-height: 1.4; }
+.bug-eval-field .el-form-item__content { margin-left: 0; width: 100%; }
+.bug-eval-reason { min-height: 170px; }
+.bug-eval-reason.rt__area { min-height: 170px; max-height: 240px; }
+.bug-radio-line { display: flex; gap: 18px; flex-wrap: wrap; padding: 4px 0; }
+.bug-radio-line label { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: #606266; cursor: pointer; }
+
+/* 表格里的级别 / 状态小标签 */
+.bug-pill { display: inline-block; min-width: 34px; height: 20px; padding: 0 7px; border-radius: 10px; font-size: 11px; line-height: 20px; text-align: center; }
+.bug-pill--p0 { background: #fef0f0; color: #f56c6c; }
+.bug-pill--p1 { background: #fdf6ec; color: #e6a23c; }
+.bug-pill--p2 { background: #ecf5ff; color: #409eff; }
+.bug-pill--p3 { background: #f4f4f5; color: #909399; }
+.bug-pill--none { background: #f4f4f5; color: #c0c4cc; }
+
+/* ---------- 附件（登记 / 编辑 / 详情） ---------- */
+.bug-word-btn { height: 26px; line-height: 24px; padding: 0 10px; font-size: 12px; }
+.bug-file-field { margin-top: 10px; }
+.bug-file-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.bug-file-label { font-size: 13px; color: #606266; font-weight: 600; }
+.bug-file-hint { font-size: 12px; color: #909399; }
+.bug-file-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.bug-file-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 2px 4px 2px 8px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fafbfc; font-size: 12px; color: #606266; }
+.bug-file-chip__name { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bug-file-chip__del { border: 0; background: transparent; color: #c0c4cc; cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+.bug-file-chip__del:hover { color: #f56c6c; }
+.bug-file-existing { margin-top: 10px; }
+.bug-file-existing__title { font-size: 12px; color: #909399; margin-bottom: 4px; }
+.bug-detail__files { padding: 2px 0 4px; }
+.bug-file { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px dashed #f0f0f0; font-size: 12px; color: #606266; }
+.bug-file:last-child { border-bottom: 0; }
+.bug-file__name { color: #409eff; text-decoration: none; max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bug-file__name:hover { text-decoration: underline; }
+.bug-file__size { color: #909399; }
+
+/* ---------- 关闭缺陷：原因录入区（加高，可拖拽调整） ---------- */
+.bug-close-reason {
+  min-height: 180px;
+  height: 180px;
+  line-height: 1.6;
+  padding: 8px 10px;
+  resize: vertical;
+  box-sizing: border-box;
+}

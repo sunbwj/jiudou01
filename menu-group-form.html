@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>菜单组维护 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">系统管理</div>
+                <a class="app-side__item" href="menu.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h12v2H3v-2z"/></svg></span>菜单项管理
+                </a>
+                <a class="app-side__item is-active" href="menu-group.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>菜单组管理
+                </a>
+                <a class="app-side__item" href="menu-group-item.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h2v12H4V6zm4 0h10v2H8V6zm0 5h10v2H8v-2zm0 5h7v2H8v-2zm12-9h2v12h-2V7z"/></svg></span>菜单组项目管理
+                </a>
+                <a class="app-side__item is-disabled" href="javascript:void(0)">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12.5a4.25 4.25 0 100-8.5 4.25 4.25 0 000 8.5zm0 1.8c-4.2 0-7.6 2.2-7.6 4.9V21h15.2v-1.8c0-2.7-3.4-4.9-7.6-4.9z"/></svg></span>用户管理
+                </a>
+                <a class="app-side__item is-disabled" href="javascript:void(0)">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a5 5 0 00-5 5v2.6H6v12h12v-12h-1V7a5 5 0 00-5-5zm0 2.2A2.8 2.8 0 0114.8 7v2.6H9.2V7A2.8 2.8 0 0112 4.2z"/></svg></span>角色权限
+                </a>
+                <div class="app-side__group-title">业务中心</div>
+                <a class="app-side__item is-disabled" href="javascript:void(0)">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 20V10h3.2v10H4zm6.4 0V4h3.2v16h-3.2zM16.8 20v-7H20v7h-3.2z"/></svg></span>统计报表
+                </a>
+                <a class="app-side__item is-disabled" href="javascript:void(0)">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.5A1.5 1.5 0 014.5 4h4.2l2 2.4h8.8A1.5 1.5 0 0121 7.9v10.6A1.5 1.5 0 0119.5 20h-15A1.5 1.5 0 013 18.5v-13z"/></svg></span>文件管理
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="菜单组管理/新增菜单组">
+                <h2 class="page-head__title" id="pageTitle">新增菜单组</h2>
+            </div>
+
+            <section class="el-card form-page">
+                <div class="el-card__body">
+                    <form class="el-form form-label-width" id="groupForm" novalidate onsubmit="return false;">
+                        <!-- 菜单组图标 -->
+                        <div class="el-form-item is-required" data-field="icon">
+                            <label class="el-form-item__label">菜单组图标</label>
+                            <div class="el-form-item__content icon-line">
+                                <span class="icon-picker" id="iconPicker" title="点击选择图标">
+                                    <span class="icon-picker__preview" id="iconPreview">
+                                        <svg viewBox="0 0 24 24" width="20" height="20"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></g></svg>
+                                    </span>
+                                    <span class="icon-picker__name" id="iconName">未设置</span>
+                                </span>
+                                <button type="button" class="el-button el-button--small" id="btnPickIcon" style="margin-left:10px">选择图标</button>
+                                <button type="button" class="el-button el-button--text el-button--small" id="btnClearIcon">清除</button>
+                                <span class="form-tip">点击图标或按钮从图标库中选择</span>
+                            </div>
+                        </div>
+
+                        <!-- 编号 -->
+                        <div class="el-form-item is-required" data-field="code">
+                            <label class="el-form-item__label" for="code">编号</label>
+                            <div class="el-form-item__content field-line">
+                                <div class="el-input"><input class="el-input__inner" type="text" id="code" name="code" maxlength="24" placeholder="例如：MNG0001"></div>
+                                <span class="form-tip" id="codeTip">由系统自动生成（MNG + 4 位流水号），无需填写</span>
+                            </div>
+                        </div>
+
+                        <!-- 中文名 -->
+                        <div class="el-form-item is-required" data-field="nameCn">
+                            <label class="el-form-item__label" for="nameCn">中文名</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input"><input class="el-input__inner" type="text" id="nameCn" name="nameCn" maxlength="20" placeholder="例如：系统管理"></div>
+                            </div>
+                        </div>
+
+                        <!-- 英文名 -->
+                        <div class="el-form-item is-required" data-field="nameEn">
+                            <label class="el-form-item__label" for="nameEn">英文名</label>
+                            <div class="el-form-item__content field-line">
+                                <div class="el-input"><input class="el-input__inner" type="text" id="nameEn" name="nameEn" maxlength="40" placeholder="例如：SystemManagement"></div>
+                                <span class="form-tip">以字母开头，仅含字母、数字、下划线，<b style="color:#f56c6c">必须唯一</b></span>
+                            </div>
+                        </div>
+
+                        <!-- 上级菜单组：支持多层级，不选则为顶级 -->
+                        <div class="el-form-item" data-field="parentId">
+                            <label class="el-form-item__label" for="parentId">上级菜单组</label>
+                            <div class="el-form-item__content field-line">
+                                <div class="el-input el-input--select">
+                                    <select class="el-input__inner" id="parentId" name="parentId">
+                                        <option value="0">— 顶级菜单组（无上级）—</option>
+                                    </select>
+                                </div>
+                                <span class="form-tip">选择上级后自动成为其下一级，<b id="levelTip" style="color:#409eff;font-weight:400">当前层级：第 1 级</b></span>
+                            </div>
+                        </div>
+
+                        <!-- 排序号：同级排序 -->
+                        <div class="el-form-item" data-field="sortNo">
+                            <label class="el-form-item__label" for="sortNo">排序号</label>
+                            <div class="el-form-item__content field-line">
+                                <div class="el-input"><input class="el-input__inner" type="text" id="sortNo" name="sortNo" maxlength="4" placeholder="0"></div>
+                                <span class="form-tip">同级内按排序号从小到大排列（数值小的在前）</span>
+                            </div>
+                        </div>
+
+                        <!-- 可否绑定菜单项（不设默认值，必须显式选择；选「否」时显示功能页面路径，非必填） -->
+                        <div class="el-form-item is-required" data-field="hasChild">
+                            <label class="el-form-item__label">可否绑定菜单项</label>
+                            <div class="el-form-item__content">
+                                <span class="radio-line">
+                                    <label class="el-radio" for="hasChild1">
+                                        <input class="el-radio__original" type="radio" name="hasChild" id="hasChild1" value="1">
+                                        <span class="el-radio__inner"></span>
+                                        <span class="el-radio__label">是</span>
+                                    </label>
+                                    <label class="el-radio" for="hasChild0">
+                                        <input class="el-radio__original" type="radio" name="hasChild" id="hasChild0" value="0">
+                                        <span class="el-radio__inner"></span>
+                                        <span class="el-radio__label">否</span>
+                                    </label>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 功能页面路径 URL：仅「可否绑定菜单项 = 否」时显示，非必填 -->
+                        <div class="el-form-item is-hidden" data-field="path" id="pathItem">
+                            <label class="el-form-item__label" for="path">功能页面路径</label>
+                            <div class="el-form-item__content field-line">
+                                <div class="el-input el-input--prefix">
+                                    <span class="el-input__prefix"><svg class="svg-ico" viewBox="0 0 24 24" style="width:16px;height:16px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M10 14a4 4 0 006 .5l3-3a4 4 0 00-5.7-5.7l-2 2"/><path d="M14 10a4 4 0 00-6-.5l-3 3A4 4 0 0010.7 18l2-2"/></g></svg></span>
+                                    <input class="el-input__inner" type="text" id="path" name="path" maxlength="120" placeholder="例如：system/help.html 或 /system/help">
+                                </div>
+                                <span class="form-tip">该菜单组不可绑定菜单项时，可直接指向功能页面（非必填）</span>
+                            </div>
+                        </div>
+
+                        <!-- 启用否 -->
+                        <div class="el-form-item" data-field="enabled">
+                            <label class="el-form-item__label">启用否</label>
+                            <div class="el-form-item__content">
+                                <span class="switch-line">
+                                    <span class="el-switch is-checked" id="enabledSwitch" role="switch">
+                                        <input class="el-switch__input" type="checkbox" id="enabled" checked>
+                                        <span class="el-switch__core"></span>
+                                    </span>
+                                    <span class="switch-text" id="enabledText">已启用</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 操作（form-actions：页面操作按钮表 pageopbtn 扫描识别用） -->
+                        <div class="el-form-item form-actions">
+                            <div class="el-form-item__content">
+                                <button type="button" class="el-button el-button--primary" id="btnSave">保存</button>
+                                <button type="button" class="el-button" id="btnBack">返回</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/menu-group-form.js?v=20261031a"></script>
+</body>
+</html>

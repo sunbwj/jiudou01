@@ -1,0 +1,10 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+sysdict	0
+sysdictitems	0
+syspara	2
+tables_total	22
+test_tag_dict	0
+test_tag_item	0
+test_tag_para	0
+menu_pages	3
+btn_reg	20

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>工作量统计 · 真实 Edge 探针</title>
+<style>html,body{margin:0;background:#fff}iframe{width:100%;height:1020px;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="fr"></iframe>
+<script>
+/* 真实浏览器探针：注入登录态后加载 workload-report.html，等统计表渲染出来，
+   把关键指标写进 <html data-*>，供 --dump-dom 校验；也可直接截图看视觉。
+   用法：msedge --headless=new ... "…/_edge_workload_probe.html?tk=<token>&me=<empId>" */
+(function () {
+    'use strict';
+    var q = new URLSearchParams(location.search);
+    var TK = q.get('tk') || '';
+    var ME = parseInt(q.get('me') || '1', 10) || 1;
+    var D = document.documentElement;
+    var ERRS = [];
+    function set(k, v) { D.setAttribute('data-' + k, String(v)); }
+    localStorage.setItem('menu_admin_login_v1', JSON.stringify({
+        token: TK, user: { empId: ME, nameCn: '系统管理员' },
+        expireAt: Date.now() + 8 * 3600 * 1000
+    }));
+    window.addEventListener('error', function (e) { ERRS.push('outer:' + e.message); });
+
+    var fr = document.getElementById('fr');
+    fr.onload = function () {
+        var w = fr.contentWindow, doc = fr.contentDocument;
+        w.addEventListener('error', function (e) { ERRS.push('inner:' + e.message); });
+        var t0 = Date.now();
+        (function poll() {
+            var rows = doc.querySelectorAll('#wlTbody tr[data-owner]');
+            var empty = doc.getElementById('wlEmpty');
+            var done = rows.length > 0 || (empty && !empty.hasAttribute('hidden'));
+            if (!done && Date.now() - t0 < 15000) { setTimeout(poll, 300); return; }
+            set('rows', rows.length);
+            set('empty', empty ? !empty.hasAttribute('hidden') : 'no-node');
+            set('kpiOrders', (doc.getElementById('wlKpiOrders') || {}).textContent || '');
+            set('kpiDone', (doc.getElementById('wlKpiDone') || {}).textContent || '');
+            set('kpiRate', (doc.getElementById('wlKpiRate') || {}).textContent || '');
+            set('kpiOverdue', (doc.getElementById('wlKpiOverdue') || {}).textContent || '');
+            set('kpiPeople', (doc.getElementById('wlKpiPeople') || {}).textContent || '');
+            set('planCount', (doc.getElementById('wlPlanCount') || {}).textContent || '');
+            set('rangeText', (doc.getElementById('wlRangeText') || {}).textContent || '');
+            /* 按钮权限：pageopbtn 登记 + 授权后仍应可见（btnperm 对未授权是直接隐藏） */
+            (function () {
+                var ids = ['wlBtnRefresh', 'wlBtnExport', 'wlBtnMine'], out = [];
+                for (var i = 0; i < ids.length; i++) {
+                    var el = doc.getElementById(ids[i]);
+                    out.push(ids[i] + ':' + (el ? (el.offsetParent ? 'show' : 'hide') : 'missing'));
+                }
+                set('btns', out.join(','));
+            })();
+            if (rows.length) {
+                set('first', (rows[0].textContent || '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '').slice(0, 120));
+                set('firstOwner', (rows[0].getAttribute('data-owner') || ''));
+            }
+            var errBox = doc.querySelector('.el-message');
+            set('msg', errBox ? (errBox.textContent || '') : '');
+            set('errs', ERRS.join(' | '));
+            /* open=1：顺便点开第一行「明细」，校验钻取弹窗（行数 / 首行文本 / 分页） */
+            if (q.get('open') === '1' && rows.length) {
+                var btn = rows[0].querySelector('.wl-detail-btn');
+                if (btn) { btn.click(); }
+                var t1 = Date.now();
+                (function pollDetail() {
+                    var dRows = doc.querySelectorAll('#wlDetailBody tr');
+                    var dlg = doc.querySelector('.wl-detail-dialog');
+                    var okDlg = dlg && dRows.length && !doc.querySelector('#wlDetailBody .wl-detail__empty');
+                    if (!okDlg && Date.now() - t1 < 12000) { setTimeout(pollDetail, 300); return; }
+                    set('dlgTitle', (dlg && dlg.querySelector('.el-dialog__title')
+                        ? dlg.querySelector('.el-dialog__title').textContent : ''));
+                    set('dlgRows', dRows.length);
+                    set('dlgFirst', dRows.length
+                        ? (dRows[0].textContent || '').replace(/\s+/g, ' ').replace(/^\s+|\s+$/g, '').slice(0, 140) : '');
+                    set('dlgHead', (dlg && dlg.querySelector('.wl-detail__head')
+                        ? (dlg.querySelector('.wl-detail__head').textContent || '').replace(/\s+/g, ' ').slice(0, 160) : ''));
+                    set('dlgPlanLinks', dlg ? dlg.querySelectorAll('.wl-go-plan').length : 0);
+                    set('dlgTaskLinks', dlg ? dlg.querySelectorAll('.wl-go-task').length : 0);
+                    set('errs', ERRS.join(' | '));
+                    set('done', '1');
+                })();
+                return;
+            }
+            set('done', '1');
+        })();
+    };
+    fr.src = '/workload-report.html?tk=' + encodeURIComponent(TK) + '&me=' + ME;
+})();
+</script>
+</body>
+</html>

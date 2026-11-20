@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 400" width="560" height="400" role="img" aria-label="一体化管理中枢示意">
+  <defs>
+    <linearGradient id="ltHub" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f7bff"/>
+      <stop offset="1" stop-color="#12d6c2"/>
+    </linearGradient>
+    <radialGradient id="ltGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#2f7bff" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#12d6c2" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#061423" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ltLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2f7bff" stop-opacity="0.05"/>
+      <stop offset="0.5" stop-color="#5ac8ff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#12d6c2" stop-opacity="0.08"/>
+    </linearGradient>
+    <filter id="ltBlur" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+
+  <!-- 背景光斑 -->
+  <circle cx="280" cy="196" r="185" fill="url(#ltGlow)"/>
+
+  <!-- 同心雷达环 -->
+  <g fill="none" stroke="#3d9bff" stroke-opacity="0.20">
+    <circle cx="280" cy="196" r="150" stroke-dasharray="3 9"/>
+    <circle cx="280" cy="196" r="112" stroke-opacity="0.26"/>
+    <circle cx="280" cy="196" r="76" stroke-opacity="0.32" stroke-dasharray="6 6"/>
+  </g>
+  <!-- 环形进度弧 -->
+  <g fill="none" stroke-width="2.6" stroke-linecap="round">
+    <path d="M280 46a150 150 0 0 1 106 44" stroke="#12d6c2" stroke-opacity="0.85"/>
+    <path d="M386 284a150 150 0 0 1 -106 62" stroke="#7a5cff" stroke-opacity="0.7"/>
+    <path d="M130 196a150 150 0 0 1 34 -95" stroke="#2f7bff" stroke-opacity="0.8"/>
+  </g>
+
+  <!-- 中心枢纽（六边形 + 内核） -->
+  <g>
+    <circle cx="280" cy="196" r="66" fill="#0a2440" fill-opacity="0.85" stroke="#5ac8ff" stroke-opacity="0.45"/>
+    <path d="M280 148l42 24v48l-42 24-42-24v-48z" fill="none" stroke="url(#ltHub)" stroke-width="2.4"/>
+    <path d="M280 166l26 15v30l-26 15-26-15v-30z" fill="url(#ltHub)" fill-opacity="0.18" stroke="url(#ltHub)" stroke-width="1.4"/>
+    <circle cx="280" cy="196" r="12" fill="url(#ltHub)"/>
+    <circle cx="280" cy="196" r="22" fill="none" stroke="#12d6c2" stroke-opacity="0.55"/>
+    <circle cx="280" cy="196" r="22" fill="none" stroke="#12d6c2" stroke-opacity="0.35" filter="url(#ltBlur)"/>
+  </g>
+
+  <!-- 连线（枢纽 → 外围节点） -->
+  <g stroke="url(#ltLine)" stroke-width="1.6">
+    <path d="M280 130 L280 66"/>
+    <path d="M340 160 L432 108"/>
+    <path d="M348 210 L452 236"/>
+    <path d="M310 250 L372 316"/>
+    <path d="M236 250 L176 318"/>
+    <path d="M210 196 L108 196"/>
+    <path d="M228 152 L154 96"/>
+  </g>
+
+  <!-- 外围节点：组织 / 员工 / 账号 / 角色 / 权限 / 页面 -->
+  <g>
+    <!-- 组织架构 -->
+    <g transform="translate(280,66)">
+      <rect x="-26" y="-22" width="52" height="44" rx="10" fill="#0d2a47" stroke="#5ac8ff" stroke-opacity="0.5"/>
+      <path d="M-12 -8h24M-12 0h16M-12 8h20" stroke="#8fd8ff" stroke-width="2" stroke-linecap="round" stroke-opacity="0.9"/>
+    </g>
+    <!-- 员工 -->
+    <g transform="translate(432,108)">
+      <rect x="-26" y="-22" width="52" height="44" rx="10" fill="#0d2a47" stroke="#5ac8ff" stroke-opacity="0.5"/>
+      <circle cx="-4" cy="-4" r="5" fill="#8fd8ff"/>
+      <path d="M-13 11a9 9 0 0 1 18 0" fill="none" stroke="#8fd8ff" stroke-width="2"/>
+      <path d="M8 -8h8M8 0h10M8 8h6" stroke="#8fd8ff" stroke-width="2" stroke-linecap="round" stroke-opacity="0.75"/>
+    </g>
+    <!-- 账号 -->
+    <g transform="translate(452,236)">
+      <rect x="-26" y="-22" width="52" height="44" rx="10" fill="#0d2a47" stroke="#12d6c2" stroke-opacity="0.55"/>
+      <path d="M0 -10a6 6 0 0 0 -6 6v4h-3v12h18V0h-3v-4a6 6 0 0 0 -6 -6zm0 3a3 3 0 0 1 3 3v4h-6v-4a3 3 0 0 1 3 -3z" fill="#7ff0e2"/>
+    </g>
+    <!-- 角色 -->
+    <g transform="translate(372,316)">
+      <rect x="-26" y="-22" width="52" height="44" rx="10" fill="#0d2a47" stroke="#12d6c2" stroke-opacity="0.55"/>
+      <path d="M0 -12l11 4.5v8c0 6-4.4 10.6-11 12.8C-6.6 11.1-11 6.5-11 .5v-8z" fill="none" stroke="#7ff0e2" stroke-width="2"/>
+      <path d="M-4 0l3 3 5-6" stroke="#7ff0e2" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- 权限（按钮） -->
+    <g transform="translate(176,318)">
+      <rect x="-26" y="-22" width="52" height="44" rx="10" fill="#0d2a47" stroke="#7a5cff" stroke-opacity="0.55"/>
+      <path d="M-13 -9h26v7h-26zM-13 -1h13v7h-13zM-13 7h18v7h-18z" fill="none" stroke="#b9a9ff" stroke-width="1.8"/>
+    </g>
+    <!-- 页面 -->
+    <g transform="translate(108,196)">
+      <rect x="-26" y="-22" width="52" height="44" rx="10" fill="#0d2a47" stroke="#2f7bff" stroke-opacity="0.6"/>
+      <rect x="-14" y="-11" width="28" height="22" rx="3" fill="none" stroke="#9ecbff" stroke-width="1.8"/>
+      <path d="M-14 -4h28" stroke="#9ecbff" stroke-width="1.4" stroke-opacity="0.8"/>
+      <circle cx="-10" cy="-7.5" r="1.4" fill="#9ecbff"/>
+    </g>
+    <!-- 数据 -->
+    <g transform="translate(154,96)">
+      <rect x="-26" y="-22" width="52" height="44" rx="10" fill="#0d2a47" stroke="#2f7bff" stroke-opacity="0.6"/>
+      <path d="M-12 8V-2M-4 8V-8M4 8V2M12 8V-5" stroke="#9ecbff" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- 节点高光 -->
+  <g fill="#bff3ff">
+    <circle cx="280" cy="130" r="2.6"/>
+    <circle cx="340" cy="160" r="2.2"/>
+    <circle cx="348" cy="210" r="2.2"/>
+    <circle cx="310" cy="250" r="2.2"/>
+    <circle cx="236" cy="250" r="2"/>
+    <circle cx="210" cy="196" r="2"/>
+    <circle cx="228" cy="152" r="2"/>
+  </g>
+
+  <!-- 底部扫描线 -->
+  <g stroke="#5ac8ff" stroke-opacity="0.18">
+    <path d="M64 360h432M64 372h300M64 384h180"/>
+  </g>
+</svg>

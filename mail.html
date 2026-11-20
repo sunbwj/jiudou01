@@ -1,0 +1,226 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>邮箱助手 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">邮件中心</div>
+                <a class="app-side__item" href="service-email.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.8 2L12 12.4 19.2 7H4.8zM4 9.2V17h16V9.2l-7.4 5.5a1 1 0 01-1.2 0L4 9.2z"/></svg></span>服务信箱设置
+                </a>
+                <a class="app-side__item is-active" href="mail.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v10a1 1 0 01-1 1H9l-5 4V5a1 1 0 011-1z"/></svg></span>邮箱助手
+                </a>
+                <div class="app-side__group-title">系统管理</div>
+                <a class="app-side__item" href="menu.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h12v2H3v-2z"/></svg></span>菜单项管理
+                </a>
+                <a class="app-side__item" href="menu-group.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>菜单组管理
+                </a>
+                <a class="app-side__item" href="org.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 4a3 3 0 100 6 3 3 0 000-6zm-6 15v-1a5 5 0 015-5h2a5 5 0 015 5v1H3zm12-15a3 3 0 110 6 3 3 0 010-6zm-2 15v-1a5 5 0 013-4.6V19h-3z"/></svg></span>组织架构
+                </a>
+                <a class="app-side__item" href="emp.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg></span>员工信息管理
+                </a>
+                <a class="app-side__item" href="user.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 9a3 3 0 100-6 3 3 0 000 6zm0 2c-3.9 0-7 2-7 4.5V18h14v-2.5C19 13 15.9 11 12 11zm7-3h2v2h2v2h-2v2h-2v-2h-2v-2h2V8z"/></svg></span>用户信息管理
+                </a>
+                <a class="app-side__item" href="role.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l7 3v5.5c0 4.2-2.9 7.4-7 8.9-4.1-1.5-7-4.7-7-8.9V6l7-3zm0 2.2L7 7.1v4.4c0 3.1 2 5.6 5 6.9 3-1.3 5-3.8 5-6.9V7.1l-5-1.9z"/></svg></span>用户角色管理
+                </a>
+                <a class="app-side__item" href="role-power.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l8 4v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6l8-4z"/></svg></span>角色权限配置
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <!-- mail-page：邮件工作区（列表 + 阅读区）撑满页面剩余高度，只在列表 / 正文内部滚动 -->
+        <main class="app-main mail-page">
+            <div class="page-head" id="pageHead" data-crumb="邮件中心/邮箱助手">
+                <h2 class="page-head__title">邮箱助手</h2>
+            </div>
+
+            <!-- 状态条 -->
+            <section class="el-card mail-status-card">
+                <div class="el-card__body">
+                    <div class="mail-status">
+                        <div class="mail-status__mail">
+                            <span class="mail-status__ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.8 2L12 12.4 19.2 7H4.8zM4 9.2V17h16V9.2l-7.4 5.5a1 1 0 01-1.2 0L4 9.2z"/></svg></span>
+                            <div>
+                                <div class="mail-status__email" id="mailEmail">未启用服务信箱</div>
+                                <div class="mail-status__meta" id="mailMeta">请先到「服务信箱设置」中新增并启用一个邮箱</div>
+                            </div>
+                        </div>
+                        <div class="mail-status__actions toolbar">
+                            <button type="button" class="el-button el-button--primary" id="btnSync">
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>收件
+                            </button>
+                            <button type="button" class="el-button el-button--success" id="btnWrite">
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M5 19h2.4l9.3-9.3-2.4-2.4L5 16.6V19zM3 21v-4.2L15.9 3.9l4.2 4.2L7.2 21H3z"/></svg>写邮件
+                            </button>
+                            <button type="button" class="el-button" id="btnMailRefresh">
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>刷新
+                            </button>
+                            <!-- 设置：弹出「服务信箱」弹窗（serviceemail 是单例表，无记录=新增、有记录=编辑） -->
+                            <button type="button" class="el-button el-button--icon" id="btnMailSetting"
+                                    title="服务信箱设置（编辑 / 新增）" aria-label="服务信箱设置">
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.48.48 0 00-.59.22L2.74 8.87a.48.48 0 00.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 00-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 邮件工作区：文件夹 + 列表 + 阅读 -->
+            <section class="el-card mail-card">
+                <div class="el-card__body mail-body">
+                    <!-- 文件夹 -->
+                    <aside class="mail-folders">
+                        <div class="mail-folder is-active" data-folder="inbox">
+                            <span class="mail-folder__name">收件箱</span>
+                            <span class="mail-folder__badge" id="badgeInbox">0</span>
+                        </div>
+                        <div class="mail-folder" data-folder="sent">
+                            <span class="mail-folder__name">已发送</span>
+                            <span class="mail-folder__badge is-plain" id="badgeSent">0</span>
+                        </div>
+                        <div class="mail-folders__foot">
+                            <div id="mailLastSync">最近收件：-</div>
+                            <div class="mail-folders__tip">收件由后台每 5 分钟自动执行，也可点「收件」立即拉取</div>
+                        </div>
+                    </aside>
+
+                    <!-- 列表 -->
+                    <div class="mail-list">
+                        <div class="mail-search">
+                            <div class="el-input el-input--prefix">
+                                <span class="el-input__prefix">
+                                    <svg class="svg-ico" viewBox="0 0 24 24" style="width:16px;height:16px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                                </span>
+                                <input class="el-input__inner" type="text" id="mailKeyword" placeholder="搜索主题 / 发件人 / 收件人">
+                            </div>
+                        </div>
+                        <div class="mail-list__items" id="mailList"></div>
+                        <div class="mail-list__foot" id="mailPager"></div>
+                    </div>
+
+                    <!-- 阅读 -->
+                    <div class="mail-read" id="mailRead">
+                        <div class="mail-read__empty">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.8 2L12 12.4 19.2 7H4.8zM4 9.2V17h16V9.2l-7.4 5.5a1 1 0 01-1.2 0L4 9.2z"/></svg>
+                            <p>从左侧选择一封邮件查看详情</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- ============ 写邮件弹窗模板 ============ -->
+<div id="mailFormTpl" style="display:none;">
+    <form class="el-form mail-form" id="mailForm" autocomplete="off" onsubmit="return false;">
+        <div class="el-form-item is-required" data-field="to">
+            <label class="el-form-item__label" for="mfTo">收件人</label>
+            <div class="el-form-item__content">
+                <div class="mail-to">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="mfTo" placeholder="多个地址用逗号分隔，也可点右侧按钮从员工信息中选取"></div>
+                    <button type="button" class="el-button el-button--small el-button--primary mail-to__pick" id="mfPickEmp">
+                        <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg>从员工选取
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="cc">
+            <label class="el-form-item__label" for="mfCc">抄送</label>
+            <div class="el-form-item__content">
+                <div class="mail-to">
+                    <div class="el-input"><input class="el-input__inner" type="text" id="mfCc" placeholder="选填，多个地址用逗号分隔，也可点右侧按钮从员工信息中选取"></div>
+                    <button type="button" class="el-button el-button--small mail-to__pick" id="mfPickEmpCc">
+                        <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg>从员工选取
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="el-form-item is-required" data-field="subject">
+            <label class="el-form-item__label" for="mfSubject">主题</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="mfSubject" maxlength="200" placeholder="请输入邮件主题"></div>
+            </div>
+        </div>
+        <div class="el-form-item is-required" data-field="body">
+            <label class="el-form-item__label" for="mfBody">正文</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><div class="el-input__inner mail-form__body" id="mfBody"
+                        contenteditable="true" data-rt-placeholder="请输入邮件正文（支持加粗、颜色、列表、链接等富文本格式）"
+                        role="textbox" aria-multiline="true" aria-label="邮件正文"></div></div>
+                <div class="form-tip" id="mfFromTip"></div>
+            </div>
+        </div>
+        <!-- 附件：点「添加附件」选文件 → 读成 base64 后随发送一起提交（内容不落库，只记名称与大小） -->
+        <div class="el-form-item" data-field="attach">
+            <label class="el-form-item__label">附件</label>
+            <div class="el-form-item__content">
+                <div class="mail-attach">
+                    <button type="button" class="el-button el-button--small mail-attach__pick" id="mfPickFile">
+                        <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 6.5v9a4.5 4.5 0 01-9 0V5.5a3 3 0 016 0v9.5a1.5 1.5 0 01-3 0V7h1.5v8a.3.3 0 00.6 0V5.5a1.5 1.5 0 00-3 0v10a3 3 0 006 0v-9h1.4z"/></svg>添加附件
+                    </button>
+                    <span class="mail-attach__tip" id="mfAttachTip">单个不超过 10 MB，最多 5 个，合计不超过 20 MB</span>
+                    <input class="mail-attach__file" type="file" id="mfFile" multiple>
+                </div>
+                <div class="mail-attach__list" id="mfAttachList"></div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/rich-text.js?v=20261116a"></script>
+<script src="js/service-email-form.js?v=20261104a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/mail.js?v=20261110d"></script>
+</body>
+</html>

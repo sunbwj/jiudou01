@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>项目管理 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+<style>
+/* 项目管理「操作引导区」：8 个纯图标按钮（app.css 的 .toolbar--icons / .el-button--icon 提供 40px 方形与间距）。
+   条数提示仍保持靠右，不跟随 sysdict 那种紧贴按钮的排法；页面级覆盖，不升 app.css 版本。 */
+.toolbar--icons .toolbar-hint { margin-left: auto; }
+/* 项目信息页：左右分栏吃掉主区剩余高度（需求①，纯页面级覆盖，不升 app.css 版本） */
+@media screen and (min-width: 769px) {
+  .app-main > .pj-split {
+    -webkit-box-flex: 1; -ms-flex: 1 1 auto; flex: 1 1 auto;
+    min-height: 0; margin-bottom: 0;
+  }
+  .pj-split__right .pj-filepanel { margin-bottom: 0; }
+  .pj-split__right .pj-filepanel__table { max-height: none; min-height: 200px; }
+}
+/* 右栏文件面板：检索 + 操作按钮（需求⑤） */
+.pj-filepanel__toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 0 14px 10px;
+}
+.pj-filepanel__toolbar .pf-kw {
+  -webkit-box-flex: 1; -ms-flex: 1 1 160px; flex: 1 1 160px; min-width: 120px;
+  height: 32px; padding: 0 10px; border: 1px solid #dcdfe6; border-radius: 4px;
+  font-size: 13px; color: #606266; background: #fff;
+}
+.pj-filepanel__toolbar .pf-kw:focus { outline: none; border-color: #409eff; }
+/* 操作引导区：图标按钮（上传 / 启用 / 停用 / 删除 / 下载），窄栏内用 32px 紧凑尺寸 */
+.pj-filepanel__actions {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 0 14px 10px;
+}
+.pj-filepanel__actions .el-button--icon { width: 32px; height: 32px; padding: 0; }
+.pj-filepanel__actions .el-button--icon .svg-ico { width: 15px; height: 15px; margin: 0; }
+.pj-filepanel__actions .el-button + .el-button { margin-left: 0; }
+/* 演示文稿预览增强（需求④）：幻灯片标题 + 翻页导航 */
+.fp-slide__title {
+  font-size: 17px; font-weight: 700; color: #303133; color: var(--theme-text);
+  margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid #ebeef5;
+}
+.fp-slide { scroll-margin-top: 8px; }
+.fp-slides-nav {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid #ebeef5; background: #fff;
+}
+.fp-slides-nav__info { font-size: 13px; color: #606266; min-width: 96px; text-align: center; }
+/* docx-preview / PPTXjs 组件容器（需求④升级）：横向可滚、不被裁切 */
+.fp-docx { overflow-x: auto; }
+.fp-pptx { overflow-x: auto; padding-bottom: 4px; }
+.fp-pptx .slide { margin: 0 auto 12px; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+/* 项目目录：维护按钮分组 / 列表·目录树标签页 / 树形选择组件（页面级样式，不升 app.css） */
+.pj-filepanel__actions-sep {
+  width: 1px; height: 20px; margin: 0 2px; background: #dcdfe6; flex: 0 0 1px;
+}
+.pj-filetabs {
+  display: flex; align-items: center; gap: 0; padding: 0 14px;
+  border-bottom: 1px solid #ebeef5; margin-bottom: 6px;
+}
+.pj-filetabs__tab {
+  border: 0; background: none; cursor: pointer; font-size: 13px; color: #606266;
+  padding: 7px 14px; border-bottom: 2px solid transparent; line-height: 1.4;
+}
+.pj-filetabs__tab:hover { color: #409eff; }
+.pj-filetabs__tab.is-active { color: #409eff; border-bottom-color: #409eff; font-weight: 600; }
+.pj-treeview, .pj-tree {
+  overflow: auto; font-size: 13px; color: #303133; color: var(--theme-text);
+}
+.pj-treeview { flex: 1 1 auto; min-height: 200px; max-height: none; padding: 4px 8px 12px; }
+.pj-tree { max-height: 190px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 4px 0; background: #fff; }
+.pj-tnode {
+  display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 8px;
+  border-radius: 4px; cursor: pointer; white-space: nowrap;
+}
+.pj-tnode:hover { background: #f5f7fa; }
+.pj-tnode.is-selected { background: #ecf5ff; color: #409eff; }
+.pj-tnode.is-root { color: #909399; font-style: italic; }
+.pj-tnode__caret {
+  width: 14px; flex: 0 0 14px; text-align: center; color: #909399; font-size: 11px;
+}
+.pj-tnode__caret.is-clickable { cursor: pointer; }
+.pj-tnode__caret.is-clickable:hover { color: #409eff; }
+.pj-tnode__ico { width: 15px; height: 15px; flex: 0 0 15px; color: #e6a23c; }
+.pj-tnode--file .pj-tnode__ico { color: #909399; }
+.pj-tnode__name { overflow: hidden; text-overflow: ellipsis; }
+.pj-tnode__meta { margin-left: auto; color: #909399; font-size: 12px; flex: 0 0 auto; }
+.pj-tnode__empty { padding: 14px 10px; color: #909399; }
+.pj-tree__current {
+  display: flex; align-items: center; gap: 8px; margin-top: 6px;
+  font-size: 12px; color: #606266;
+}
+.pj-tree__current b { color: #409eff; font-weight: 600; }
+.pj-tree__current .el-button { padding: 4px 8px; font-size: 12px; }
+/* 目录视图：文件节点可拖拽移动到其它目录（整棵树都是落点区域，按坐标解析目标目录） */
+.pj-tnode--file[draggable="true"] { cursor: grab; }
+.pj-tnode--file.is-dragging { opacity: .4; }
+.pj-tnode--dir.is-drop-target {
+  background: #ecf5ff; box-shadow: inset 0 0 0 1px #409eff; color: #409eff;
+}
+.pj-tree__rootdrop {
+  display: none; align-items: center; gap: 6px; margin: 8px 4px 2px;
+  padding: 6px 10px; border: 1px dashed #c0c4cc; border-radius: 4px;
+  font-size: 12px; color: #909399;
+}
+.pj-treeview.is-dragging .pj-tree__rootdrop { display: flex; }
+.pj-tree__rootdrop.is-drop-target {
+  border-color: #409eff; color: #409eff; background: #ecf5ff;
+}
+
+    /* 项目组弹窗：员工勾选列表 */
+    .pj-members__head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .pj-members__kw { flex: 1 1 auto; }
+    .pj-members__count { flex: 0 0 auto; font-size: 12px; color: #606266; }
+    .pj-members__count b { color: #409eff; }
+    .pj-members__list {
+        max-height: 320px; overflow-y: auto; border: 1px solid #ebeef5; border-radius: 4px;
+    }
+    .pj-members__item {
+        display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+        border-bottom: 1px dashed #f5f7fa; cursor: pointer; font-size: 13px;
+    }
+    .pj-members__item:last-child { border-bottom: 0; }
+    .pj-members__item:hover { background: #f5f9ff; }
+    .pj-members__item input[type="checkbox"] { width: 14px; height: 14px; margin: 0; padding: 0; flex: 0 0 auto; }
+    .pj-members__name { flex: 0 0 96px; color: #303133; font-weight: 500; }
+    .pj-members__sub { flex: 1 1 auto; min-width: 0; color: #909399; font-size: 12px;
+                       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pj-members__mail { flex: 0 0 auto; font-size: 11px; color: #c0c4cc; }
+    .pj-members__mail.is-on { color: #67c23a; }
+    .pj-members__tip { margin-top: 8px; font-size: 12px; color: #909399; line-height: 1.6; }
+    .pj-members__tip b { color: #e6a23c; }
+</style>
+<style>
+/* 项目类型 / 项目状态复选下拉 */
+.search-card { overflow: visible; }
+.pjf-multi { position: relative; width: 100%; }
+.pjf-multi__box { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; padding: 0 9px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; color: #606266; font-size: 13px; text-align: left; cursor: pointer; }
+.pjf-multi__box:hover, .pjf-multi__box:focus { border-color: #409eff; outline: none; }
+.pjf-multi__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pjf-multi__caret { flex: 0 0 auto; margin-left: 6px; color: #c0c4cc; }
+.pjf-multi.has-value .pjf-multi__text { color: #303133; }
+.pjf-multi__drop { position: absolute; left: 0; right: 0; top: 36px; z-index: 60; padding: 0; border: 1px solid #e4e7ed; border-radius: 4px; background: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+.pjf-multi__list { max-height: 210px; overflow: auto; padding: 5px 4px; }
+.pjf-multi__opt { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 13px; color: #606266; cursor: pointer; }
+.pjf-multi__opt:hover { background: #f5f7fa; color: #409eff; }
+.pjf-multi__opt input { width: auto; flex: 0 0 auto; margin: 0; }
+.pjf-multi__foot { padding: 4px 8px 2px; border-top: 1px solid #f0f2f5; text-align: right; }
+.pjf-multi__clear { padding: 0; border: 0; background: none; color: #909399; font-size: 12px; cursor: pointer; }
+.pjf-multi__clear:hover { color: #f56c6c; }
+</style>
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单（被框架页内嵌时由 layout.js 隐藏） ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">项目管理</div>
+                <a class="app-side__item is-active" href="project.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h7l2 2h9v12H3V5zm2 2v10h14V9h-7.2L9.8 7H5z"/></svg></span>项目信息
+                </a>
+                <a class="app-side__item" href="project-file.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h8l5 5v15H6V2zm7 1.5V8h4.5L13 3.5zM8 11h8v2H8v-2zm0 4h8v2H8v-2z"/></svg></span>项目文件
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <main class="app-main">
+            <div class="page-head" id="pageHead" data-crumb="项目管理/项目信息">
+                <h2 class="page-head__title">项目管理</h2>
+            </div>
+
+            <!-- 检索区域 -->
+            <section class="el-card search-card">
+                <div class="el-card__body">
+                    <form class="el-form el-form--inline search-form" id="searchForm" autocomplete="off" onsubmit="return false;">
+                        <div class="el-form-item search-item--kw">
+                            <label class="el-form-item__label" for="keyword">关键字</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input el-input--prefix">
+                                    <span class="el-input__prefix">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" style="width:16px;height:16px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                                    </span>
+                                    <input class="el-input__inner" type="text" id="keyword" name="keyword" placeholder="编号 / 名称 / 说明 / 创建人">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--status">
+                            <label class="el-form-item__label" for="projectType">项目类型</label>
+                            <div class="el-form-item__content">
+                                <div class="pjf-multi" id="projectTypeMulti" data-placeholder="全部类型" data-select="projectType">
+                                    <select id="projectType" name="projectType" style="display:none">
+                                        <option value="">全部类型</option>
+                                    </select>
+                                    <button type="button" class="el-input__inner pjf-multi__box" aria-haspopup="true">
+                                        <span class="pjf-multi__text">全部类型</span>
+                                        <span class="pjf-multi__caret">▾</span>
+                                    </button>
+                                    <div class="pjf-multi__drop" hidden>
+                                        <div class="pjf-multi__list"></div>
+                                        <div class="pjf-multi__foot">
+                                            <button type="button" class="pjf-multi__clear">清空</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--status">
+                            <label class="el-form-item__label" for="projectStatus">项目状态</label>
+                            <div class="el-form-item__content">
+                                <div class="pjf-multi" id="projectStatusMulti" data-placeholder="全部状态" data-select="projectStatus">
+                                    <select id="projectStatus" name="projectStatus" style="display:none">
+                                        <option value="">全部状态</option>
+                                    </select>
+                                    <button type="button" class="el-input__inner pjf-multi__box" aria-haspopup="true">
+                                        <span class="pjf-multi__text">全部状态</span>
+                                        <span class="pjf-multi__caret">▾</span>
+                                    </button>
+                                    <div class="pjf-multi__drop" hidden>
+                                        <div class="pjf-multi__list"></div>
+                                        <div class="pjf-multi__foot">
+                                            <button type="button" class="pjf-multi__clear">清空</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--status">
+                            <label class="el-form-item__label" for="ispub">公用否</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input search-input--select">
+                                    <select class="el-input__inner" id="ispub" name="ispub">
+                                        <option value="">全部</option>
+                                        <option value="1">公用</option>
+                                        <option value="0">私有</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-item--status">
+                            <label class="el-form-item__label" for="enabled">启用状态</label>
+                            <div class="el-form-item__content">
+                                <div class="el-input search-input--select">
+                                    <select class="el-input__inner" id="enabled" name="enabled">
+                                        <option value="">全部</option>
+                                        <option value="1">启用</option>
+                                        <option value="0">停用</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="el-form-item search-btns">
+                            <button type="button" class="el-button el-button--primary" id="btnSearch">查询</button>
+                            <button type="button" class="el-button" id="btnReset">重置</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- 操作引导区域 -->
+            <section class="el-card">
+                <div class="el-card__body">
+                    <div class="toolbar toolbar--icons" role="toolbar" aria-label="项目管理操作">
+                        <button type="button" class="el-button el-button--success el-button--icon" id="btnAdd"
+                                title="新增项目" aria-label="新增项目">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="btnEdit" disabled
+                                title="编辑" aria-label="编辑">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M5 19h2.4l9.3-9.3-2.4-2.4L5 16.6V19zM3 21v-4.2L15.9 3.9l4.2 4.2L7.2 21H3z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--success el-button--icon" id="btnEnable" disabled
+                                title="启用" aria-label="启用">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1 14.4l-4-4 1.4-1.4L11 13.6l4.6-4.6L17 10.4l-6 6z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--warning el-button--icon" id="btnDisable" disabled
+                                title="停用" aria-label="停用">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm5 11H7v-2h10v2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="btnView" disabled
+                                title="查看项目" aria-label="查看项目">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4.5C7 4.5 2.7 7.6 1 12c1.7 4.4 6 7.5 11 7.5s9.3-3.1 11-7.5C21.3 7.6 17 4.5 12 4.5zm0 12.5a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="btnUpload" disabled
+                                title="上传文件" aria-label="上传文件">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l5 5h-3v7h-4V8H7l5-5zm-7 15h14v2H5v-2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--primary el-button--icon" id="btnMembers" disabled
+                                title="项目组管理（成员选定后自动通知）" aria-label="项目组管理">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7zm0 2c-3.9 0-7 1.9-7 4.2V19h14v-1.8C16 14.9 12.9 13 9 13zm8.5-2a3 3 0 100-6 3 3 0 000 6zm0 2c-.9 0-1.7.1-2.5.4 1.3 1 2 2.3 2 3.8V19H22v-1.8c0-2-2-3.2-4.5-3.2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--danger el-button--icon" id="btnDelete" disabled
+                                title="删除" aria-label="删除">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4h10l1 2h3v2H3V6h3l1-2zm-1 6h12l-1 11H7L6 10z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--icon" id="btnRefresh"
+                                title="刷新" aria-label="刷新">
+                            <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>
+                        </button>
+                        <span class="toolbar-hint">共 <b id="pjCount">0</b> 条项目</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 查询结果 + 项目文件：左右分栏（左 70% 项目列表 / 右 30% 文件列表） -->
+            <section class="pj-split">
+                <div class="pj-split__left">
+                    <section class="el-card table-card">
+                        <div class="table-wrapper" id="tableWrapper">
+                            <div class="el-table">
+                                <div class="el-table__inner-wrapper">
+                                    <table id="pjTable">
+                                        <colgroup>
+                                            <col style="width:60px">
+                                            <col style="width:48px">
+                                            <col style="width:118px">
+                                            <col style="width:200px">
+                                            <col style="width:90px">
+                                            <col style="width:90px">
+                                            <col style="width:74px">
+                                            <col style="width:76px">
+                                            <col style="width:96px">
+                                            <col style="width:156px">
+                                            <col style="width:80px">
+                                        </colgroup>
+                                        <thead>
+                                        <tr>
+                                            <th class="is-center">序号</th>
+                                            <th class="is-center">选择</th>
+                                            <th>项目编号</th>
+                                            <th>项目名称</th>
+                                            <th>项目类型</th>
+                                            <th>项目状态</th>
+                                            <th class="is-center">文件数</th>
+                                            <th class="is-center">公用否</th>
+                                            <th>创建人</th>
+                                            <th>创建时间</th>
+                                            <th class="is-center">启用</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="pjTbody" class="el-table__body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pager-wrap" id="pagerWrap"></div>
+                    </section>
+                </div>
+                <div class="pj-split__right">
+                    <section class="el-card pj-filepanel">
+                        <div class="pj-filepanel__head">
+                            <div class="pj-filepanel__title">
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h8l5 5v15H6V2zm7 1.5V8h4.5L13 3.5zM8 11h8v2H8v-2zm0 4h8v2H8v-2z"/></svg>
+                                <span>项目文件</span>
+                                <em id="pfPanelProject" class="pj-filepanel__project">未选择项目</em>
+                            </div>
+                            <button type="button" class="el-button el-button--small" id="btnPfRefresh"
+                                    title="刷新文件列表" aria-label="刷新文件列表">刷新</button>
+                        </div>
+                        <div class="pj-filepanel__toolbar">
+                            <input class="pf-kw" type="text" id="pfKeyword" placeholder="文件名搜索" autocomplete="off">
+                            <button type="button" class="el-button el-button--small el-button--primary" id="btnPfSearch">搜索</button>
+                        </div>
+                        <!-- 操作引导区：图标按钮（上传 / 启用 / 停用 / 删除 / 下载） -->
+                        <div class="pj-filepanel__actions" role="toolbar" aria-label="项目文件操作">
+                            <button type="button" class="el-button el-button--primary el-button--icon" id="btnPfUpload"
+                                    title="上传文件" aria-label="上传文件" disabled>
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3l5 5h-3v7h-4V8H7l5-5zM5 18h14v2H5v-2z"/></svg>
+                            </button>
+                            <button type="button" class="el-button el-button--success el-button--icon" id="btnPfEnable"
+                                    title="启用选中的文件" aria-label="启用文件" disabled>
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>
+                            </button>
+                            <button type="button" class="el-button el-button--warning el-button--icon" id="btnPfDisable"
+                                    title="停用选中的文件" aria-label="停用文件" disabled>
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+                            </button>
+                            <button type="button" class="el-button el-button--danger el-button--icon" id="btnPfDelete"
+                                    title="删除选中的文件" aria-label="删除文件" disabled>
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zM6 9h12v11a1 1 0 01-1 1H7a1 1 0 01-1-1V9zm3 2v8h2v-8H9zm4 0v8h2v-8h-2z"/></svg>
+                            </button>
+                            <button type="button" class="el-button el-button--icon" id="btnPfDownload"
+                                    title="下载选中的文件" aria-label="下载文件" disabled>
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17l-5-5h3V4h4v8h3l-5 5zM5 19h14v2H5v-2z"/></svg>
+                            </button>
+                            <span class="pj-filepanel__actions-sep" aria-hidden="true"></span>
+                            <button type="button" class="el-button el-button--success el-button--icon" id="btnDirAdd"
+                                    title="创建文件夹（在选中的目录下创建子目录）" aria-label="创建文件夹" disabled>
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h7l2 2h9v12H3V5zm9 4v3h-3v2h3v3h2v-3h3v-2h-3V9h-2z"/></svg>
+                            </button>
+                            <button type="button" class="el-button el-button--primary el-button--icon" id="btnDirEdit"
+                                    title="编辑选中的文件夹（名称 / 说明 / 上级 / 公开 / 启用）" aria-label="编辑文件夹" disabled>
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h7l2 2h9v11H3V6zm2 2v9h14V10h-7.2L9.8 8H5zm3.5 7.5l6.2-6.2 1.7 1.7-6.2 6.2H8.5v-1.7z"/></svg>
+                            </button>
+                            <button type="button" class="el-button el-button--danger el-button--icon" id="btnDirDelete"
+                                    title="删除选中的文件夹（内容不会删除：子目录上移、文件回到项目根）" aria-label="删除文件夹" disabled>
+                                <svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h7l2 2h9v2H3V6zm2 4h14l-1 10a1 1 0 01-1 1H7a1 1 0 01-1-1L5 10zm4 2v7h2v-7H9zm4 0v7h2v-7h-2z"/></svg>
+                            </button>
+                        </div>
+                        <div class="pj-filetabs" role="tablist" aria-label="项目文件展示方式">
+                            <button type="button" class="pj-filetabs__tab is-active" id="pfTabList" role="tab" aria-selected="true">文件列表</button>
+                            <button type="button" class="pj-filetabs__tab" id="pfTabTree" role="tab" aria-selected="false">目录</button>
+                        </div>
+                        <div class="pj-treeview" id="pfTreeView" style="display:none;"></div>
+                        <div class="table-wrapper pj-filepanel__table" id="pfPanelWrapper">
+                            <div class="el-table">
+                                <div class="el-table__inner-wrapper">
+                                    <table id="pfPanelTable">
+                                        <colgroup>
+                                            <col style="width:44px">
+                                            <col>
+                                            <col style="width:62px">
+                                            <col style="width:70px">
+                                            <col style="width:88px">
+                                        </colgroup>
+                                        <thead>
+                                        <tr>
+                                            <th class="is-center">#</th>
+                                            <th>文件名</th>
+                                            <th>类型</th>
+                                            <th class="is-center">大小</th>
+                                            <th>上传时间</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="pfPanelTbody" class="el-table__body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- ============ 项目组管理弹窗模板（btnMembers，选中项目后弹出） ============ -->
+<div id="pjMembersTpl" style="display:none;">
+    <div class="pj-members">
+        <div class="pj-members__head">
+            <div class="el-input pj-members__kw">
+                <input class="el-input__inner" type="text" id="pmSearch" placeholder="搜索姓名 / 部门 / 岗位" autocomplete="off">
+            </div>
+            <span class="pj-members__count">已选 <b id="pmCount">0</b> 人</span>
+        </div>
+        <div class="pj-members__list" id="pmList"></div>
+        <div class="pj-members__tip" id="pmTip">
+            保存后，平台会自动给<b>新加入</b>的成员推送站内即时消息；成员在员工信息里登记了邮箱的，同步发送通知邮件。
+        </div>
+    </div>
+</div>
+
+<!-- ============ 上传项目文件弹窗模板（btnUpload，选中项目后弹出） ============ -->
+<div id="pjUploadTpl" style="display:none;">
+    <form class="el-form pj-form" id="pjUploadForm" autocomplete="off" onsubmit="return false;">
+        <input type="hidden" id="upData" value="">
+        <div class="el-form-item is-required" data-field="project">
+            <label class="el-form-item__label" for="upProject">所属项目</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="upProject" readonly></div>
+                <div class="form-tip">文件将挂到当前选中的项目下（上传人按登录账号自动记录）</div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="dir">
+            <label class="el-form-item__label" for="upDirId">所属目录</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><select class="el-input__inner" id="upDirId"></select></div>
+                <div class="form-tip">下拉按层级缩进显示；不选择时文件直接关联项目。</div>
+            </div>
+        </div>
+        <div class="el-form-item is-required" data-field="file">
+            <label class="el-form-item__label" for="upFile">选择文件</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner pj-file" type="file" id="upFile"></div>
+                <div class="form-tip" id="upFileTip">请选择要上传的文件（单个不超过 10 MB）</div>
+            </div>
+        </div>
+        <div class="el-form-item is-required" data-field="fileName">
+            <label class="el-form-item__label" for="upName">文件名</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="upName" maxlength="255" placeholder="选择文件后自动带入，可修改"></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="fileType">
+            <label class="el-form-item__label" for="upType">文件类型</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><select class="el-input__inner" id="upType"></select></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="fileDesc">
+            <label class="el-form-item__label" for="upDesc">文件说明</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><textarea class="el-input__inner pj-textarea" id="upDesc" maxlength="500" rows="3" placeholder="选填"></textarea></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="ispub">
+            <label class="el-form-item__label" for="upIspub">公用否</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="upIspub">
+                        <option value="1">公用（其他用户可检索 / 下载）</option>
+                        <option value="0">私有（仅上传人可检索 / 下载）</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="enabled">
+            <label class="el-form-item__label" for="upEnabled">启用状态</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="upEnabled">
+                        <option value="1">启用</option>
+                        <option value="0">停用</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- ============ 创建 / 编辑项目目录弹窗模板（项目文件区目录维护按钮） ============ -->
+<div id="pjDirTpl" style="display:none;">
+    <form class="el-form pj-form" id="pjDirForm" autocomplete="off" onsubmit="return false;">
+        <input type="hidden" id="dirId" value="">
+        <div class="el-form-item" data-field="parent">
+            <label class="el-form-item__label" for="dirParent">上级目录</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><select class="el-input__inner" id="dirParent"></select></div>
+                <div class="form-tip">选「项目根目录」创建一级目录；也可选一个已有目录创建子目录</div>
+            </div>
+        </div>
+        <div class="el-form-item is-required" data-field="name">
+            <label class="el-form-item__label" for="dirName">目录名</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="dirName" maxlength="150" placeholder="请输入目录名"></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="desc">
+            <label class="el-form-item__label" for="dirDesc">说明</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><textarea class="el-input__inner pj-textarea" id="dirDesc" maxlength="500" rows="3" placeholder="选填"></textarea></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="ispub">
+            <label class="el-form-item__label" for="dirIspub">公开否</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="dirIspub">
+                        <option value="1">公用（其他用户可检索）</option>
+                        <option value="0">私有（仅创建人可检索）</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="enabled">
+            <label class="el-form-item__label" for="dirEnabled">启用状态</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="dirEnabled">
+                        <option value="1">启用</option>
+                        <option value="0">停用</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- 新增 / 编辑项目已改为独立页 project-form.html（打页模式），本页不再使用弹窗 -->
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/word-import.js?v=20261106c"></script>
+<script src="js/file-preview.js?v=20261110e"></script>
+<script src="js/project.js?v=20261108b"></script>
+</body>
+</html>

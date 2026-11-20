@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>应用库表 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<link rel="stylesheet" href="css/appschema.css?v=20261120a">
+</head>
+<body>
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">数据中心</div>
+                <a class="app-side__item" href="dbinfo.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zm8 6.5v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3c1.7 1.3 4.7 2 8 2s6.3-.7 8-2zm0 6v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3c1.7 1.3 4.7 2 8 2s6.3-.7 8-2z"/></svg></span>数据库
+                </a>
+                <a class="app-side__item" href="appinfo.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm2 3v3h5V7H6zm7 0v3h5V7h-5zM6 12v2h12v-2H6zm0 4v2h8v-2H6z"/></svg></span>应用信息
+                </a>
+                <a class="app-side__item is-active" href="appschema.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h7v6H3V5zm11 0h7v6h-7V5zM3 14h7v5H3v-5zm11 0h7v5h-7v-5z"/></svg></span>应用结构
+                </a>
+                <div class="app-side__group-title">报表中心</div>
+                <a class="app-side__item" href="report-designer.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm2 3v3h5V6H6zm7 0v3h5V6h-5zM6 11v3h5v-3H6zm7 0v3h5v-3h-5zM6 16v2h12v-2H6z"/></svg></span>报表设计
+                </a>
+                <a class="app-side__item" href="report-center.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>报表中心
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容 ============ -->
+        <main class="app-main as-page">
+            <div class="page-head" id="pageHead" data-crumb="数据中心/应用库表">
+                <h2 class="page-head__title">应用库表</h2>
+            </div>
+
+            <!-- 应用选择 + 应用级动作 -->
+            <section class="el-card as-topbar">
+                <div class="el-card__body as-topbar__body">
+                    <span class="as-topbar__label">应用</span>
+                    <div class="el-input as-topbar__app">
+                        <select class="el-input__inner" id="asApp" title="选择要维护结构的应用"></select>
+                    </div>
+                    <div class="as-meta" id="asMeta"></div>
+                </div>
+            </section>
+
+            <!-- 操作引导区：纯图标按钮，文案在 title（悬停可见）与 aria-label -->
+            <div class="toolbar db-toolbar as-guide" id="asGuide">
+                <button type="button" class="el-button el-button--primary db-tool" id="asBtnScan"
+                        title="扫描导入：从应用绑定的连接扫描它指定的那一个库（表 / 视图 / 索引 / 触发器 / 存储过程 / 函数 / 字段）并导入设计态"
+                        aria-label="扫描导入">
+                    <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>
+                </button>
+                <button type="button" class="el-button db-tool" id="asBtnImport"
+                        title="导入 DDL：粘贴 CREATE / ALTER 语句，落到设计态（不会改动真实数据库）" aria-label="导入 DDL">
+                    <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3l4 4h-3v6h-2V7H8l4-4zM5 15h14v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4z"/></svg>
+                </button>
+                <button type="button" class="el-button db-tool" id="asBtnCompare"
+                        title="与实库对比：人工触发，把设计态与真实数据库逐表比对（可先选实库连接与目标库，比如线上生产库），结果留存" aria-label="与实库对比">
+                    <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 4h4v2h-1v5h4v2h-4v5h1v2h-4v-2h1V6h-1V4zM3 8h5v2H5v4h3v2H3V8zm13 0h5v8h-5v-2h3v-4h-3V8z"/></svg>
+                </button>
+                <button type="button" class="el-button db-tool" id="asBtnRefresh"
+                        title="刷新：重新加载结构树与版本列表" aria-label="刷新">
+                    <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5V2L8 6l4 4V7a5 5 0 11-5 5H5a7 7 0 107-7z"/></svg>
+                </button>
+                <span class="toolbar-hint" id="asGuideHint"></span>
+            </div>
+
+            <div class="split-layout as-layout">
+                <!-- ---------------- 左：结构树 ---------------- -->
+                <section class="db-pane db-pane--left as-pane-left" id="asLeft">
+                    <div class="db-pane__head">
+                        <span class="db-pane__title">结构树</span>
+                        <span class="db-pane__count" id="asTreeCount">0 库 / 0 对象</span>
+                        <span class="db-pane__spacer"></span>
+                        <button type="button" class="el-button el-button--small db-pane__act" id="asBtnDbAdd"
+                                title="手工新增一个库（不扫描也能维护）">新增库</button>
+                    </div>
+                    <div class="toolbar db-toolbar as-tree-toolbar">
+                        <button type="button" class="el-button el-button--primary db-tool" id="asBtnObjAdd"
+                                title="在选中的库里新增表 / 视图 / 索引 / 触发器 / 存储过程 / 函数" aria-label="新增对象">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></svg>
+                        </button>
+                        <button type="button" class="el-button db-tool" id="asBtnNodeEdit" disabled
+                                title="编辑选中的库或对象（名称 / 注释 / 定义）" aria-label="编辑节点">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 19h2.4l9.3-9.3-2.4-2.4L5 16.6V19zM3 21v-4.2L15.9 3.9l4.2 4.2L7.2 21H3z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--danger db-tool" id="asBtnNodeDel" disabled
+                                title="删除选中的库或对象（连带下级）" aria-label="删除节点">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2zM4 6h16v2H4V6z"/></svg>
+                        </button>
+                        <button type="button" class="el-button db-tool" id="asBtnExpand"
+                                title="展开 / 收起全部库" aria-label="展开收起">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h6v2H4V5zm0 6h10v2H4v-2zm0 6h14v2H4v-2z"/></svg>
+                        </button>
+                        <button type="button" class="el-button el-button--primary db-tool" id="asBtnExport"
+                                title="导出表结构：勾选左边的表后导出 Excel / Word（含应用信息、表的中文名、字段明细、导出时间与导出人）" aria-label="导出表结构">
+                            <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a1 1 0 01.7.3l4 4-1.4 1.4L13 6.4V15h-2V6.4L8.7 8.7 7.3 7.3l4-4A1 1 0 0112 3zM5 15h2v3h10v-3h2v4a1 1 0 01-1 1H6a1 1 0 01-1-1v-4z"/></svg>
+                        </button>
+                        <span class="as-pick-hint" id="asPickHint"></span>
+                    </div>
+                    <div class="db-pane__hint" id="asTreeTip"></div>
+                    <div class="el-tree db-tree as-tree" id="asTree">
+                        <div class="db-tree__empty">先在上方选择一个应用；没有结构可以点「扫描导入」把连接指定的那个库导进来，也可以点「新增库」手工录入</div>
+                    </div>
+                </section>
+
+                <!-- ---------------- 右：标签页 ---------------- -->
+                <section class="db-pane db-pane--right as-pane-right" id="asRight">
+                    <div class="el-tabs db-tabs as-tabs" id="asTabs">
+                        <div class="el-tabs__header db-tabs__header">
+                            <div class="el-tabs__nav-wrap">
+                                <div class="el-tabs__nav" id="asTabNav" role="tablist">
+                                    <div class="el-tabs__item is-active" data-tab="cols" role="tab" tabindex="0" aria-selected="true">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h12v2H3v-2z"/></svg>字段明细
+                                    </div>
+                                    <div class="el-tabs__item" data-tab="versions" role="tab" tabindex="0" aria-selected="false">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 2a7 7 0 110 14 7 7 0 010-14zm-1 3v5l4 2 .9-1.6-3-1.5V8h-1.9z"/></svg>变更历史
+                                    </div>
+                                    <div class="el-tabs__item" data-tab="scripts" role="tab" tabindex="0" aria-selected="false">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm2 4l3 5-3 5h2l3-5-3-5H6zm7 9v2h5v-2h-5z"/></svg>版本脚本
+                                    </div>
+                                    <div class="el-tabs__item" data-tab="compare" role="tab" tabindex="0" aria-selected="false">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 4h4v2h-1v5h4v2h-4v5h1v2h-4v-2h1V6h-1V4zM3 8h5v2H5v4h3v2H3V8zm13 0h5v8h-5v-2h3v-4h-3V8z"/></svg>实库对比
+                                    </div>
+                                    <div class="el-tabs__item" data-tab="lineage" role="tab" tabindex="0" aria-selected="false">
+                                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3a3 3 0 011 5.8V10h5V8.8A3 3 0 1115 9v1h2v6a2 2 0 01-2 2h-1v1.2A3 3 0 1112 19v-1H9a2 2 0 01-2-2v-3.2A3 3 0 017 3zm1 11v2h8v-4h-8v2z"/></svg>字段血缘
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="db-tabs__conn" id="asTabTip">未选择对象</span>
+                        </div>
+
+                        <div class="el-tabs__content">
+                            <!-- ① 字段明细 -->
+                            <div class="el-tab-pane is-active" data-pane="cols" role="tabpanel">
+                                <div class="as-pane-bar">
+                                    <span class="db-cols__title" id="asObjTitle">字段明细</span>
+                                    <span class="db-cols__hint" id="asObjHint">在左边点一张表，这里维护它的字段</span>
+                                    <span class="db-pane__spacer"></span>
+                                    <button type="button" class="el-button el-button--small" id="asBtnColAdd" disabled>新增字段</button>
+                                    <button type="button" class="el-button el-button--small" id="asBtnColPaste" disabled>批量粘贴</button>
+                                    <button type="button" class="el-button el-button--small el-button--primary" id="asBtnColSave" disabled>保存字段</button>
+                                </div>
+                                <div class="as-scroll" id="asColsWrap">
+                                    <table class="el-table as-cols" id="asColsTable">
+                                        <thead><tr>
+                                            <th class="is-center" style="width:46px">序号</th>
+                                            <th style="width:150px">字段名</th>
+                                            <th style="width:118px">逻辑类型</th>
+                                            <th style="width:82px">长度</th>
+                                            <th class="is-center" style="width:70px">可空</th>
+                                            <th style="width:110px">默认值</th>
+                                            <th class="is-center" style="width:56px">主键</th>
+                                            <th class="is-center" style="width:56px">自增</th>
+                                            <th>注释</th>
+                                            <th class="is-center" style="width:74px">来源</th>
+                                            <th class="is-center" style="width:56px">操作</th>
+                                        </tr></thead>
+                                        <tbody id="asColsBody"></tbody>
+                                    </table>
+                                </div>
+                                <div class="as-objddl" id="asObjDdlBox" hidden>
+                                    <div class="as-objddl__head">
+                                        <span id="asObjDdlTitle">视图 / 存储过程 / 函数 / 触发器 / 索引定义（原文，发布时按它输出）</span>
+                                    </div>
+                                    <textarea class="as-objddl__text" id="asObjDdl" spellcheck="false" readonly></textarea>
+                                </div>
+                            </div>
+
+                            <!-- ② 变更历史 -->
+                            <div class="el-tab-pane" data-pane="versions" role="tabpanel">
+                                <div class="as-pane-bar">
+                                    <span class="db-cols__title">版本历史</span>
+                                    <span class="db-cols__hint" id="asVerHint">每次保存出一个草稿，发布才生成正式版与脚本</span>
+                                    <span class="db-pane__spacer"></span>
+                                    <button type="button" class="el-button el-button--small" id="asBtnVerReload">刷新版本</button>
+                                    <button type="button" class="el-button el-button--small el-button--primary" id="asBtnPublish" disabled>发布草稿</button>
+                                    <button type="button" class="el-button el-button--small" id="asBtnDiscard" disabled>丢弃草稿</button>
+                                </div>
+                                <div class="as-vers">
+                                    <div class="as-vers__list">
+                                        <div class="as-scroll">
+                                            <table class="el-table as-vers__table" id="asVerTable">
+                                                <thead><tr>
+                                                    <th style="width:74px">版本</th>
+                                                    <th class="is-center" style="width:74px">类型</th>
+                                                    <th>摘要</th>
+                                                    <th class="is-center" style="width:64px">变更</th>
+                                                    <th style="width:132px">时间</th>
+                                                </tr></thead>
+                                                <tbody id="asVerBody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="as-vers__detail">
+                                        <div class="as-vers__dhead" id="asVerDetailTitle">变更明细</div>
+                                        <div class="as-scroll">
+                                            <table class="el-table as-changes" id="asChangeTable">
+                                                <thead><tr>
+                                                    <th style="width:80px">类型</th>
+                                                    <th style="width:70px">动作</th>
+                                                    <th style="width:220px">对象</th>
+                                                    <th>说明</th>
+                                                </tr></thead>
+                                                <tbody id="asChangeBody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ③ 版本脚本 -->
+                            <div class="el-tab-pane" data-pane="scripts" role="tabpanel">
+                                <div class="as-pane-bar">
+                                    <span class="db-cols__title">脚本</span>
+                                    <div class="el-input as-script__sel">
+                                        <select class="el-input__inner" id="asScriptVer" title="选择版本（只有正式版才有脚本）"></select>
+                                    </div>
+                                    <div class="el-input as-script__sel as-script__sel--kind">
+                                        <select class="el-input__inner" id="asScriptKind">
+                                            <option value="forward">正向脚本</option>
+                                            <option value="rollback">回滚脚本</option>
+                                        </select>
+                                    </div>
+                                    <span class="as-script__state" id="asScriptState"></span>
+                                    <span class="db-pane__spacer"></span>
+                                    <button type="button" class="el-button el-button--small" id="asBtnScriptCopy">复制</button>
+                                    <button type="button" class="el-button el-button--small" id="asBtnScriptDown">下载 .sql</button>
+                                    <button type="button" class="el-button el-button--small el-button--warning" id="asBtnScriptSkip" disabled
+                                            title="在外部工具里手工执行过，记录为「外部执行」">外部执行</button>
+                                    <button type="button" class="el-button el-button--small el-button--danger" id="asBtnScriptFail" disabled
+                                            title="执行报错，记录失败原因">执行失败</button>
+                                    <button type="button" class="el-button el-button--small el-button--success" id="asBtnScriptOk" disabled
+                                            title="人工执行完成后回写状态（平台永远不会自动执行脚本）">标记已执行</button>
+                                </div>
+                                <div class="as-script__wrap">
+                                    <textarea class="as-script__text" id="asScript" spellcheck="false" readonly
+                                        placeholder="选择正式版本后，这里显示发布时生成的正向 / 回滚脚本；脚本不会自动执行，必须人工确认"></textarea>
+                                </div>
+                                <div class="as-script__foot" id="asScriptFoot"></div>
+                            </div>
+
+                            <!-- ④ 实库对比 -->
+                            <div class="el-tab-pane" data-pane="compare" role="tabpanel">
+                                <div class="as-pane-bar">
+                                    <span class="db-cols__title">与真实数据库对比</span>
+                                    <div class="el-input as-script__sel">
+                                        <select class="el-input__inner" id="asCmpLeft" title="对比基准">
+                                            <option value="design">设计态（当前）</option>
+                                            <option value="draft">最新草稿</option>
+                                            <option value="release">最新正式版</option>
+                                        </select>
+                                    </div>
+                                    <div class="el-input as-script__sel as-cmp__conn">
+                                        <select class="el-input__inner" id="asCmpConn" title="实库连接：默认是应用绑定的连接；上线前可换成线上生产库的连接">
+                                            <option value="">（应用绑定的连接）</option>
+                                        </select>
+                                    </div>
+                                    <div class="el-input as-script__sel" id="asCmpDbWrap">
+                                        <select class="el-input__inner" id="asCmpDb" title="对比目标库（实库侧选中的库）">
+                                            <option value="">（还没有库）</option>
+                                        </select>
+                                    </div>
+                                    <div class="el-input as-script__sel" id="asCmpDesignWrap" hidden>
+                                        <select class="el-input__inner" id="asCmpDesignDb" title="对应设计态库：实库库名和设计态库名不一致时（如 db_prod ↔ db_dev）指定对应关系">
+                                            <option value="">（设计态库）</option>
+                                        </select>
+                                    </div>
+                                    <span class="db-pane__spacer"></span>
+                                    <div class="el-input as-script__sel">
+                                        <select class="el-input__inner" id="asCmpHistory" title="历次对比记录">
+                                            <option value="">历史对比记录</option>
+                                        </select>
+                                    </div>
+                                    <button type="button" class="el-button el-button--small" id="asBtnCmpDiff"
+                                            title="只看差异（隐藏「一致」的行）">只看差异</button>
+                                    <button type="button" class="el-button el-button--small" id="asBtnCmpSql"
+                                            title="查看这次对比生成的升级脚本（实库 → 设计态），可复制 / 下载">升级脚本</button>
+                                    <button type="button" class="el-button el-button--small" id="asBtnCmpExport"
+                                            title="批量导出：勾选多条历史对比记录，合成一份可直接执行的 .sql">批量导出</button>
+                                    <button type="button" class="el-button el-button--small el-button--primary" id="asBtnCmpRun"
+                                            title="人工触发一次对比（会实时扫描实库）">开始对比</button>
+                                </div>
+                                <div class="as-cmp__cards" id="asCmpCards"></div>
+                                <div class="as-cmp__filter">
+                                    <div class="el-input as-script__sel" id="asCmpDiffTypeWrap">
+                                        <select class="el-input__inner" id="asCmpDiffType">
+                                            <option value="">全部差异类型</option>
+                                            <option value="designOnly">仅设计态有</option>
+                                            <option value="dbOnly">仅实库有</option>
+                                            <option value="attrDiff">属性不同</option>
+                                            <option value="orderDiff">顺序不同</option>
+                                            <option value="same">一致</option>
+                                        </select>
+                                    </div>
+                                    <div class="el-input as-cmp__kw">
+                                        <input class="el-input__inner" type="text" id="asCmpKeyword" placeholder="按对象名过滤，如 empinfos">
+                                    </div>
+                                    <span class="as-cmp__tip" id="asCmpTip">对比结果会留存，可在右侧下拉里回看历次记录</span>
+                                </div>
+                                <div class="as-scroll">
+                                    <table class="el-table as-cmp" id="asCmpTable">
+                                        <thead><tr>
+                                            <th style="width:96px">差异类型</th>
+                                            <th style="width:76px">对象类型</th>
+                                            <th style="width:220px">对象</th>
+                                            <th>差异说明（逐条列出到底哪里不一样）</th>
+                                            <th style="width:92px">升级语句</th>
+                                        </tr></thead>
+                                        <tbody id="asCmpBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- ⑤ 字段血缘 -->
+                            <div class="el-tab-pane" data-pane="lineage" role="tabpanel">
+                                <div class="as-pane-bar">
+                                    <span class="db-cols__title" id="asLgTitle">字段血缘</span>
+                                    <span class="db-cols__hint" id="asLgHint">在左边选表 / 视图，这里看字段从哪来、又被谁用</span>
+                                    <span class="db-pane__spacer"></span>
+                                    <span class="as-lg__stat" id="asLgStat"></span>
+                                    <button type="button" class="el-button el-button--small" id="asBtnLgManual"
+                                            title="手工标注血缘：人工指定来源 → 目标字段，写在字段注释 / SQL 里表达不出来的依赖也能记下来（重新分析不会覆盖）">手工标注</button>
+                                    <button type="button" class="el-button el-button--small el-button--primary" id="asBtnLgBuild"
+                                            title="重新分析：解析视图 / 触发器 / 存储过程 / 函数里的 SQL，算出字段级血缘（只读设计态，不连真实库；人工标注的边保留不动）">重新分析</button>
+                                </div>
+                                <div class="as-lg__body">
+                                    <div class="as-lg__side">
+                                        <div class="as-lg__shead">字段 <span id="asLgFieldCount"></span></div>
+                                        <div class="as-scroll" id="asLgFields"></div>
+                                    </div>
+                                    <div class="as-lg__main">
+                                        <div class="as-lg__block as-lg__block--graph">
+                                            <div class="as-lg__head">
+                                                <span class="as-lg__head-t">关系图 · 当前字段上下游</span>
+                                                <span class="as-lg__head-h" id="asLgGraphHint">点任意节点可跳过去看它自己的血缘；点连线可标注 / 纠正</span>
+                                            </div>
+                                            <div class="as-lg__graph" id="asLgGraph"></div>
+                                        </div>
+                                        <div class="as-lg__block">
+                                            <div class="as-lg__head">
+                                                <span class="as-lg__head-t">上游 · 这个字段从哪来</span>
+                                                <span class="as-lg__head-h" id="asLgUpHint"></span>
+                                            </div>
+                                            <div class="as-scroll">
+                                                <table class="el-table as-lg__table">
+                                                    <thead><tr>
+                                                        <th style="width:190px">来源字段</th>
+                                                        <th>怎么算出来的</th>
+                                                        <th style="width:126px">途径 / 层数</th>
+                                                        <th style="width:74px"></th>
+                                                    </tr></thead>
+                                                    <tbody id="asLgUpBody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="as-lg__block">
+                                            <div class="as-lg__head">
+                                                <span class="as-lg__head-t">下游 · 谁在用这个字段</span>
+                                                <span class="as-lg__head-h" id="asLgDownHint"></span>
+                                            </div>
+                                            <div class="as-scroll">
+                                                <table class="el-table as-lg__table">
+                                                    <thead><tr>
+                                                        <th style="width:190px">目标字段</th>
+                                                        <th>怎么用</th>
+                                                        <th style="width:126px">途径 / 层数</th>
+                                                        <th style="width:74px"></th>
+                                                    </tr></thead>
+                                                    <tbody id="asLgDownBody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div class="as-lg__block is-rowdeps">
+                                            <div class="as-lg__head">
+                                                <span class="as-lg__head-t">整表依赖 · 影响所有行</span>
+                                                <span class="as-lg__head-h" id="asLgRowHint">过滤 / 连接 / 分组 / 排序用到的列，改它会改变结果集</span>
+                                            </div>
+                                            <div class="as-scroll">
+                                                <table class="el-table as-lg__table">
+                                                    <thead><tr>
+                                                        <th style="width:170px">来源字段</th>
+                                                        <th style="width:96px">作用</th>
+                                                        <th>条件 / 表达式</th>
+                                                        <th style="width:74px"></th>
+                                                    </tr></thead>
+                                                    <tbody id="asLgRowBody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="as-lg__notes" id="asLgNotes"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- ============ 库 / 对象 表单模板 ============ -->
+<div id="asNodeTpl" style="display:none;">
+    <form class="el-form as-form" id="asNodeForm" autocomplete="off" onsubmit="return false;">
+        <div class="el-form-item is-required" data-field="nodeName">
+            <label class="el-form-item__label" for="anName" id="anNameLabel">库名</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="anName" maxlength="120" placeholder="如 jiudou_main"></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="objType" id="anTypeItem" hidden>
+            <label class="el-form-item__label" for="anType">对象类型</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="anType">
+                        <option value="table">表</option>
+                        <option value="view">视图</option>
+                        <option value="procedure">存储过程</option>
+                        <option value="function">函数</option>
+                        <option value="trigger">触发器</option>
+                        <option value="index">索引</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="comment">
+            <label class="el-form-item__label" for="anComment">注释</label>
+            <div class="el-form-item__content">
+                <div class="el-input"><input class="el-input__inner" type="text" id="anComment" maxlength="200" placeholder="选填"></div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="ddl" id="anDdlItem" hidden>
+            <label class="el-form-item__label" for="anDdl">定义（DDL）</label>
+            <div class="el-form-item__content">
+                <textarea class="el-input__inner as-form__ddl" id="anDdl" spellcheck="false"
+                    placeholder="视图 / 存储过程 / 函数 / 触发器 / 索引的定义原文，发布时按原文输出"></textarea>
+                <div class="form-tip">非表对象必填（脚本按原文输出）；表的结构用「字段明细」维护</div>
+            </div>
+        </div>
+        <div class="el-form-item" data-field="locked">
+            <label class="el-form-item__label" for="anLocked">锁定</label>
+            <div class="el-form-item__content">
+                <div class="el-input">
+                    <select class="el-input__inner" id="anLocked">
+                        <option value="0">不锁定（扫描可以覆盖）</option>
+                        <option value="1">锁定（扫描不会覆盖 / 删除）</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+<script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/appschema.js?v=20261120a"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<meta name="renderer" content="webkit">
+<meta name="format-detection" content="telephone=no">
+<title>报表中心 - 九豆综合管理平台</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="stylesheet" href="css/element-ui.css?v=20261110d">
+<link rel="stylesheet" href="css/app.css?v=20261110f">
+<link rel="stylesheet" href="css/theme.css?v=20261031c">
+<!--[if lt IE 9]>
+<script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+<![endif]-->
+</head>
+<body>
+
+
+<div class="app">
+    <!-- ============ 顶部导航 ============ -->
+    <header class="app-header">
+        <button type="button" class="app-header__toggle" id="sideToggle" aria-label="菜单">☰</button>
+        <div class="app-header__logo">
+            <img class="logo-mark" src="assets/logo.svg" alt="九豆">
+            <span>九豆综合管理平台</span>
+        </div>
+        <div class="app-header__spacer"></div>
+        <div class="app-header__user">
+            <span class="avatar">管</span>
+            <span class="name">系统管理员</span>
+        </div>
+        <div class="theme-switch" id="pageTheme"></div>
+    </header>
+
+    <div class="app-body">
+        <!-- ============ 左侧菜单 ============ -->
+        <aside class="app-side" id="appSide">
+            <nav class="app-side__menu">
+                <div class="app-side__group-title">数据中心</div>
+                <a class="app-side__item" href="dbinfo.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zm8 6.5v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3c1.7 1.3 4.7 2 8 2s6.3-.7 8-2zm0 6v3c0 1.7-3.6 3-8 3s-8-1.3-8-3v-3c1.7 1.3 4.7 2 8 2s6.3-.7 8-2z"/></svg></span>数据库
+                </a>
+                <a class="app-side__item" href="report-designer.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 3h16a1 1 0 011 1v16a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1zm2 3v3h5V6H6zm7 0v3h5V6h-5zM6 11v3h5v-3H6zm7 0v3h5v-3h-5zM6 16v2h12v-2H6z"/></svg></span>报表设计
+                </a>
+                <a class="app-side__item is-active" href="report-center.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg></span>报表中心
+                </a>
+                <div class="app-side__group-title">人力资源中心</div>
+                <a class="app-side__item" href="address-book.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M5 3h11l3 3v15H5V3zm2 2v14h10V7h-3V5H7zm2 5h6v2H9V10zm0 4h6v2H9v-2z"/></svg></span>员工通讯录
+                </a>
+                <a class="app-side__item" href="org.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M9 4a3 3 0 100 6 3 3 0 000-6zm-6 15v-1a5 5 0 015-5h2a5 5 0 015 5v1H3zm12-15a3 3 0 110 6 3 3 0 010-6zm-2 15v-1a5 5 0 013-4.6V19h-3z"/></svg></span>组织架构
+                </a>
+                <div class="app-side__group-title">邮件中心</div>
+                <a class="app-side__item" href="service-email.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.8 2L12 12.4 19.2 7H4.8z"/></svg></span>服务信箱设置
+                </a>
+                <a class="app-side__item" href="mail.html">
+                    <span class="ico"><svg class="svg-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v10a1 1 0 01-1 1H9l-5 4V5a1 1 0 011-1z"/></svg></span>邮箱助手
+                </a>
+            </nav>
+        </aside>
+        <div class="app-side__mask" id="sideMask"></div>
+
+        <!-- ============ 主内容：上（检索） / 下（报表卡片列表） ============ -->
+        <main class="app-main rc-page">
+            <div class="page-head" id="pageHead" data-crumb="数据中心/报表中心">
+                <h2 class="page-head__title">报表中心</h2>
+                <!--<span class="page-head__hint">只收录已启用的报表：先在上面按关键词 / 分类检索，<b>双击</b>下方卡片即可填报参数执行、打印或导出</span>-->
+            </div>
+
+            <!-- ---------------- 上部：检索区 ---------------- -->
+            <section class="rc-search" id="rcSearch">
+                <div class="rc-search__form">
+                    <div class="rc-search__field rc-search__field--kw">
+                        <label class="rc-search__label" for="rcKeyword">关键词</label>
+                        <div class="el-input el-input--prefix">
+                            <span class="el-input__prefix">
+                                <svg class="svg-ico" viewBox="0 0 24 24" style="width:15px;height:15px"><g stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></g></svg>
+                            </span>
+                            <input class="el-input__inner" type="text" id="rcKeyword" name="rcKeyword" autocomplete="off"
+                                   placeholder="报表编码 / 名称 / 英文名 / 主表 / 说明">
+                        </div>
+                    </div>
+                    <div class="rc-search__field">
+                        <label class="rc-search__label" for="rcCategory">分类</label>
+                        <div class="el-input">
+                            <select class="el-input__inner" id="rcCategory" name="rcCategory">
+                                <option value="">全部分类</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="rc-search__actions">
+                        <button type="button" class="el-button el-button--primary" id="btnRcSearch">查询</button>
+                        <button type="button" class="el-button" id="btnRcReset">重置</button>
+                    </div>
+                </div>
+                <p class="rc-search__tip">
+                    <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1.2 14.6l-4.3-4.3 1.4-1.4 2.9 2.9 5.9-5.9 1.4 1.4-7.3 7.3z"/></svg>
+                    这里只显示<b>启用状态</b>的报表（停用的不会出现在检索结果里）· 共 <b id="rcTotal">0</b> 张
+                </p>
+            </section>
+
+            <!-- ---------------- 下部：卡片列表 ---------------- -->
+            <section class="rc-list" id="rcList">
+                <div class="rc-grid" id="rcGrid"></div>
+
+                <div class="rc-empty" id="rcEmpty" hidden>
+                    <div class="rc-empty__icon">
+                        <svg class="svg-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm2 3v3h12V7H6zm0 5v2h7v-2H6zm0 4v2h12v-2H6z"/></svg>
+                    </div>
+                    <p class="rc-empty__title">还没有已启用的报表</p>
+                    <p class="rc-empty__hint">到「报表设计」里新建报表并启用后，就会出现在报表中心。</p>
+                </div>
+            </section>
+
+            <div class="rc-pager" id="rcPager" hidden></div>
+        </main>
+
+    </div>
+</div>
+
+<script src="vendor/jquery-3.7.1.min.js"></script>
+<script src="js/theme.js?v=20261031c"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js?v=20261119d"></script>
+<script src="js/ui.js?v=20261105a"></script>
+<script src="js/layout.js?v=20261031b"></script>
+    <script src="js/btnperm.js?v=20261112a"></script>
+<script src="js/report-viewer.js?v=20261105c"></script>
+<script src="js/report-center.js?v=20261105c"></script>
+</body>
+</html>
